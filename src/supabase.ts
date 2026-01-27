@@ -5,12 +5,10 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// 簡易的なユーザーID（後でちゃんとした認証に変更可能）
+// 固定のユーザーID（全デバイスで共通）
+const SHARED_USER_ID = 'conan_deck_user_main';
+
 export function getUserId(): string {
-  let userId = localStorage.getItem('conan_user_id')
-  if (!userId) {
-    userId = 'user_' + Math.random().toString(36).substr(2, 9)
-    localStorage.setItem('conan_user_id', userId)
-  }
-  return userId
+  // 常に同じIDを返す
+  return SHARED_USER_ID;
 }
