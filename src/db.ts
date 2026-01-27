@@ -79,7 +79,7 @@ export async function uploadImage(blob: Blob, cardId: number): Promise<string | 
   try {
     const fileName = `${getUserId()}/card_${cardId}_${Date.now()}.${blob.type.split('/')[1]}`;
     
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('card-images')
       .upload(fileName, blob, {
         contentType: blob.type,
