@@ -72,7 +72,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "sync">("cards");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // ← モバイルメニュー状態
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // 編集用の状態
+  const [editingCard, setEditingCard] = useState<Card | null>(null);
+  const [editForm, setEditForm] = useState<Partial<Card>>({});
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
 
   // 初回：デッキが無ければ作る
   useEffect(() => {
@@ -147,6 +152,55 @@ export default function App() {
     } else {
       setDeckCards([]);
     }
+  }
+
+  // カード編集を開く
+  function openEditCard(card: Card) {
+    setEditingCard(card);
+    setEditForm({
+      name: card.name,
+      number: card.number,
+      color: card.color,
+      type: card.type,
+      memo: card.memo,
+    });
+    setEditImageFile(null);
+  }
+
+  // カード編集をキャンセル
+  function closeEditCard() {
+    setEditingCard(null);
+    setEditForm({});
+    setEditImageFile(null);
+  }
+
+  // カード編集を保存
+  async function saveEditCard() {
+    if (!editingCard?.id) return;
+
+    const name = (editForm.name ?? "").trim();
+    if (!name) {
+      alert("カード名は必須です。");
+      return;
+    }
+
+    const imageBlob = editImageFile
+      ? new Blob([await editImageFile.arrayBuffer()], { type: editImageFile.type })
+      : editingCard.image;
+
+    await db.cards.update(editingCard.id, {
+      name,
+      number: (editForm.number ?? "").trim() || undefined,
+      color: (editForm.color ?? "").trim() || undefined,
+      type: (editForm.type ?? "").trim() || undefined,
+      memo: (editForm.memo ?? "").trim() || undefined,
+      image: imageBlob,
+      updatedAt: Date.now(),
+      synced: false,
+    });
+
+    closeEditCard();
+    await refreshAll();
   }
 
   async function addCardToDeck(cardId: number) {
@@ -331,12 +385,10 @@ export default function App() {
     setTimeout(() => setSyncMessage(""), 3000);
   }
 
-  // モバイルメニュー切り替え
   function toggleMobileMenu() {
     setMobileMenuOpen(!mobileMenuOpen);
   }
 
-  // タブ切り替え（モバイルメニューも閉じる）
   function switchTab(tab: "cards" | "decks" | "editor" | "sync") {
     setActiveTab(tab);
     setMobileMenuOpen(false);
@@ -486,6 +538,91 @@ export default function App() {
         </ul>
       </nav>
 
+      {/* 編集モーダル */}
+      {editingCard && (
+        <div className="modal-overlay" onClick={closeEditCard}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <span>カードを編集</span>
+              <button className="modal-close" onClick={closeEditCard}>✕</button>
+            </div>
+            <div className="form-grid">
+              <input
+                type="text"
+                placeholder="カード名（必須）"
+                value={editForm.name ?? ""}
+                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+              />
+              <div className="form-row">
+                <input
+                  type="text"
+                  placeholder="カード番号（任意）"
+                  value={editForm.number ?? ""}
+                  onChange={(e) => setEditForm((p) => ({ ...p, number: e.target.value }))}
+                />
+                <select
+                  value={editForm.color ?? "赤"}
+                  onChange={(e) => setEditForm((p) => ({ ...p, color: e.target.value }))}
+                >
+                  <option>赤</option>
+                  <option>青</option>
+                  <option>黄</option>
+                  <option>緑</option>
+                  <option>無色</option>
+                </select>
+              </div>
+              <select
+                value={editForm.type ?? "キャラクター"}
+                onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}
+              >
+                <option>キャラクター</option>
+                <option>イベント</option>
+                <option>アイテム</option>
+              </select>
+              <textarea
+                placeholder="メモ（任意）"
+                value={editForm.memo ?? ""}
+                onChange={(e) => setEditForm((p) => ({ ...p, memo: e.target.value }))}
+                rows={3}
+              />
+              <div>
+                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
+                  画像を変更（任意）
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setEditImageFile(file);
+                  }}
+                />
+                {editImageFile && (
+                  <img
+                    src={URL.createObjectURL(editImageFile)}
+                    alt="プレビュー"
+                    className="image-preview"
+                  />
+                )}
+                {!editImageFile && editingCard.image && (
+                  <div style={{ marginTop: "0.5rem", color: "#666", fontSize: "0.9rem" }}>
+                    現在の画像を保持（変更する場合は上で選択）
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-secondary" onClick={closeEditCard}>
+                キャンセル
+              </button>
+              <button className="btn-primary" onClick={saveEditCard}>
+                ✅ 保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* メインコンテンツ */}
       <div className="app-content">
         {/* カード管理画面 */}
@@ -572,7 +709,7 @@ export default function App() {
             ) : (
               <div className="cards-grid">
                 {filteredCards.map((c) => (
-                  <div key={c.id} className="card-item">
+                  <div key={c.id} className="card-item" onClick={() => openEditCard(c)}>
                     {c.color && (
                       <div
                         className="card-color-badge"
@@ -585,7 +722,7 @@ export default function App() {
                       {c.number ? `No.${c.number}` : ""}
                       {c.type ? ` • ${c.type}` : ""}
                     </div>
-                    <div className="card-actions">
+                    <div className="card-actions" onClick={(e) => e.stopPropagation()}>
                       <button
                         className="btn-primary"
                         style={{ flex: 1, padding: "0.5rem" }}
@@ -649,7 +786,6 @@ export default function App() {
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
             <>
-              {/* デッキ統計 */}
               <div className="deck-stats">
                 <div className="deck-stats-title">{activeDeck.name}</div>
                 <div className="deck-stats-info">
@@ -671,7 +807,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* デッキ内カード */}
               <div className="section">
                 <div className="section-header">
                   <h2 className="section-title">デッキ内カード</h2>
@@ -736,8 +871,6 @@ export default function App() {
             <div className="info-panel-title">☁️ クラウド同期</div>
             <div className="info-panel-text">
               Supabaseを使って、PC・スマホ間でデータを同期できます。
-              <br />
-              同期すると、他のデバイスでも同じデータが使えるようになります。
             </div>
           </div>
 
@@ -788,29 +921,6 @@ export default function App() {
                   ⬆️ クラウドへ保存
                 </button>
               </div>
-            </div>
-          </div>
-
-          <div className="section">
-            <div className="section-header">
-              <h2 className="section-title">📱 使い方</h2>
-            </div>
-            <div style={{ lineHeight: "1.8" }}>
-              <p><strong>1. PCで登録したら：</strong></p>
-              <p style={{ marginLeft: "1rem" }}>
-                「⬆️ クラウドへ保存」または「🔄 完全同期」をクリック
-              </p>
-              
-              <p style={{ marginTop: "1rem" }}><strong>2. スマホで使うとき：</strong></p>
-              <p style={{ marginLeft: "1rem" }}>
-                同じURL（https://...）をスマホで開く<br />
-                「⬇️ クラウドから取得」または「🔄 完全同期」をクリック
-              </p>
-
-              <p style={{ marginTop: "1rem" }}><strong>3. 定期的に：</strong></p>
-              <p style={{ marginLeft: "1rem" }}>
-                「🔄 完全同期」で最新状態を保つ
-              </p>
             </div>
           </div>
         </div>
