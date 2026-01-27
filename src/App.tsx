@@ -72,6 +72,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "sync">("cards");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // ← モバイルメニュー状態
 
   // 初回：デッキが無ければ作る
   useEffect(() => {
@@ -330,6 +331,17 @@ export default function App() {
     setTimeout(() => setSyncMessage(""), 3000);
   }
 
+  // モバイルメニュー切り替え
+  function toggleMobileMenu() {
+    setMobileMenuOpen(!mobileMenuOpen);
+  }
+
+  // タブ切り替え（モバイルメニューも閉じる）
+  function switchTab(tab: "cards" | "decks" | "editor" | "sync") {
+    setActiveTab(tab);
+    setMobileMenuOpen(false);
+  }
+
   const activeDeck = decks.find((d) => d.id === activeDeckId);
 
   return (
@@ -337,8 +349,104 @@ export default function App() {
       {/* ヘッダー */}
       <header className="app-header">
         <div className="app-logo">🃏 Conan Card Deck</div>
-        <button className="menu-toggle">☰</button>
+        <button className="menu-toggle" onClick={toggleMobileMenu}>☰</button>
       </header>
+
+      {/* モバイルメニュー */}
+      {mobileMenuOpen && (
+        <div 
+          className="mobile-menu-overlay" 
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 200,
+          }}
+        >
+          <div 
+            className="mobile-menu"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "fixed",
+              top: "68px",
+              left: 0,
+              right: 0,
+              background: "white",
+              padding: "1rem",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              zIndex: 201,
+            }}
+          >
+            <button
+              onClick={() => switchTab("cards")}
+              style={{
+                width: "100%",
+                padding: "1rem",
+                marginBottom: "0.5rem",
+                border: activeTab === "cards" ? "2px solid #667eea" : "2px solid #e0e0e0",
+                background: activeTab === "cards" ? "#f5f7fa" : "white",
+                borderRadius: "8px",
+                fontSize: "1rem",
+                fontWeight: activeTab === "cards" ? "bold" : "normal",
+                textAlign: "left",
+              }}
+            >
+              🃏 カード管理
+            </button>
+            <button
+              onClick={() => switchTab("decks")}
+              style={{
+                width: "100%",
+                padding: "1rem",
+                marginBottom: "0.5rem",
+                border: activeTab === "decks" ? "2px solid #667eea" : "2px solid #e0e0e0",
+                background: activeTab === "decks" ? "#f5f7fa" : "white",
+                borderRadius: "8px",
+                fontSize: "1rem",
+                fontWeight: activeTab === "decks" ? "bold" : "normal",
+                textAlign: "left",
+              }}
+            >
+              📦 デッキ一覧
+            </button>
+            <button
+              onClick={() => switchTab("editor")}
+              style={{
+                width: "100%",
+                padding: "1rem",
+                marginBottom: "0.5rem",
+                border: activeTab === "editor" ? "2px solid #667eea" : "2px solid #e0e0e0",
+                background: activeTab === "editor" ? "#f5f7fa" : "white",
+                borderRadius: "8px",
+                fontSize: "1rem",
+                fontWeight: activeTab === "editor" ? "bold" : "normal",
+                textAlign: "left",
+              }}
+            >
+              ✏️ デッキ編集
+            </button>
+            <button
+              onClick={() => switchTab("sync")}
+              style={{
+                width: "100%",
+                padding: "1rem",
+                border: activeTab === "sync" ? "2px solid #667eea" : "2px solid #e0e0e0",
+                background: activeTab === "sync" ? "#f5f7fa" : "white",
+                borderRadius: "8px",
+                fontSize: "1rem",
+                fontWeight: activeTab === "sync" ? "bold" : "normal",
+                textAlign: "left",
+              }}
+            >
+              ☁️ 同期
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ナビゲーション */}
       <nav className="app-nav">
