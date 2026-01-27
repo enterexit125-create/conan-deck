@@ -69,6 +69,55 @@ class AppDB extends Dexie {
 export const db = new AppDB();
 
 // ========================================
+// 画像アップロード機能
+// ========================================
+
+/**
+ * 画像をSupabase Storageにアップロード
+ */
+export async function uploadImage(blob: Blob, cardId: number): Promise<string | null> {
+  try {
+    const fileName = `${getUserId()}/card_${cardId}_${Date.now()}.${blob.type.split('/')[1]}`;
+    
+    const { data, error } = await supabase.storage
+      .from('card-images')
+      .upload(fileName, blob, {
+        contentType: blob.type,
+        upsert: true
+      });
+
+    if (error) {
+      console.error("画像アップロードエラー:", error);
+      return null;
+    }
+
+    // 公開URLを取得
+    const { data: urlData } = supabase.storage
+      .from('card-images')
+      .getPublicUrl(fileName);
+
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error("画像アップロード失敗:", error);
+    return null;
+  }
+}
+
+/**
+ * 画像URLから画像をダウンロード
+ */
+export async function downloadImage(url: string): Promise<Blob | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.blob();
+  } catch (error) {
+    console.error("画像ダウンロード失敗:", error);
+    return null;
+  }
+}
+
+// ========================================
 // Supabase同期機能
 // ========================================
 
@@ -98,20 +147,31 @@ export async function syncFromSupabase() {
 
     if (cardsData && cardsData.length > 0) {
       await db.cards.clear();
-      await db.cards.bulkAdd(
-        cardsData.map((c: any) => ({
+      
+      // 画像をダウンロードしながら保存
+      for (const c of cardsData) {
+        let imageBlob: Blob | undefined = undefined;
+        
+        // 画像URLがあればダウンロード
+        if (c.image_url) {
+          const blob = await downloadImage(c.image_url);
+          if (blob) imageBlob = blob;
+        }
+        
+        await db.cards.add({
           id: c.id,
           name: c.name || "",
           number: c.number || undefined,
           color: c.color || undefined,
           type: c.type || undefined,
           memo: c.memo || undefined,
+          image: imageBlob,
           imageUrl: c.image_url || undefined,
           updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
           userId: c.user_id || userId,
           synced: true,
-        }))
-      );
+        });
+      }
     }
 
     if (decksData && decksData.length > 0) {
@@ -152,17 +212,27 @@ export async function syncToSupabase() {
   const userId = getUserId();
 
   try {
-    // 未同期のカードを取得（syncedがfalseまたは存在しない）
+    // 未同期のカードを取得
     const allCards = await db.cards.toArray();
     const unsyncedCards = allCards.filter(c => c.synced === false || c.synced === undefined);
     
     console.log(`📤 アップロード: ${unsyncedCards.length}枚のカード`);
     
     for (const card of unsyncedCards) {
-      // 必須フィールドのチェック
       if (!card.name) {
         console.warn("⚠️ カード名が空のためスキップ:", card);
         continue;
+      }
+
+      let imageUrl: string | null = null;
+      
+      // 画像があればアップロード
+      if (card.image && card.id) {
+        console.log(`📸 画像アップロード中: ${card.name}`);
+        imageUrl = await uploadImage(card.image, card.id);
+        if (imageUrl) {
+          console.log(`✅ 画像アップロード成功: ${imageUrl}`);
+        }
       }
 
       const { data, error } = await supabase
@@ -173,7 +243,7 @@ export async function syncToSupabase() {
           color: card.color || null,
           type: card.type || null,
           memo: card.memo || null,
-          image_url: card.imageUrl || null,
+          image_url: imageUrl || card.imageUrl || null,
           updated_at: new Date(card.updatedAt).toISOString(),
           user_id: userId,
         })
@@ -186,7 +256,7 @@ export async function syncToSupabase() {
       }
 
       if (card.id && data) {
-        await db.cards.update(card.id, { synced: true });
+        await db.cards.update(card.id, { synced: true, imageUrl: imageUrl || undefined });
       }
     }
 
@@ -229,7 +299,6 @@ export async function syncToSupabase() {
     console.log(`📤 アップロード: ${unsyncedDeckCards.length}個のデッキカード`);
     
     for (const dc of unsyncedDeckCards) {
-      // データ型の検証
       if (!Number.isInteger(dc.deckId) || !Number.isInteger(dc.cardId)) {
         console.warn("⚠️ 無効なIDのためスキップ:", dc);
         continue;
@@ -266,14 +335,14 @@ export async function syncToSupabase() {
 export async function fullSync() {
   console.log("🔄 完全同期開始...");
   
-  // まずアップロード（ローカルの変更を先に保存）
+  // まずアップロード
   const uploadResult = await syncToSupabase();
   if (!uploadResult.success) {
     console.error("アップロード失敗");
     return uploadResult;
   }
 
-  // 次にダウンロード（最新データを取得）
+  // 次にダウンロード
   const downloadResult = await syncFromSupabase();
   
   if (downloadResult.success) {
