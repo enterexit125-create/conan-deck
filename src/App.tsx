@@ -709,7 +709,16 @@ export default function App() {
             ) : (
               <div className="cards-grid">
                 {filteredCards.map((c) => (
-                  <div key={c.id} className="card-item" onClick={() => openEditCard(c)}>
+                  <div 
+                    key={c.id} 
+                    className="card-item" 
+                    onClick={() => openEditCard(c)}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      openEditCard(c);
+                   }}
+                   style={{ cursor: "pointer" }}
+              >
                     {c.color && (
                       <div
                         className="card-color-badge"
