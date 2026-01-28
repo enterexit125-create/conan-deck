@@ -389,6 +389,7 @@ export async function syncToSupabase() {
         const { data, error } = await supabase
           .from("cards")
           .insert({
+            id: card.id, // ローカルIDを保持
             name: card.name,
             number: card.number || null,
             color: card.color || null,
