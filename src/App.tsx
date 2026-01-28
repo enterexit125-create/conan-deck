@@ -1,4 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+
+// デバッグツール（スマホ用）- 開発時のみ
+if (window.location.hostname !== 'localhost') {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+  document.body.appendChild(script);
+  script.onload = () => {
+    // @ts-ignore
+    window.eruda?.init();
+  };
+}
 import { db, fullSync, syncFromSupabase, syncToSupabase } from "./db";
 import type { Card, Deck, DeckCard } from "./db";
 import "./App.css";
