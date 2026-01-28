@@ -210,7 +210,75 @@ export async function syncToSupabase() {
   const userId = getUserId();
 
   try {
-    // 未同期のカードを取得
+    // ========================================
+    // 1. まずデッキをアップロード（外部キー制約のため）
+    // ========================================
+    const allDecks = await db.decks.toArray();
+    const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
+    
+    console.log(`📤 アップロード: ${unsyncedDecks.length}個のデッキ`);
+    
+    for (const deck of unsyncedDecks) {
+      if (!deck.name) {
+        console.warn("⚠️ デッキ名が空のためスキップ:", deck);
+        continue;
+      }
+
+      // Supabaseに同じIDが存在するかチェック
+      const { data: existingDeck } = await supabase
+        .from("decks")
+        .select("id")
+        .eq("id", deck.id)
+        .eq("user_id", userId)
+        .single();
+
+      if (existingDeck) {
+        // 既存デッキを更新
+        console.log(`🔄 デッキ更新: ${deck.name} (ID: ${deck.id})`);
+        const { error } = await supabase
+          .from("decks")
+          .update({
+            name: deck.name,
+            created_at: new Date(deck.createdAt).toISOString(),
+          })
+          .eq("id", deck.id)
+          .eq("user_id", userId);
+
+        if (error) {
+          console.error("デッキ更新エラー:", error);
+          throw error;
+        }
+
+        if (deck.id) {
+          await db.decks.update(deck.id, { synced: true });
+        }
+      } else {
+        // 新規デッキを挿入
+        console.log(`➕ デッキ追加: ${deck.name}`);
+        const { data, error } = await supabase
+          .from("decks")
+          .insert({
+            name: deck.name,
+            created_at: new Date(deck.createdAt).toISOString(),
+            user_id: userId,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("デッキ保存エラー:", error);
+          throw error;
+        }
+
+        if (deck.id && data) {
+          await db.decks.update(deck.id, { synced: true });
+        }
+      }
+    }
+
+    // ========================================
+    // 2. 次にカードをアップロード
+    // ========================================
     const allCards = await db.cards.toArray();
     const unsyncedCards = allCards.filter(c => c.synced === false || c.synced === undefined);
     
@@ -295,71 +363,9 @@ export async function syncToSupabase() {
       }
     }
 
-    // 未同期のデッキを取得
-    const allDecks = await db.decks.toArray();
-    const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
-    
-    console.log(`📤 アップロード: ${unsyncedDecks.length}個のデッキ`);
-    
-    for (const deck of unsyncedDecks) {
-      if (!deck.name) {
-        console.warn("⚠️ デッキ名が空のためスキップ:", deck);
-        continue;
-      }
-
-      // Supabaseに同じIDが存在するかチェック
-      const { data: existingDeck } = await supabase
-        .from("decks")
-        .select("id")
-        .eq("id", deck.id)
-        .eq("user_id", userId)
-        .single();
-
-      if (existingDeck) {
-        // 既存デッキを更新
-        console.log(`🔄 デッキ更新: ${deck.name} (ID: ${deck.id})`);
-        const { error } = await supabase
-          .from("decks")
-          .update({
-            name: deck.name,
-            created_at: new Date(deck.createdAt).toISOString(),
-          })
-          .eq("id", deck.id)
-          .eq("user_id", userId);
-
-        if (error) {
-          console.error("デッキ更新エラー:", error);
-          throw error;
-        }
-
-        if (deck.id) {
-          await db.decks.update(deck.id, { synced: true });
-        }
-      } else {
-        // 新規デッキを挿入
-        console.log(`➕ デッキ追加: ${deck.name}`);
-        const { data, error } = await supabase
-          .from("decks")
-          .insert({
-            name: deck.name,
-            created_at: new Date(deck.createdAt).toISOString(),
-            user_id: userId,
-          })
-          .select()
-          .single();
-
-        if (error) {
-          console.error("デッキ保存エラー:", error);
-          throw error;
-        }
-
-        if (deck.id && data) {
-          await db.decks.update(deck.id, { synced: true });
-        }
-      }
-    }
-
-    // 未同期のデッキカードを取得
+    // ========================================
+    // 3. 最後にデッキカードをアップロード
+    // ========================================
     const allDeckCards = await db.deckCards.toArray();
     const unsyncedDeckCards = allDeckCards.filter(dc => dc.synced === false || dc.synced === undefined);
     
