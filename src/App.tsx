@@ -687,6 +687,23 @@ export default function App() {
                 <div className="section-header">
                   <h2 className="section-title">📊 レベル分布</h2>
                 </div>
+                
+                {/* デバッグ情報 */}
+                <div style={{ 
+                  padding: "1rem", 
+                  background: "#fff3cd", 
+                  borderRadius: "8px", 
+                  marginBottom: "1rem",
+                  fontSize: "0.9rem",
+                  fontFamily: "monospace"
+                }}>
+                  <div><strong>デバッグ情報:</strong></div>
+                  <div>レベル分布: {JSON.stringify(levelDistribution)}</div>
+                  <div>最大値: {maxLevelCount}</div>
+                  <div>デッキカード数: {deckCards.length}</div>
+                  <div>カードサンプル: {JSON.stringify(cards.slice(0, 2).map(c => ({ name: c.name, level: c.level })))}</div>
+                </div>
+                
                 <div style={{ 
                   display: "flex", 
                   alignItems: "flex-end", 
