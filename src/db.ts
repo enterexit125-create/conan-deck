@@ -8,6 +8,8 @@ export type Card = {
   number?: string;
   color?: string;
   type?: string;
+  rarity?: string;  // 新規追加
+  level?: string;   // 新規追加
   memo?: string;
   image?: Blob;
   imageUrl?: string;
@@ -165,6 +167,8 @@ export async function syncFromSupabase() {
             number: c.number || undefined,
             color: c.color || undefined,
             type: c.type || undefined,
+            rarity: c.rarity || undefined,
+            level: c.level || undefined,
             memo: c.memo || undefined,
             image: imageBlob,
             imageUrl: c.image_url || undefined,
@@ -180,6 +184,8 @@ export async function syncFromSupabase() {
             number: c.number || undefined,
             color: c.color || undefined,
             type: c.type || undefined,
+            rarity: c.rarity || undefined,
+            level: c.level || undefined,
             memo: c.memo || undefined,
             image: imageBlob,
             imageUrl: c.image_url || undefined,
@@ -361,6 +367,8 @@ export async function syncToSupabase() {
         number: card.number || null,
         color: card.color || null,
         type: card.type || null,
+        rarity: card.rarity || null,
+        level: card.level || null,
         memo: card.memo || null,
         image_url: imageUrl,
         updated_at: new Date(card.updatedAt).toISOString(),
@@ -383,6 +391,8 @@ export async function syncToSupabase() {
           number: card.number,
           color: card.color,
           type: card.type,
+          rarity: card.rarity,
+          level: card.level,
           memo: card.memo,
           image_url: card.image_url,
           updated_at: card.updated_at,

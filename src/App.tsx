@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { db, fullSync, syncFromSupabase, syncToSupabase } from "./db";
+import type { Card, Deck, DeckCard } from "./db";
+import "./App.css";
 
 // デバッグツール（スマホ用）- 開発時のみ
 if (window.location.hostname !== 'localhost') {
@@ -10,9 +13,6 @@ if (window.location.hostname !== 'localhost') {
     window.eruda?.init();
   };
 }
-import { db, fullSync, syncFromSupabase, syncToSupabase } from "./db";
-import type { Card, Deck, DeckCard } from "./db";
-import "./App.css";
 
 // 画像サムネイルコンポーネント
 function Thumb({ blob, alt, size = "small" }: { blob?: Blob; alt: string; size?: "small" | "large" }) {
@@ -53,12 +53,19 @@ function Thumb({ blob, alt, size = "small" }: { blob?: Blob; alt: string; size?:
 
 // 色のマッピング
 const colorMap: Record<string, string> = {
+  黄: "#fdd835",
   赤: "#e53935",
   青: "#1e88e5",
-  黄: "#fdd835",
   緑: "#43a047",
-  無色: "#9e9e9e",
+  白: "#f5f5f5",
+  黒: "#424242",
 };
+
+// 選択肢
+const COLOR_OPTIONS = ["黄", "赤", "青", "緑", "白", "黒"];
+const TYPE_OPTIONS = ["キャラ", "事件", "イベント", "パートナー"];
+const RARITY_OPTIONS = ["C", "U", "R", "SR", "SSR"];
+const LEVEL_OPTIONS = ["1", "2", "3", "4", "5"];
 
 const TARGET_DECK_SIZE = 40;
 const SAME_NAME_LIMIT = 3;
@@ -72,12 +79,22 @@ export default function App() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
   const [deckCards, setDeckCards] = useState<DeckCard[]>([]);
+  
+  // 検索・フィルター
   const [search, setSearch] = useState("");
+  const [filterColor, setFilterColor] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("");
+  const [filterRarity, setFilterRarity] = useState<string>("");
+  const [filterLevel, setFilterLevel] = useState<string>("");
+  
   const [form, setForm] = useState<Partial<Card>>({ 
     name: "", 
     number: "", 
-    color: "赤",
-    type: "キャラクター"
+    color: "黄",
+    type: "キャラ",
+    rarity: "C",
+    level: "1",
+    memo: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "sync">("cards");
@@ -136,13 +153,27 @@ export default function App() {
 
   const filteredCards = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return cards;
     return cards.filter((c) => {
+      // フリーワード検索
       const name = (c.name ?? "").toLowerCase();
       const num = (c.number ?? "").toLowerCase();
-      return name.includes(q) || num.includes(q);
+      const matchText = !q || name.includes(q) || num.includes(q);
+      
+      // 色フィルター
+      const matchColor = !filterColor || c.color === filterColor;
+      
+      // 種類フィルター
+      const matchType = !filterType || c.type === filterType;
+      
+      // レアフィルター
+      const matchRarity = !filterRarity || c.rarity === filterRarity;
+      
+      // レベルフィルター
+      const matchLevel = !filterLevel || c.level === filterLevel;
+      
+      return matchText && matchColor && matchType && matchRarity && matchLevel;
     });
-  }, [cards, search]);
+  }, [cards, search, filterColor, filterType, filterRarity, filterLevel]);
 
   const deckCardMap = useMemo(() => {
     const m = new Map<number, DeckCard>();
@@ -173,6 +204,8 @@ export default function App() {
       number: card.number,
       color: card.color,
       type: card.type,
+      rarity: card.rarity,
+      level: card.level,
       memo: card.memo,
     });
     setEditImageFile(null);
@@ -204,6 +237,8 @@ export default function App() {
       number: (editForm.number ?? "").trim() || undefined,
       color: (editForm.color ?? "").trim() || undefined,
       type: (editForm.type ?? "").trim() || undefined,
+      rarity: (editForm.rarity ?? "").trim() || undefined,
+      level: (editForm.level ?? "").trim() || undefined,
       memo: (editForm.memo ?? "").trim() || undefined,
       image: imageBlob,
       updatedAt: Date.now(),
@@ -277,7 +312,6 @@ export default function App() {
 
   async function saveCard() {
     const name = (form.name ?? "").trim();
-    const number = (form.number ?? "").trim();
     if (!name) {
       alert("カード名は必須です。");
       return;
@@ -289,16 +323,26 @@ export default function App() {
 
     await db.cards.add({
       name,
-      number: number || undefined,
+      number: (form.number ?? "").trim() || undefined,
       color: (form.color ?? "").trim() || undefined,
       type: (form.type ?? "").trim() || undefined,
+      rarity: (form.rarity ?? "").trim() || undefined,
+      level: (form.level ?? "").trim() || undefined,
       memo: (form.memo ?? "").trim() || undefined,
       image: imageBlob,
       updatedAt: Date.now(),
       synced: false,
     });
 
-    setForm({ name: "", number: "", color: "赤", type: "キャラクター", memo: "" });
+    setForm({ 
+      name: "", 
+      number: "", 
+      color: "黄", 
+      type: "キャラ", 
+      rarity: "C",
+      level: "1",
+      memo: "" 
+    });
     setImageFile(null);
     await refreshAll();
   }
@@ -572,24 +616,32 @@ export default function App() {
                   onChange={(e) => setEditForm((p) => ({ ...p, number: e.target.value }))}
                 />
                 <select
-                  value={editForm.color ?? "赤"}
+                  value={editForm.color ?? "黄"}
                   onChange={(e) => setEditForm((p) => ({ ...p, color: e.target.value }))}
                 >
-                  <option>赤</option>
-                  <option>青</option>
-                  <option>黄</option>
-                  <option>緑</option>
-                  <option>無色</option>
+                  {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <select
-                value={editForm.type ?? "キャラクター"}
+                value={editForm.type ?? "キャラ"}
                 onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}
               >
-                <option>キャラクター</option>
-                <option>イベント</option>
-                <option>アイテム</option>
+                {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
               </select>
+              <div className="form-row">
+                <select
+                  value={editForm.rarity ?? "C"}
+                  onChange={(e) => setEditForm((p) => ({ ...p, rarity: e.target.value }))}
+                >
+                  {RARITY_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                </select>
+                <select
+                  value={editForm.level ?? "1"}
+                  onChange={(e) => setEditForm((p) => ({ ...p, level: e.target.value }))}
+                >
+                  {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
+                </select>
+              </div>
               <textarea
                 placeholder="メモ（任意）"
                 value={editForm.memo ?? ""}
@@ -658,24 +710,32 @@ export default function App() {
                   onChange={(e) => setForm((p) => ({ ...p, number: e.target.value }))}
                 />
                 <select
-                  value={form.color ?? "赤"}
+                  value={form.color ?? "黄"}
                   onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
                 >
-                  <option>赤</option>
-                  <option>青</option>
-                  <option>黄</option>
-                  <option>緑</option>
-                  <option>無色</option>
+                  {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <select
-                value={form.type ?? "キャラクター"}
+                value={form.type ?? "キャラ"}
                 onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
               >
-                <option>キャラクター</option>
-                <option>イベント</option>
-                <option>アイテム</option>
+                {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
               </select>
+              <div className="form-row">
+                <select
+                  value={form.rarity ?? "C"}
+                  onChange={(e) => setForm((p) => ({ ...p, rarity: e.target.value }))}
+                >
+                  {RARITY_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                </select>
+                <select
+                  value={form.level ?? "1"}
+                  onChange={(e) => setForm((p) => ({ ...p, level: e.target.value }))}
+                >
+                  {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
+                </select>
+              </div>
               <textarea
                 placeholder="メモ（任意）"
                 value={form.memo ?? ""}
@@ -709,12 +769,43 @@ export default function App() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            {/* フィルター */}
+            <div className="form-grid" style={{ marginTop: "1rem" }}>
+              <select
+                value={filterColor}
+                onChange={(e) => setFilterColor(e.target.value)}
+              >
+                <option value="">色: 全て</option>
+                {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <option value="">種類: 全て</option>
+                {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <select
+                value={filterRarity}
+                onChange={(e) => setFilterRarity(e.target.value)}
+              >
+                <option value="">レア: 全て</option>
+                {RARITY_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <select
+                value={filterLevel}
+                onChange={(e) => setFilterLevel(e.target.value)}
+              >
+                <option value="">レベル: 全て</option>
+                {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
+              </select>
+            </div>
             {filteredCards.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🃏</div>
-                <div>まだカードがありません</div>
+                <div>カードが見つかりません</div>
                 <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>
-                  上のフォームから登録してください
+                  検索条件を変更してください
                 </div>
               </div>
             ) : (
@@ -732,6 +823,8 @@ export default function App() {
                     <div className="card-number">
                       {c.number ? `No.${c.number}` : ""}
                       {c.type ? ` • ${c.type}` : ""}
+                      {c.rarity ? ` • ${c.rarity}` : ""}
+                      {c.level ? ` • Lv${c.level}` : ""}
                     </div>
                     <div className="card-actions">
                       <button
@@ -852,6 +945,8 @@ export default function App() {
                               {c?.number ? `No.${c.number}` : ""}
                               {c?.color ? ` • ${c.color}` : ""}
                               {c?.type ? ` • ${c.type}` : ""}
+                              {c?.rarity ? ` • ${c.rarity}` : ""}
+                              {c?.level ? ` • Lv${c.level}` : ""}
                             </div>
                           </div>
                           <div className="deck-card-controls">
