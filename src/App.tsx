@@ -103,6 +103,9 @@ export default function App() {
   const [editingCard, setEditingCard] = useState<Card | null>(null);
   const [editForm, setEditForm] = useState<Partial<Card>>({});
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  
+  // デッキカード編集用
+  const [editingDeckCard, setEditingDeckCard] = useState<{ cardId: number; count: number } | null>(null);
 
   // 初回：デッキが無ければ作る
   useEffect(() => {
@@ -221,6 +224,70 @@ export default function App() {
     setEditingCard(null);
     setEditForm({});
     setEditImageFile(null);
+  }
+
+  // デッキカード編集を開く
+  function openEditDeckCard(cardId: number) {
+    const dc = deckCardMap.get(cardId);
+    if (!dc) return;
+    setEditingDeckCard({ cardId, count: dc.count });
+  }
+
+  // デッキカード編集を閉じる
+  function closeEditDeckCard() {
+    setEditingDeckCard(null);
+  }
+
+  // デッキカード枚数を増やす
+  async function incrementDeckCard() {
+    if (!editingDeckCard || activeDeckId == null) return;
+
+    if (totalInDeck >= TARGET_DECK_SIZE) {
+      alert("デッキが40枚に達しています。");
+      return;
+    }
+
+    const nextCount = editingDeckCard.count + 1;
+    if (nextCount > SAME_NAME_LIMIT) {
+      alert("同名カードは最大3枚までです。");
+      return;
+    }
+
+    const found = await db.deckCards
+      .where("[deckId+cardId]")
+      .equals([activeDeckId, editingDeckCard.cardId])
+      .first();
+
+    if (found?.id) {
+      await db.deckCards.update(found.id, { count: nextCount, synced: false });
+    }
+
+    setEditingDeckCard({ ...editingDeckCard, count: nextCount });
+    await refreshAll();
+  }
+
+  // デッキカード枚数を減らす
+  async function decrementDeckCard() {
+    if (!editingDeckCard || activeDeckId == null) return;
+
+    const nextCount = editingDeckCard.count - 1;
+
+    const found = await db.deckCards
+      .where("[deckId+cardId]")
+      .equals([activeDeckId, editingDeckCard.cardId])
+      .first();
+
+    if (!found?.id) return;
+
+    if (nextCount <= 0) {
+      await db.deckCards.delete(found.id);
+      closeEditDeckCard();
+    } else {
+      await db.deckCards.update(found.id, { count: nextCount, synced: false });
+      setEditingDeckCard({ ...editingDeckCard, count: nextCount });
+    }
+
+    await refreshAll();
   }
 
   async function saveEditCard() {
@@ -572,6 +639,89 @@ export default function App() {
         </div>
       )}
 
+      {/* デッキカード枚数編集モーダル */}
+      {editingDeckCard && (
+        <div className="modal-overlay" onClick={closeEditDeckCard}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+            <div className="modal-header">
+              <span>枚数を変更</span>
+              <button className="modal-close" onClick={closeEditDeckCard}>✕</button>
+            </div>
+            {(() => {
+              const card = cards.find(c => c.id === editingDeckCard.cardId);
+              return (
+                <div style={{ textAlign: "center" }}>
+                  <Thumb blob={card?.image} alt={card?.name ?? "card"} size="large" />
+                  <div style={{ fontSize: "1.2rem", fontWeight: "bold", margin: "1rem 0" }}>
+                    {card?.name}
+                  </div>
+                  <div style={{ color: "#666", marginBottom: "1.5rem" }}>
+                    {card?.number ? `No.${card.number}` : ""}
+                    {card?.type ? ` • ${card.type}` : ""}
+                    {card?.level ? ` • Lv${card.level}` : ""}
+                  </div>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "1.5rem",
+                    fontSize: "1.5rem"
+                  }}>
+                    <button
+                      onClick={decrementDeckCard}
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        borderRadius: "50%",
+                        border: "2px solid #667eea",
+                        background: "white",
+                        fontSize: "1.5rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
+                      onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                    >
+                      −
+                    </button>
+                    <div style={{
+                      fontSize: "2.5rem",
+                      fontWeight: "bold",
+                      color: "#667eea",
+                      minWidth: "60px"
+                    }}>
+                      {editingDeckCard.count}
+                    </div>
+                    <button
+                      onClick={incrementDeckCard}
+                      style={{
+                        width: "50px",
+                        height: "50px",
+                        borderRadius: "50%",
+                        border: "2px solid #667eea",
+                        background: "white",
+                        fontSize: "1.5rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s"
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
+                      onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+            <div className="modal-actions" style={{ marginTop: "2rem" }}>
+              <button className="btn-primary" onClick={closeEditDeckCard} style={{ width: "100%" }}>
+                完了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="app-content">
         <div className={`screen ${activeTab === "cards" ? "active" : ""}`}>
           <div className="section">
@@ -774,25 +924,79 @@ export default function App() {
                     <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>「カード管理」タブからカードを追加してください</div>
                   </div>
                 ) : (
-                  <div className="deck-card-list">
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                    gap: "1rem",
+                    padding: "1rem 0"
+                  }}>
                     {deckCards.map((dc) => {
                       const c = cards.find((x) => x.id === dc.cardId);
                       return (
-                        <div key={dc.cardId} className="deck-card-row">
-                          <Thumb blob={c?.image} alt={c?.name ?? "card"} size="small" />
-                          <div className="deck-card-info">
-                            <div className="deck-card-info-name">{c?.name ?? "（不明カード）"}</div>
-                            <div className="deck-card-info-meta">
-                              {c?.number ? `No.${c.number}` : ""}
-                              {c?.color ? ` • ${c.color}` : ""}
-                              {c?.type ? ` • ${c.type}` : ""}
-                              {c?.level ? ` • Lv${c.level}` : ""}
+                        <div
+                          key={dc.cardId}
+                          onClick={() => openEditDeckCard(dc.cardId)}
+                          style={{
+                            position: "relative",
+                            cursor: "pointer",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                            transition: "transform 0.2s, box-shadow 0.2s"
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.transform = "translateY(-4px)";
+                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                          }}
+                        >
+                          <div style={{ aspectRatio: "0.7", position: "relative" }}>
+                            {c?.image ? (
+                              <img
+                                src={URL.createObjectURL(c.image)}
+                                alt={c.name}
+                                style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  objectFit: "cover"
+                                }}
+                              />
+                            ) : (
+                              <div style={{
+                                width: "100%",
+                                height: "100%",
+                                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                                fontSize: "3rem"
+                              }}>
+                                🃏
+                              </div>
+                            )}
+                            {/* 枚数バッジ */}
+                            <div style={{
+                              position: "absolute",
+                              bottom: "8px",
+                              right: "8px",
+                              background: "rgba(0, 0, 0, 0.8)",
+                              color: "white",
+                              borderRadius: "50%",
+                              width: "32px",
+                              height: "32px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "1.1rem",
+                              fontWeight: "bold",
+                              boxShadow: "0 2px 4px rgba(0,0,0,0.3)"
+                            }}>
+                              {dc.count}
                             </div>
-                          </div>
-                          <div className="deck-card-controls">
-                            <button className="count-btn" onClick={() => decCardInDeck(dc.cardId)}>−</button>
-                            <div className="card-count">{dc.count}</div>
-                            <button className="count-btn" onClick={() => addCardToDeck(dc.cardId)}>+</button>
                           </div>
                         </div>
                       );
