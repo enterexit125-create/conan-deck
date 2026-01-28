@@ -216,6 +216,12 @@ export async function syncToSupabase() {
     const allDecks = await db.decks.toArray();
     const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
     
+    // デバッグ: デッキ情報を表示
+    alert(`デッキ数: ${allDecks.length}, 未同期: ${unsyncedDecks.length}`);
+    if (allDecks.length > 0) {
+      alert(`デッキ1: id=${allDecks[0].id}, name=${allDecks[0].name}, synced=${allDecks[0].synced}`);
+    }
+    
     console.log(`📤 アップロード: ${unsyncedDecks.length}個のデッキ`);
     
     for (const deck of unsyncedDecks) {
@@ -225,12 +231,18 @@ export async function syncToSupabase() {
       }
 
       // Supabaseに同じIDが存在するかチェック
-      const { data: existingDeck } = await supabase
+      const { data: existingDeck, error: checkError } = await supabase
         .from("decks")
         .select("id")
         .eq("id", deck.id)
         .eq("user_id", userId)
         .single();
+
+      // デバッグ: チェック結果
+      if (checkError && checkError.code !== 'PGRST116') {
+        alert(`デッキチェックエラー: ${checkError.message}`);
+        throw checkError;
+      }
 
       if (existingDeck) {
         // 既存デッキを更新
@@ -246,6 +258,7 @@ export async function syncToSupabase() {
 
         if (error) {
           console.error("デッキ更新エラー:", error);
+          alert(`デッキ更新エラー: ${error.message}`);
           throw error;
         }
 
@@ -255,9 +268,12 @@ export async function syncToSupabase() {
       } else {
         // 新規デッキを挿入
         console.log(`➕ デッキ追加: ${deck.name}`);
+        alert(`デッキ追加中: ${deck.name}, ID: ${deck.id}`);
+        
         const { data, error } = await supabase
           .from("decks")
           .insert({
+            id: deck.id, // IDを明示的に指定
             name: deck.name,
             created_at: new Date(deck.createdAt).toISOString(),
             user_id: userId,
@@ -267,8 +283,11 @@ export async function syncToSupabase() {
 
         if (error) {
           console.error("デッキ保存エラー:", error);
+          alert(`デッキ保存エラー: ${error.message}`);
           throw error;
         }
+
+        alert(`デッキ保存成功: ${data.id}`);
 
         if (deck.id && data) {
           await db.decks.update(deck.id, { synced: true });
