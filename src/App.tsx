@@ -709,7 +709,7 @@ export default function App() {
             ) : (
               <div className="cards-grid">
                 {filteredCards.map((c) => (
-                  <div key={c.id} className="card-item" onClick={() => openEditCard(c)}>
+                  <div key={c.id} className="card-item">
                     {c.color && (
                       <div
                         className="card-color-badge"
@@ -722,37 +722,24 @@ export default function App() {
                       {c.number ? `No.${c.number}` : ""}
                       {c.type ? ` • ${c.type}` : ""}
                     </div>
-                    <div 
-                      className="card-actions" 
-                      onClick={(e) => e.stopPropagation()}
-                      onTouchEnd={(e) => e.stopPropagation()}
-                    >
+                    <div className="card-actions">
+                      <button
+                        className="btn-secondary"
+                        style={{ padding: "0.5rem" }}
+                        onClick={() => openEditCard(c)}
+                      >
+                        ✏️ 編集
+                      </button>
                       <button
                         className="btn-primary"
                         style={{ flex: 1, padding: "0.5rem" }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          addCardToDeck(c.id!);
-                        }}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addCardToDeck(c.id!);
-                        }}
+                        onClick={() => addCardToDeck(c.id!)}
                       >
                         ➕ デッキへ
                       </button>
                       <button
                         className="btn-danger btn-icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteCard(c.id!);
-                        }}
-                        onTouchEnd={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          deleteCard(c.id!);
-                        }}
+                        onClick={() => deleteCard(c.id!)}
                       >
                         🗑
                       </button>
