@@ -145,20 +145,18 @@ export async function syncFromSupabase() {
 
     if (deckCardsError) throw deckCardsError;
 
+    // カードを個別に put（IDを保持）
     if (cardsData && cardsData.length > 0) {
-      await db.cards.clear();
-      
-      // 画像をダウンロードしながら保存
       for (const c of cardsData) {
         let imageBlob: Blob | undefined = undefined;
         
-        // 画像URLがあればダウンロード
         if (c.image_url) {
           const blob = await downloadImage(c.image_url);
           if (blob) imageBlob = blob;
         }
         
-        await db.cards.add({
+        // put を使ってIDを保持したまま上書き
+        await db.cards.put({
           id: c.id,
           name: c.name || "",
           number: c.number || undefined,
@@ -174,30 +172,30 @@ export async function syncFromSupabase() {
       }
     }
 
+    // デッキも同様
     if (decksData && decksData.length > 0) {
-      await db.decks.clear();
-      await db.decks.bulkAdd(
-        decksData.map((d: any) => ({
+      for (const d of decksData) {
+        await db.decks.put({
           id: d.id,
           name: d.name || "",
           createdAt: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
           userId: d.user_id || userId,
           synced: true,
-        }))
-      );
+        });
+      }
     }
 
+    // デッキカードも同様
     if (deckCardsData && deckCardsData.length > 0) {
-      await db.deckCards.clear();
-      await db.deckCards.bulkAdd(
-        deckCardsData.map((dc: any) => ({
+      for (const dc of deckCardsData) {
+        await db.deckCards.put({
           id: dc.id,
           deckId: Number(dc.deck_id),
           cardId: Number(dc.card_id),
           count: Number(dc.count) || 1,
           synced: true,
-        }))
-      );
+        });
+      }
     }
 
     console.log("✅ Supabaseから同期完了");
@@ -235,28 +233,65 @@ export async function syncToSupabase() {
         }
       }
 
-      const { data, error } = await supabase
+      // Supabaseに同じIDが存在するかチェック
+      const { data: existingCard } = await supabase
         .from("cards")
-        .insert({
-          name: card.name,
-          number: card.number || null,
-          color: card.color || null,
-          type: card.type || null,
-          memo: card.memo || null,
-          image_url: imageUrl || card.imageUrl || null,
-          updated_at: new Date(card.updatedAt).toISOString(),
-          user_id: userId,
-        })
-        .select()
+        .select("id")
+        .eq("id", card.id)
+        .eq("user_id", userId)
         .single();
 
-      if (error) {
-        console.error("カード保存エラー:", error);
-        throw error;
-      }
+      if (existingCard) {
+        // 既存カードを更新
+        console.log(`🔄 カード更新: ${card.name} (ID: ${card.id})`);
+        const { error } = await supabase
+          .from("cards")
+          .update({
+            name: card.name,
+            number: card.number || null,
+            color: card.color || null,
+            type: card.type || null,
+            memo: card.memo || null,
+            image_url: imageUrl || card.imageUrl || null,
+            updated_at: new Date(card.updatedAt).toISOString(),
+          })
+          .eq("id", card.id)
+          .eq("user_id", userId);
 
-      if (card.id && data) {
-        await db.cards.update(card.id, { synced: true, imageUrl: imageUrl || undefined });
+        if (error) {
+          console.error("カード更新エラー:", error);
+          throw error;
+        }
+
+        if (card.id) {
+          await db.cards.update(card.id, { synced: true, imageUrl: imageUrl || card.imageUrl });
+        }
+      } else {
+        // 新規カードを挿入
+        console.log(`➕ カード追加: ${card.name}`);
+        const { data, error } = await supabase
+          .from("cards")
+          .insert({
+            name: card.name,
+            number: card.number || null,
+            color: card.color || null,
+            type: card.type || null,
+            memo: card.memo || null,
+            image_url: imageUrl || card.imageUrl || null,
+            updated_at: new Date(card.updatedAt).toISOString(),
+            user_id: userId,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("カード保存エラー:", error);
+          throw error;
+        }
+
+        if (card.id && data) {
+          await db.cards.update(card.id, { synced: true, imageUrl: imageUrl || undefined });
+        }
       }
     }
 
@@ -272,23 +307,55 @@ export async function syncToSupabase() {
         continue;
       }
 
-      const { data, error } = await supabase
+      // Supabaseに同じIDが存在するかチェック
+      const { data: existingDeck } = await supabase
         .from("decks")
-        .insert({
-          name: deck.name,
-          created_at: new Date(deck.createdAt).toISOString(),
-          user_id: userId,
-        })
-        .select()
+        .select("id")
+        .eq("id", deck.id)
+        .eq("user_id", userId)
         .single();
 
-      if (error) {
-        console.error("デッキ保存エラー:", error);
-        throw error;
-      }
+      if (existingDeck) {
+        // 既存デッキを更新
+        console.log(`🔄 デッキ更新: ${deck.name} (ID: ${deck.id})`);
+        const { error } = await supabase
+          .from("decks")
+          .update({
+            name: deck.name,
+            created_at: new Date(deck.createdAt).toISOString(),
+          })
+          .eq("id", deck.id)
+          .eq("user_id", userId);
 
-      if (deck.id && data) {
-        await db.decks.update(deck.id, { synced: true });
+        if (error) {
+          console.error("デッキ更新エラー:", error);
+          throw error;
+        }
+
+        if (deck.id) {
+          await db.decks.update(deck.id, { synced: true });
+        }
+      } else {
+        // 新規デッキを挿入
+        console.log(`➕ デッキ追加: ${deck.name}`);
+        const { data, error } = await supabase
+          .from("decks")
+          .insert({
+            name: deck.name,
+            created_at: new Date(deck.createdAt).toISOString(),
+            user_id: userId,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("デッキ保存エラー:", error);
+          throw error;
+        }
+
+        if (deck.id && data) {
+          await db.decks.update(deck.id, { synced: true });
+        }
       }
     }
 
@@ -304,23 +371,54 @@ export async function syncToSupabase() {
         continue;
       }
 
-      const { data, error } = await supabase
+      // Supabaseに同じIDが存在するかチェック
+      const { data: existingDeckCard } = await supabase
         .from("deck_cards")
-        .insert({
-          deck_id: dc.deckId,
-          card_id: dc.cardId,
-          count: dc.count || 1,
-        })
-        .select()
+        .select("id")
+        .eq("id", dc.id)
         .single();
 
-      if (error) {
-        console.error("デッキカード保存エラー:", error);
-        throw error;
-      }
+      if (existingDeckCard) {
+        // 既存デッキカードを更新
+        console.log(`🔄 デッキカード更新: Deck${dc.deckId}-Card${dc.cardId} (ID: ${dc.id})`);
+        const { error } = await supabase
+          .from("deck_cards")
+          .update({
+            deck_id: dc.deckId,
+            card_id: dc.cardId,
+            count: dc.count || 1,
+          })
+          .eq("id", dc.id);
 
-      if (dc.id && data) {
-        await db.deckCards.update(dc.id, { synced: true });
+        if (error) {
+          console.error("デッキカード更新エラー:", error);
+          throw error;
+        }
+
+        if (dc.id) {
+          await db.deckCards.update(dc.id, { synced: true });
+        }
+      } else {
+        // 新規デッキカードを挿入
+        console.log(`➕ デッキカード追加: Deck${dc.deckId}-Card${dc.cardId}`);
+        const { data, error } = await supabase
+          .from("deck_cards")
+          .insert({
+            deck_id: dc.deckId,
+            card_id: dc.cardId,
+            count: dc.count || 1,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error("デッキカード保存エラー:", error);
+          throw error;
+        }
+
+        if (dc.id && data) {
+          await db.deckCards.update(dc.id, { synced: true });
+        }
       }
     }
 
