@@ -64,8 +64,7 @@ const colorMap: Record<string, string> = {
 // 選択肢
 const COLOR_OPTIONS = ["黄", "赤", "青", "緑", "白", "黒"];
 const TYPE_OPTIONS = ["キャラ", "事件", "イベント", "パートナー"];
-const RARITY_OPTIONS = ["C", "U", "R", "SR", "SSR"];
-const LEVEL_OPTIONS = ["1", "2", "3", "4", "5"];
+const LEVEL_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 const TARGET_DECK_SIZE = 40;
 const SAME_NAME_LIMIT = 3;
@@ -84,7 +83,6 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [filterColor, setFilterColor] = useState<string>("");
   const [filterType, setFilterType] = useState<string>("");
-  const [filterRarity, setFilterRarity] = useState<string>("");
   const [filterLevel, setFilterLevel] = useState<string>("");
   
   const [form, setForm] = useState<Partial<Card>>({ 
@@ -92,7 +90,6 @@ export default function App() {
     number: "", 
     color: "黄",
     type: "キャラ",
-    rarity: "C",
     level: "1",
     memo: ""
   });
@@ -154,32 +151,43 @@ export default function App() {
   const filteredCards = useMemo(() => {
     const q = search.trim().toLowerCase();
     return cards.filter((c) => {
-      // フリーワード検索
       const name = (c.name ?? "").toLowerCase();
       const num = (c.number ?? "").toLowerCase();
       const matchText = !q || name.includes(q) || num.includes(q);
-      
-      // 色フィルター
       const matchColor = !filterColor || c.color === filterColor;
-      
-      // 種類フィルター
       const matchType = !filterType || c.type === filterType;
-      
-      // レアフィルター
-      const matchRarity = !filterRarity || c.rarity === filterRarity;
-      
-      // レベルフィルター
       const matchLevel = !filterLevel || c.level === filterLevel;
       
-      return matchText && matchColor && matchType && matchRarity && matchLevel;
+      return matchText && matchColor && matchType && matchLevel;
     });
-  }, [cards, search, filterColor, filterType, filterRarity, filterLevel]);
+  }, [cards, search, filterColor, filterType, filterLevel]);
 
   const deckCardMap = useMemo(() => {
     const m = new Map<number, DeckCard>();
     for (const dc of deckCards) m.set(dc.cardId, dc);
     return m;
   }, [deckCards]);
+
+  // レベル分布の計算
+  const levelDistribution = useMemo(() => {
+    const dist: Record<string, number> = {};
+    for (let i = 1; i <= 9; i++) {
+      dist[i.toString()] = 0;
+    }
+    
+    for (const dc of deckCards) {
+      const card = cards.find(c => c.id === dc.cardId);
+      if (card?.level) {
+        dist[card.level] = (dist[card.level] || 0) + dc.count;
+      }
+    }
+    
+    return dist;
+  }, [deckCards, cards]);
+
+  const maxLevelCount = useMemo(() => {
+    return Math.max(...Object.values(levelDistribution), 1);
+  }, [levelDistribution]);
 
   async function refreshAll() {
     const allDecks = await db.decks.toArray();
@@ -196,7 +204,6 @@ export default function App() {
     }
   }
 
-  // カード編集を開く
   function openEditCard(card: Card) {
     setEditingCard(card);
     setEditForm({
@@ -204,21 +211,18 @@ export default function App() {
       number: card.number,
       color: card.color,
       type: card.type,
-      rarity: card.rarity,
       level: card.level,
       memo: card.memo,
     });
     setEditImageFile(null);
   }
 
-  // カード編集をキャンセル
   function closeEditCard() {
     setEditingCard(null);
     setEditForm({});
     setEditImageFile(null);
   }
 
-  // カード編集を保存
   async function saveEditCard() {
     if (!editingCard?.id) return;
 
@@ -237,7 +241,6 @@ export default function App() {
       number: (editForm.number ?? "").trim() || undefined,
       color: (editForm.color ?? "").trim() || undefined,
       type: (editForm.type ?? "").trim() || undefined,
-      rarity: (editForm.rarity ?? "").trim() || undefined,
       level: (editForm.level ?? "").trim() || undefined,
       memo: (editForm.memo ?? "").trim() || undefined,
       image: imageBlob,
@@ -326,7 +329,6 @@ export default function App() {
       number: (form.number ?? "").trim() || undefined,
       color: (form.color ?? "").trim() || undefined,
       type: (form.type ?? "").trim() || undefined,
-      rarity: (form.rarity ?? "").trim() || undefined,
       level: (form.level ?? "").trim() || undefined,
       memo: (form.memo ?? "").trim() || undefined,
       image: imageBlob,
@@ -339,7 +341,6 @@ export default function App() {
       number: "", 
       color: "黄", 
       type: "キャラ", 
-      rarity: "C",
       level: "1",
       memo: "" 
     });
@@ -357,6 +358,7 @@ export default function App() {
       synced: false 
     });
     setActiveDeckId(id);
+    await refreshAll();
   }
 
   async function renameDeck(deckId: number) {
@@ -368,6 +370,11 @@ export default function App() {
 
     await db.decks.update(deckId, { name, synced: false });
     await refreshAll();
+  }
+
+  async function renameActiveDeck() {
+    if (activeDeckId == null) return;
+    await renameDeck(activeDeckId);
   }
 
   async function deleteDeck(deckId: number) {
@@ -388,7 +395,6 @@ export default function App() {
     await refreshAll();
   }
 
-  // 同期機能
   async function handleFullSync() {
     setSyncing(true);
     setSyncMessage("🔄 同期中...");
@@ -453,13 +459,11 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* ヘッダー */}
       <header className="app-header">
         <div className="app-logo">🃏 Conan Card Deck</div>
         <button className="menu-toggle" onClick={toggleMobileMenu}>☰</button>
       </header>
 
-      {/* モバイルメニュー */}
       {mobileMenuOpen && (
         <div 
           className="mobile-menu-overlay" 
@@ -488,112 +492,47 @@ export default function App() {
               zIndex: 201,
             }}
           >
-            <button
-              onClick={() => switchTab("cards")}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                marginBottom: "0.5rem",
-                border: activeTab === "cards" ? "2px solid #667eea" : "2px solid #e0e0e0",
-                background: activeTab === "cards" ? "#f5f7fa" : "white",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                fontWeight: activeTab === "cards" ? "bold" : "normal",
-                textAlign: "left",
-              }}
-            >
-              🃏 カード管理
-            </button>
-            <button
-              onClick={() => switchTab("decks")}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                marginBottom: "0.5rem",
-                border: activeTab === "decks" ? "2px solid #667eea" : "2px solid #e0e0e0",
-                background: activeTab === "decks" ? "#f5f7fa" : "white",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                fontWeight: activeTab === "decks" ? "bold" : "normal",
-                textAlign: "left",
-              }}
-            >
-              📦 デッキ一覧
-            </button>
-            <button
-              onClick={() => switchTab("editor")}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                marginBottom: "0.5rem",
-                border: activeTab === "editor" ? "2px solid #667eea" : "2px solid #e0e0e0",
-                background: activeTab === "editor" ? "#f5f7fa" : "white",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                fontWeight: activeTab === "editor" ? "bold" : "normal",
-                textAlign: "left",
-              }}
-            >
-              ✏️ デッキ編集
-            </button>
-            <button
-              onClick={() => switchTab("sync")}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                border: activeTab === "sync" ? "2px solid #667eea" : "2px solid #e0e0e0",
-                background: activeTab === "sync" ? "#f5f7fa" : "white",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                fontWeight: activeTab === "sync" ? "bold" : "normal",
-                textAlign: "left",
-              }}
-            >
-              ☁️ 同期
-            </button>
+            <button onClick={() => switchTab("cards")} style={{
+              width: "100%", padding: "1rem", marginBottom: "0.5rem",
+              border: activeTab === "cards" ? "2px solid #667eea" : "2px solid #e0e0e0",
+              background: activeTab === "cards" ? "#f5f7fa" : "white",
+              borderRadius: "8px", fontSize: "1rem",
+              fontWeight: activeTab === "cards" ? "bold" : "normal", textAlign: "left",
+            }}>🃏 カード管理</button>
+            <button onClick={() => switchTab("decks")} style={{
+              width: "100%", padding: "1rem", marginBottom: "0.5rem",
+              border: activeTab === "decks" ? "2px solid #667eea" : "2px solid #e0e0e0",
+              background: activeTab === "decks" ? "#f5f7fa" : "white",
+              borderRadius: "8px", fontSize: "1rem",
+              fontWeight: activeTab === "decks" ? "bold" : "normal", textAlign: "left",
+            }}>📦 デッキ一覧</button>
+            <button onClick={() => switchTab("editor")} style={{
+              width: "100%", padding: "1rem", marginBottom: "0.5rem",
+              border: activeTab === "editor" ? "2px solid #667eea" : "2px solid #e0e0e0",
+              background: activeTab === "editor" ? "#f5f7fa" : "white",
+              borderRadius: "8px", fontSize: "1rem",
+              fontWeight: activeTab === "editor" ? "bold" : "normal", textAlign: "left",
+            }}>✏️ デッキ編集</button>
+            <button onClick={() => switchTab("sync")} style={{
+              width: "100%", padding: "1rem",
+              border: activeTab === "sync" ? "2px solid #667eea" : "2px solid #e0e0e0",
+              background: activeTab === "sync" ? "#f5f7fa" : "white",
+              borderRadius: "8px", fontSize: "1rem",
+              fontWeight: activeTab === "sync" ? "bold" : "normal", textAlign: "left",
+            }}>☁️ 同期</button>
           </div>
         </div>
       )}
 
-      {/* ナビゲーション */}
       <nav className="app-nav">
         <ul className="nav-tabs">
-          <li>
-            <button
-              className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`}
-              onClick={() => setActiveTab("cards")}
-            >
-              カード管理
-            </button>
-          </li>
-          <li>
-            <button
-              className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`}
-              onClick={() => setActiveTab("decks")}
-            >
-              デッキ一覧
-            </button>
-          </li>
-          <li>
-            <button
-              className={`nav-tab-button ${activeTab === "editor" ? "active" : ""}`}
-              onClick={() => setActiveTab("editor")}
-            >
-              デッキ編集
-            </button>
-          </li>
-          <li>
-            <button
-              className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`}
-              onClick={() => setActiveTab("sync")}
-            >
-              ☁️ 同期
-            </button>
-          </li>
+          <li><button className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`} onClick={() => setActiveTab("cards")}>カード管理</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`} onClick={() => setActiveTab("decks")}>デッキ一覧</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "editor" ? "active" : ""}`} onClick={() => setActiveTab("editor")}>デッキ編集</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`} onClick={() => setActiveTab("sync")}>☁️ 同期</button></li>
         </ul>
       </nav>
 
-      {/* 編集モーダル */}
       {editingCard && (
         <div className="modal-overlay" onClick={closeEditCard}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -602,200 +541,82 @@ export default function App() {
               <button className="modal-close" onClick={closeEditCard}>✕</button>
             </div>
             <div className="form-grid">
-              <input
-                type="text"
-                placeholder="カード名（必須）"
-                value={editForm.name ?? ""}
-                onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
-              />
+              <input type="text" placeholder="カード名（必須）" value={editForm.name ?? ""} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
               <div className="form-row">
-                <input
-                  type="text"
-                  placeholder="カード番号（任意）"
-                  value={editForm.number ?? ""}
-                  onChange={(e) => setEditForm((p) => ({ ...p, number: e.target.value }))}
-                />
-                <select
-                  value={editForm.color ?? "黄"}
-                  onChange={(e) => setEditForm((p) => ({ ...p, color: e.target.value }))}
-                >
+                <input type="text" placeholder="カード番号（任意）" value={editForm.number ?? ""} onChange={(e) => setEditForm((p) => ({ ...p, number: e.target.value }))} />
+                <select value={editForm.color ?? "黄"} onChange={(e) => setEditForm((p) => ({ ...p, color: e.target.value }))}>
                   {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <select
-                value={editForm.type ?? "キャラ"}
-                onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}
-              >
-                {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
-              </select>
               <div className="form-row">
-                <select
-                  value={editForm.rarity ?? "C"}
-                  onChange={(e) => setEditForm((p) => ({ ...p, rarity: e.target.value }))}
-                >
-                  {RARITY_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                <select value={editForm.type ?? "キャラ"} onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}>
+                  {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
                 </select>
-                <select
-                  value={editForm.level ?? "1"}
-                  onChange={(e) => setEditForm((p) => ({ ...p, level: e.target.value }))}
-                >
+                <select value={editForm.level ?? "1"} onChange={(e) => setEditForm((p) => ({ ...p, level: e.target.value }))}>
                   {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
                 </select>
               </div>
-              <textarea
-                placeholder="メモ（任意）"
-                value={editForm.memo ?? ""}
-                onChange={(e) => setEditForm((p) => ({ ...p, memo: e.target.value }))}
-                rows={3}
-              />
+              <textarea placeholder="メモ（任意）" value={editForm.memo ?? ""} onChange={(e) => setEditForm((p) => ({ ...p, memo: e.target.value }))} rows={3} />
               <div>
-                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>
-                  画像を変更（任意）
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] ?? null;
-                    setEditImageFile(file);
-                  }}
-                />
-                {editImageFile && (
-                  <img
-                    src={URL.createObjectURL(editImageFile)}
-                    alt="プレビュー"
-                    className="image-preview"
-                  />
-                )}
-                {!editImageFile && editingCard.image && (
-                  <div style={{ marginTop: "0.5rem", color: "#666", fontSize: "0.9rem" }}>
-                    現在の画像を保持（変更する場合は上で選択）
-                  </div>
-                )}
+                <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>画像を変更（任意）</label>
+                <input type="file" accept="image/*" onChange={(e) => setEditImageFile(e.target.files?.[0] ?? null)} />
+                {editImageFile && <img src={URL.createObjectURL(editImageFile)} alt="プレビュー" className="image-preview" />}
+                {!editImageFile && editingCard.image && <div style={{ marginTop: "0.5rem", color: "#666", fontSize: "0.9rem" }}>現在の画像を保持（変更する場合は上で選択）</div>}
               </div>
             </div>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={closeEditCard}>
-                キャンセル
-              </button>
-              <button className="btn-primary" onClick={saveEditCard}>
-                ✅ 保存
-              </button>
+              <button className="btn-secondary" onClick={closeEditCard}>キャンセル</button>
+              <button className="btn-primary" onClick={saveEditCard}>✅ 保存</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* メインコンテンツ */}
       <div className="app-content">
-        {/* カード管理画面 */}
         <div className={`screen ${activeTab === "cards" ? "active" : ""}`}>
-          {/* カード登録 */}
           <div className="section">
             <div className="section-header">
               <h2 className="section-title">新しいカードを登録</h2>
             </div>
             <div className="form-grid">
-              <input
-                type="text"
-                placeholder="カード名（必須）"
-                value={form.name ?? ""}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              />
+              <input type="text" placeholder="カード名（必須）" value={form.name ?? ""} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
               <div className="form-row">
-                <input
-                  type="text"
-                  placeholder="カード番号（任意）"
-                  value={form.number ?? ""}
-                  onChange={(e) => setForm((p) => ({ ...p, number: e.target.value }))}
-                />
-                <select
-                  value={form.color ?? "黄"}
-                  onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}
-                >
+                <input type="text" placeholder="カード番号（任意）" value={form.number ?? ""} onChange={(e) => setForm((p) => ({ ...p, number: e.target.value }))} />
+                <select value={form.color ?? "黄"} onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}>
                   {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
-              <select
-                value={form.type ?? "キャラ"}
-                onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}
-              >
-                {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
-              </select>
               <div className="form-row">
-                <select
-                  value={form.rarity ?? "C"}
-                  onChange={(e) => setForm((p) => ({ ...p, rarity: e.target.value }))}
-                >
-                  {RARITY_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                <select value={form.type ?? "キャラ"} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
+                  {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
                 </select>
-                <select
-                  value={form.level ?? "1"}
-                  onChange={(e) => setForm((p) => ({ ...p, level: e.target.value }))}
-                >
+                <select value={form.level ?? "1"} onChange={(e) => setForm((p) => ({ ...p, level: e.target.value }))}>
                   {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
                 </select>
               </div>
-              <textarea
-                placeholder="メモ（任意）"
-                value={form.memo ?? ""}
-                onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))}
-                rows={3}
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null;
-                  setImageFile(file);
-                }}
-              />
-              <button className="btn-primary" onClick={saveCard}>
-                ✅ カードを保存
-              </button>
+              <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))} rows={3} />
+              <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
+              <button className="btn-primary" onClick={saveCard}>✅ カードを保存</button>
             </div>
           </div>
 
-          {/* カード検索 */}
           <div className="section">
             <div className="section-header">
               <h2 className="section-title">カード一覧</h2>
             </div>
             <div className="search-bar">
-              <input
-                type="text"
-                placeholder="🔍 カード名・番号で検索..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <input type="text" placeholder="🔍 カード名・番号で検索..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            {/* フィルター */}
-            <div className="form-grid" style={{ marginTop: "1rem" }}>
-              <select
-                value={filterColor}
-                onChange={(e) => setFilterColor(e.target.value)}
-              >
+            <div className="form-grid" style={{ marginTop: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+              <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)}>
                 <option value="">色: 全て</option>
                 {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-              >
+              <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
                 <option value="">種類: 全て</option>
                 {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <select
-                value={filterRarity}
-                onChange={(e) => setFilterRarity(e.target.value)}
-              >
-                <option value="">レア: 全て</option>
-                {RARITY_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-              <select
-                value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value)}
-              >
+              <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)}>
                 <option value="">レベル: 全て</option>
                 {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
               </select>
@@ -804,49 +625,24 @@ export default function App() {
               <div className="empty-state">
                 <div className="empty-state-icon">🃏</div>
                 <div>カードが見つかりません</div>
-                <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>
-                  検索条件を変更してください
-                </div>
+                <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>検索条件を変更してください</div>
               </div>
             ) : (
               <div className="cards-grid">
                 {filteredCards.map((c) => (
                   <div key={c.id} className="card-item">
-                    {c.color && (
-                      <div
-                        className="card-color-badge"
-                        style={{ background: colorMap[c.color] || "#9e9e9e" }}
-                      />
-                    )}
+                    {c.color && <div className="card-color-badge" style={{ background: colorMap[c.color] || "#9e9e9e" }} />}
                     <Thumb blob={c.image} alt={c.name ?? "card"} size="large" />
                     <div className="card-name">{c.name}</div>
                     <div className="card-number">
                       {c.number ? `No.${c.number}` : ""}
                       {c.type ? ` • ${c.type}` : ""}
-                      {c.rarity ? ` • ${c.rarity}` : ""}
                       {c.level ? ` • Lv${c.level}` : ""}
                     </div>
                     <div className="card-actions">
-                      <button
-                        className="btn-secondary"
-                        style={{ padding: "0.5rem" }}
-                        onClick={() => openEditCard(c)}
-                      >
-                        ✏️ 編集
-                      </button>
-                      <button
-                        className="btn-primary"
-                        style={{ flex: 1, padding: "0.5rem" }}
-                        onClick={() => addCardToDeck(c.id!)}
-                      >
-                        ➕ デッキへ
-                      </button>
-                      <button
-                        className="btn-danger btn-icon"
-                        onClick={() => deleteCard(c.id!)}
-                      >
-                        🗑
-                      </button>
+                      <button className="btn-secondary" style={{ padding: "0.5rem" }} onClick={() => openEditCard(c)}>✏️ 編集</button>
+                      <button className="btn-primary" style={{ flex: 1, padding: "0.5rem" }} onClick={() => addCardToDeck(c.id!)}>➕ デッキへ</button>
+                      <button className="btn-danger btn-icon" onClick={() => deleteCard(c.id!)}>🗑</button>
                     </div>
                   </div>
                 ))}
@@ -855,66 +651,98 @@ export default function App() {
           </div>
         </div>
 
-        {/* デッキ一覧画面 */}
         <div className={`screen ${activeTab === "decks" ? "active" : ""}`}>
           <div className="section">
             <div className="section-header">
               <h2 className="section-title">デッキ管理</h2>
-              <button className="btn-primary" onClick={createDeck}>
-                ➕ 新規デッキ作成
-              </button>
+              <button className="btn-primary" onClick={createDeck}>➕ 新規デッキ作成</button>
             </div>
             <div className="deck-list">
               {decks.map((d) => (
-                <div
-                  key={d.id}
-                  className={`deck-chip ${d.id === activeDeckId ? "active" : ""}`}
-                  onClick={() => {
-                    setActiveDeckId(d.id!);
-                    setActiveTab("editor");
-                  }}
-                  onDoubleClick={() => renameDeck(d.id!)}
-                  title="クリックで選択・ダブルクリックでリネーム"
-                >
+                <div key={d.id} className={`deck-chip ${d.id === activeDeckId ? "active" : ""}`} onClick={() => { setActiveDeckId(d.id!); setActiveTab("editor"); }} onDoubleClick={() => renameDeck(d.id!)} title="クリックで選択・ダブルクリックでリネーム">
                   <span>{d.name}</span>
-                  <button
-                    className="deck-delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteDeck(d.id!);
-                    }}
-                    title="削除"
-                  >
-                    ✕
-                  </button>
+                  <button className="deck-delete-btn" onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} title="削除">✕</button>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* デッキ編集画面 */}
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
             <>
               <div className="deck-stats">
-                <div className="deck-stats-title">{activeDeck.name}</div>
+                <div className="deck-stats-title">
+                  {activeDeck.name}
+                  <button className="btn-secondary" style={{ marginLeft: "1rem", padding: "0.5rem 1rem", fontSize: "0.9rem" }} onClick={renameActiveDeck}>✏️ 名前変更</button>
+                </div>
                 <div className="deck-stats-info">
-                  <div>
-                    📊 合計: <strong>{totalInDeck} / {TARGET_DECK_SIZE}枚</strong>
-                  </div>
-                  <div>
-                    🎴 種類: <strong>{deckCards.length}種類</strong>
-                  </div>
+                  <div>📊 合計: <strong>{totalInDeck} / {TARGET_DECK_SIZE}枚</strong></div>
+                  <div>🎴 種類: <strong>{deckCards.length}種類</strong></div>
+                </div>
+              </div>
+
+              {/* レベル分布グラフ */}
+              <div className="section">
+                <div className="section-header">
+                  <h2 className="section-title">📊 レベル分布</h2>
+                </div>
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "flex-end", 
+                  gap: "0.5rem", 
+                  height: "200px",
+                  padding: "1rem",
+                  background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+                  borderRadius: "12px",
+                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
+                }}>
+                  {LEVEL_OPTIONS.map((level) => {
+                    const count = levelDistribution[level] || 0;
+                    const height = maxLevelCount > 0 ? (count / maxLevelCount) * 160 : 0;
+                    
+                    return (
+                      <div key={level} style={{ 
+                        flex: 1, 
+                        display: "flex", 
+                        flexDirection: "column", 
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: "0.5rem"
+                      }}>
+                        <div style={{
+                          fontSize: "0.9rem",
+                          fontWeight: "bold",
+                          color: count > 0 ? "#667eea" : "#999",
+                          minHeight: "1.5rem"
+                        }}>
+                          {count > 0 ? count : ""}
+                        </div>
+                        <div style={{
+                          width: "100%",
+                          height: `${height}px`,
+                          background: count > 0 ? "linear-gradient(180deg, #667eea 0%, #764ba2 100%)" : "#e0e0e0",
+                          borderRadius: "4px 4px 0 0",
+                          transition: "all 0.3s ease",
+                          boxShadow: count > 0 ? "0 2px 4px rgba(102, 126, 234, 0.3)" : "none"
+                        }} />
+                        <div style={{
+                          fontSize: "0.9rem",
+                          fontWeight: "bold",
+                          color: "#333"
+                        }}>
+                          Lv{level}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {totalInDeck === TARGET_DECK_SIZE && (
                 <div className="success-panel info-panel">
                   <div className="info-panel-title">✅ デッキ完成！</div>
-                  <div className="info-panel-text">
-                    40枚のデッキが完成しました。対戦の準備ができています！
-                  </div>
+                  <div className="info-panel-text">40枚のデッキが完成しました。対戦の準備ができています！</div>
                 </div>
               )}
 
@@ -926,9 +754,7 @@ export default function App() {
                   <div className="empty-state">
                     <div className="empty-state-icon">📦</div>
                     <div>デッキにカードがありません</div>
-                    <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>
-                      「カード管理」タブからカードを追加してください
-                    </div>
+                    <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>「カード管理」タブからカードを追加してください</div>
                   </div>
                 ) : (
                   <div className="deck-card-list">
@@ -938,25 +764,18 @@ export default function App() {
                         <div key={dc.cardId} className="deck-card-row">
                           <Thumb blob={c?.image} alt={c?.name ?? "card"} size="small" />
                           <div className="deck-card-info">
-                            <div className="deck-card-info-name">
-                              {c?.name ?? "（不明カード）"}
-                            </div>
+                            <div className="deck-card-info-name">{c?.name ?? "（不明カード）"}</div>
                             <div className="deck-card-info-meta">
                               {c?.number ? `No.${c.number}` : ""}
                               {c?.color ? ` • ${c.color}` : ""}
                               {c?.type ? ` • ${c.type}` : ""}
-                              {c?.rarity ? ` • ${c.rarity}` : ""}
                               {c?.level ? ` • Lv${c.level}` : ""}
                             </div>
                           </div>
                           <div className="deck-card-controls">
-                            <button className="count-btn" onClick={() => decCardInDeck(dc.cardId)}>
-                              −
-                            </button>
+                            <button className="count-btn" onClick={() => decCardInDeck(dc.cardId)}>−</button>
                             <div className="card-count">{dc.count}</div>
-                            <button className="count-btn" onClick={() => addCardToDeck(dc.cardId)}>
-                              +
-                            </button>
+                            <button className="count-btn" onClick={() => addCardToDeck(dc.cardId)}>+</button>
                           </div>
                         </div>
                       );
@@ -970,69 +789,35 @@ export default function App() {
               <div className="empty-state-icon">🎴</div>
               <div>デッキを選択してください</div>
               <div style={{ marginTop: "1rem" }}>
-                <button className="btn-primary" onClick={createDeck}>
-                  ➕ 新しいデッキを作成
-                </button>
+                <button className="btn-primary" onClick={createDeck}>➕ 新しいデッキを作成</button>
               </div>
             </div>
           )}
         </div>
 
-        {/* 同期画面 */}
         <div className={`screen ${activeTab === "sync" ? "active" : ""}`}>
           <div className="info-panel">
             <div className="info-panel-title">☁️ クラウド同期</div>
-            <div className="info-panel-text">
-              Supabaseを使って、PC・スマホ間でデータを同期できます。
-            </div>
+            <div className="info-panel-text">Supabaseを使って、PC・スマホ間でデータを同期できます。</div>
           </div>
-
           {syncMessage && (
             <div className="info-panel" style={{ 
-              background: syncMessage.includes("✅") 
-                ? "linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%)" 
-                : syncMessage.includes("❌")
-                ? "linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%)"
+              background: syncMessage.includes("✅") ? "linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%)" 
+                : syncMessage.includes("❌") ? "linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%)"
                 : "linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%)"
             }}>
-              <div className="info-panel-text" style={{ fontSize: "1.1rem", fontWeight: "bold" }}>
-                {syncMessage}
-              </div>
+              <div className="info-panel-text" style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{syncMessage}</div>
             </div>
           )}
-
           <div className="section">
             <div className="section-header">
               <h2 className="section-title">同期操作</h2>
             </div>
             <div className="form-grid">
-              <button 
-                className="btn-primary" 
-                onClick={handleFullSync}
-                disabled={syncing}
-                style={{ fontSize: "1.1rem", padding: "1rem" }}
-              >
-                🔄 完全同期（おすすめ）
-              </button>
-              <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "1fr 1fr", 
-                gap: "1rem" 
-              }}>
-                <button 
-                  className="btn-secondary" 
-                  onClick={handleDownloadSync}
-                  disabled={syncing}
-                >
-                  ⬇️ クラウドから取得
-                </button>
-                <button 
-                  className="btn-secondary" 
-                  onClick={handleUploadSync}
-                  disabled={syncing}
-                >
-                  ⬆️ クラウドへ保存
-                </button>
+              <button className="btn-primary" onClick={handleFullSync} disabled={syncing} style={{ fontSize: "1.1rem", padding: "1rem" }}>🔄 完全同期（おすすめ）</button>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <button className="btn-secondary" onClick={handleDownloadSync} disabled={syncing}>⬇️ クラウドから取得</button>
+                <button className="btn-secondary" onClick={handleUploadSync} disabled={syncing}>⬆️ クラウドへ保存</button>
               </div>
             </div>
           </div>
