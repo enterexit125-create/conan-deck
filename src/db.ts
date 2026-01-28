@@ -145,7 +145,7 @@ export async function syncFromSupabase() {
 
     if (deckCardsError) throw deckCardsError;
 
-    // カードを個別に put（IDを保持）
+    // カードを同期（重複を避ける）
     if (cardsData && cardsData.length > 0) {
       for (const c of cardsData) {
         let imageBlob: Blob | undefined = undefined;
@@ -155,46 +155,87 @@ export async function syncFromSupabase() {
           if (blob) imageBlob = blob;
         }
         
-        // put を使ってIDを保持したまま上書き
-        await db.cards.put({
-          id: c.id,
-          name: c.name || "",
-          number: c.number || undefined,
-          color: c.color || undefined,
-          type: c.type || undefined,
-          memo: c.memo || undefined,
-          image: imageBlob,
-          imageUrl: c.image_url || undefined,
-          updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
-          userId: c.user_id || userId,
-          synced: true,
-        });
+        // ローカルに既に同じIDのカードがあるかチェック
+        const existingLocal = await db.cards.get(c.id);
+        
+        if (existingLocal) {
+          // 既存カードを更新（IDを保持）
+          await db.cards.update(c.id, {
+            name: c.name || "",
+            number: c.number || undefined,
+            color: c.color || undefined,
+            type: c.type || undefined,
+            memo: c.memo || undefined,
+            image: imageBlob,
+            imageUrl: c.image_url || undefined,
+            updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
+            userId: c.user_id || userId,
+            synced: true,
+          });
+        } else {
+          // 新規カードを追加（IDを明示的に指定）
+          await db.cards.add({
+            id: c.id,
+            name: c.name || "",
+            number: c.number || undefined,
+            color: c.color || undefined,
+            type: c.type || undefined,
+            memo: c.memo || undefined,
+            image: imageBlob,
+            imageUrl: c.image_url || undefined,
+            updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
+            userId: c.user_id || userId,
+            synced: true,
+          });
+        }
       }
     }
 
-    // デッキも同様
+    // デッキを同期
     if (decksData && decksData.length > 0) {
       for (const d of decksData) {
-        await db.decks.put({
-          id: d.id,
-          name: d.name || "",
-          createdAt: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-          userId: d.user_id || userId,
-          synced: true,
-        });
+        const existingLocal = await db.decks.get(d.id);
+        
+        if (existingLocal) {
+          await db.decks.update(d.id, {
+            name: d.name || "",
+            createdAt: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+            userId: d.user_id || userId,
+            synced: true,
+          });
+        } else {
+          await db.decks.add({
+            id: d.id,
+            name: d.name || "",
+            createdAt: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+            userId: d.user_id || userId,
+            synced: true,
+          });
+        }
       }
     }
 
-    // デッキカードも同様
+    // デッキカードを同期
     if (deckCardsData && deckCardsData.length > 0) {
       for (const dc of deckCardsData) {
-        await db.deckCards.put({
-          id: dc.id,
-          deckId: Number(dc.deck_id),
-          cardId: Number(dc.card_id),
-          count: Number(dc.count) || 1,
-          synced: true,
-        });
+        const existingLocal = await db.deckCards.get(dc.id);
+        
+        if (existingLocal) {
+          await db.deckCards.update(dc.id, {
+            deckId: Number(dc.deck_id),
+            cardId: Number(dc.card_id),
+            count: Number(dc.count) || 1,
+            synced: true,
+          });
+        } else {
+          await db.deckCards.add({
+            id: dc.id,
+            deckId: Number(dc.deck_id),
+            cardId: Number(dc.card_id),
+            count: Number(dc.count) || 1,
+            synced: true,
+          });
+        }
       }
     }
 
@@ -216,12 +257,6 @@ export async function syncToSupabase() {
     const allDecks = await db.decks.toArray();
     const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
     
-    // デバッグ: デッキ情報を表示
-    alert(`デッキ数: ${allDecks.length}, 未同期: ${unsyncedDecks.length}`);
-    if (allDecks.length > 0) {
-      alert(`デッキ1: id=${allDecks[0].id}, name=${allDecks[0].name}, synced=${allDecks[0].synced}`);
-    }
-    
     console.log(`📤 アップロード: ${unsyncedDecks.length}個のデッキ`);
     
     for (const deck of unsyncedDecks) {
@@ -238,9 +273,9 @@ export async function syncToSupabase() {
         .eq("user_id", userId)
         .single();
 
-      // デバッグ: チェック結果
+      // チェックエラーを処理（PGRST116 = 結果なし は正常）
       if (checkError && checkError.code !== 'PGRST116') {
-        alert(`デッキチェックエラー: ${checkError.message}`);
+        console.error("デッキチェックエラー:", checkError);
         throw checkError;
       }
 
@@ -258,7 +293,6 @@ export async function syncToSupabase() {
 
         if (error) {
           console.error("デッキ更新エラー:", error);
-          alert(`デッキ更新エラー: ${error.message}`);
           throw error;
         }
 
@@ -268,7 +302,6 @@ export async function syncToSupabase() {
       } else {
         // 新規デッキを挿入
         console.log(`➕ デッキ追加: ${deck.name}`);
-        alert(`デッキ追加中: ${deck.name}, ID: ${deck.id}`);
         
         const { data, error } = await supabase
           .from("decks")
@@ -283,11 +316,8 @@ export async function syncToSupabase() {
 
         if (error) {
           console.error("デッキ保存エラー:", error);
-          alert(`デッキ保存エラー: ${error.message}`);
           throw error;
         }
-
-        alert(`デッキ保存成功: ${data.id}`);
 
         if (deck.id && data) {
           await db.decks.update(deck.id, { synced: true });
