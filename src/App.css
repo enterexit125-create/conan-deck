@@ -243,16 +243,36 @@ button {
 /* ==================== カードグリッド ==================== */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
   margin-top: 1rem;
+}
+
+/* レスポンシブ: 画面サイズに応じて最適化 */
+@media (min-width: 768px) {
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
 }
 
 .card-item {
   background: white;
   border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  padding: 1rem;
+  border-radius: 8px;
+  padding: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
@@ -261,19 +281,19 @@ button {
 
 .card-item:hover {
   border-color: #667eea;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(102, 126, 234, 0.2);
 }
 
 .card-image-container {
   width: 100%;
-  height: 180px;
+  height: 140px;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 8px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
   overflow: hidden;
   position: relative;
 }
@@ -285,7 +305,7 @@ button {
 }
 
 .card-placeholder {
-  font-size: 4rem;
+  font-size: 3rem;
   opacity: 0.3;
 }
 
@@ -302,7 +322,7 @@ button {
 
 .card-name {
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 0.9rem;
   margin-bottom: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
@@ -310,7 +330,7 @@ button {
 }
 
 .card-number {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: #999;
 }
 
