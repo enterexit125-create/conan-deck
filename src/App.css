@@ -26,7 +26,7 @@ body {
 
 /* ==================== ヘッダー ==================== */
 .app-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d4a574 0%, #c9956e 100%);
   color: white;
   padding: 1rem 1.5rem;
   display: flex;
@@ -91,20 +91,22 @@ body {
 }
 
 .nav-tab-button:hover {
-  color: #667eea;
-  background: #f9f9f9;
+  color: #ff9a9e;
+  background: #fff5f6;
 }
 
 .nav-tab-button.active {
-  color: #667eea;
-  border-bottom-color: #667eea;
+  color: #ff9a9e;
+  border-bottom-color: #ff9a9e;
   font-weight: bold;
-  background: #f5f7fa;
+  background: #fff5f6;
 }
 
 /* ==================== メインコンテンツ ==================== */
 .app-content {
   padding: 1.5rem;
+  background: linear-gradient(135deg, #ffe4e8 0%, #ffd4dc 100%);
+  min-height: calc(100vh - 120px);
 }
 
 .screen {
@@ -134,7 +136,7 @@ body {
 .section-title {
   font-size: 1.3rem;
   font-weight: bold;
-  color: #667eea;
+  color: #d4716b;
   margin: 0;
 }
 
@@ -188,14 +190,14 @@ button {
 }
 
 .btn-primary {
-  background: #667eea;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
   color: white;
 }
 
 .btn-primary:hover {
-  background: #5568d3;
+  background: linear-gradient(135deg, #ff8a8e 0%, #f9c0b4 100%);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 154, 158, 0.4);
 }
 
 .btn-secondary {
