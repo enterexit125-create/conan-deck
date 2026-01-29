@@ -363,23 +363,6 @@ export default function App() {
     await refreshAll();
   }
 
-  async function decCardInDeck(cardId: number) {
-    if (activeDeckId == null) return;
-
-    const found = await db.deckCards
-      .where("[deckId+cardId]")
-      .equals([activeDeckId, cardId])
-      .first();
-
-    if (!found?.id) return;
-
-    const next = found.count - 1;
-    if (next <= 0) await db.deckCards.delete(found.id);
-    else await db.deckCards.update(found.id, { count: next, synced: false });
-
-    await refreshAll();
-  }
-
   async function saveCard() {
     const name = (form.name ?? "").trim();
     if (!name) {
