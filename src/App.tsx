@@ -87,7 +87,7 @@ export default function App() {
   
   const [form, setForm] = useState<Partial<Card>>({ 
     name: "", 
-    number: "", 
+    number: "",  // 空文字列から開始（必須）
     color: "黄",
     type: "キャラ",
     level: "1",
@@ -247,11 +247,31 @@ export default function App() {
       return;
     }
 
-    const nextCount = editingDeckCard.count + 1;
-    if (nextCount > SAME_NAME_LIMIT) {
-      alert("同名カードは最大3枚までです。");
+    // 追加しようとしているカードの情報を取得
+    const cardToAdd = cards.find(c => c.id === editingDeckCard.cardId);
+    if (!cardToAdd || !cardToAdd.number) {
+      alert("カード番号が設定されていないカードは追加できません。");
       return;
     }
+
+    // 同じカード番号を持つカードの合計枚数をチェック
+    const sameNumberCards = cards.filter(c => c.number === cardToAdd.number);
+    const sameNumberCardIds = sameNumberCards.map(c => c.id).filter((id): id is number => id !== undefined);
+    
+    let totalCountOfSameNumber = 0;
+    for (const id of sameNumberCardIds) {
+      const dc = deckCardMap.get(id);
+      if (dc) {
+        totalCountOfSameNumber += dc.count;
+      }
+    }
+
+    if (totalCountOfSameNumber >= SAME_NAME_LIMIT) {
+      alert(`カード番号「${cardToAdd.number}」のカードは最大3枚までです。`);
+      return;
+    }
+
+    const nextCount = editingDeckCard.count + 1;
 
     const found = await db.deckCards
       .where("[deckId+cardId]")
@@ -294,8 +314,15 @@ export default function App() {
     if (!editingCard?.id) return;
 
     const name = (editForm.name ?? "").trim();
+    const number = (editForm.number ?? "").trim();
+    
     if (!name) {
       alert("カード名は必須です。");
+      return;
+    }
+
+    if (!number) {
+      alert("カード番号は必須です。");
       return;
     }
 
@@ -305,7 +332,7 @@ export default function App() {
 
     await db.cards.update(editingCard.id, {
       name,
-      number: (editForm.number ?? "").trim() || undefined,
+      number,
       color: (editForm.color ?? "").trim() || undefined,
       type: (editForm.type ?? "").trim() || undefined,
       level: (editForm.level ?? "").trim().replace(/^Lv/, "") || undefined,
@@ -327,13 +354,32 @@ export default function App() {
       return;
     }
 
-    const existing = deckCardMap.get(cardId);
-    const nextCount = (existing?.count ?? 0) + 1;
-
-    if (nextCount > SAME_NAME_LIMIT) {
-      alert("同名カードは最大3枚までです。");
+    // 追加しようとしているカードの情報を取得
+    const cardToAdd = cards.find(c => c.id === cardId);
+    if (!cardToAdd || !cardToAdd.number) {
+      alert("カード番号が設定されていないカードは追加できません。");
       return;
     }
+
+    // 同じカード番号を持つカードの合計枚数をチェック
+    const sameNumberCards = cards.filter(c => c.number === cardToAdd.number);
+    const sameNumberCardIds = sameNumberCards.map(c => c.id).filter((id): id is number => id !== undefined);
+    
+    let totalCountOfSameNumber = 0;
+    for (const id of sameNumberCardIds) {
+      const dc = deckCardMap.get(id);
+      if (dc) {
+        totalCountOfSameNumber += dc.count;
+      }
+    }
+
+    if (totalCountOfSameNumber >= SAME_NAME_LIMIT) {
+      alert(`カード番号「${cardToAdd.number}」のカードは最大3枚までです。`);
+      return;
+    }
+
+    const existing = deckCardMap.get(cardId);
+    const nextCount = (existing?.count ?? 0) + 1;
 
     const found = await db.deckCards
       .where("[deckId+cardId]")
@@ -365,8 +411,15 @@ export default function App() {
 
   async function saveCard() {
     const name = (form.name ?? "").trim();
+    const number = (form.number ?? "").trim();
+    
     if (!name) {
       alert("カード名は必須です。");
+      return;
+    }
+
+    if (!number) {
+      alert("カード番号は必須です。");
       return;
     }
 
@@ -376,7 +429,7 @@ export default function App() {
 
     await db.cards.add({
       name,
-      number: (form.number ?? "").trim() || undefined,
+      number,
       color: (form.color ?? "").trim() || undefined,
       type: (form.type ?? "").trim() || undefined,
       level: (form.level ?? "").trim().replace(/^Lv/, "") || undefined,
@@ -593,7 +646,7 @@ export default function App() {
             <div className="form-grid">
               <input type="text" placeholder="カード名（必須）" value={editForm.name ?? ""} onChange={(e) => setEditForm((p: any) => ({ ...p, name: e.target.value }))} />
               <div className="form-row">
-                <input type="text" placeholder="カード番号（任意）" value={editForm.number ?? ""} onChange={(e) => setEditForm((p: any) => ({ ...p, number: e.target.value }))} />
+                <input type="text" placeholder="カード番号（必須）" value={editForm.number ?? ""} onChange={(e) => setEditForm((p: any) => ({ ...p, number: e.target.value }))} />
                 <select value={editForm.color ?? "黄"} onChange={(e) => setEditForm((p: any) => ({ ...p, color: e.target.value }))}>
                   {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
@@ -714,7 +767,7 @@ export default function App() {
             <div className="form-grid">
               <input type="text" placeholder="カード名（必須）" value={form.name ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, name: e.target.value }))} />
               <div className="form-row">
-                <input type="text" placeholder="カード番号（任意）" value={form.number ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, number: e.target.value }))} />
+                <input type="text" placeholder="カード番号（必須）" value={form.number ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, number: e.target.value }))} />
                 <select value={form.color ?? "黄"} onChange={(e) => setForm((p: any) => ({ ...p, color: e.target.value }))}>
                   {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
