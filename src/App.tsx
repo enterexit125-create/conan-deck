@@ -591,22 +591,22 @@ export default function App() {
               <button className="modal-close" onClick={closeEditCard}>✕</button>
             </div>
             <div className="form-grid">
-              <input type="text" placeholder="カード名（必須）" value={editForm.name ?? ""} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} />
+              <input type="text" placeholder="カード名（必須）" value={editForm.name ?? ""} onChange={(e) => setEditForm((p: Partial<Card>) => ({ ...p, name: e.target.value }))} />
               <div className="form-row">
-                <input type="text" placeholder="カード番号（任意）" value={editForm.number ?? ""} onChange={(e) => setEditForm((p) => ({ ...p, number: e.target.value }))} />
-                <select value={editForm.color ?? "黄"} onChange={(e) => setEditForm((p) => ({ ...p, color: e.target.value }))}>
+                <input type="text" placeholder="カード番号（任意）" value={editForm.number ?? ""} onChange={(e) => setEditForm((p: Partial<Card>) => ({ ...p, number: e.target.value }))} />
+                <select value={editForm.color ?? "黄"} onChange={(e) => setEditForm((p: Partial<Card>) => ({ ...p, color: e.target.value }))}>
                   {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div className="form-row">
-                <select value={editForm.type ?? "キャラ"} onChange={(e) => setEditForm((p) => ({ ...p, type: e.target.value }))}>
+                <select value={editForm.type ?? "キャラ"} onChange={(e) => setEditForm((p: Partial<Card>) => ({ ...p, type: e.target.value }))}>
                   {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
                 </select>
-                <select value={editForm.level ?? "1"} onChange={(e) => setEditForm((p) => ({ ...p, level: e.target.value }))}>
+                <select value={editForm.level ?? "1"} onChange={(e) => setEditForm((p: Partial<Card>) => ({ ...p, level: e.target.value }))}>
                   {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
                 </select>
               </div>
-              <textarea placeholder="メモ（任意）" value={editForm.memo ?? ""} onChange={(e) => setEditForm((p) => ({ ...p, memo: e.target.value }))} rows={3} />
+              <textarea placeholder="メモ（任意）" value={editForm.memo ?? ""} onChange={(e) => setEditForm((p: Partial<Card>) => ({ ...p, memo: e.target.value }))} rows={3} />
               <div>
                 <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>画像を変更（任意）</label>
                 <input type="file" accept="image/*" onChange={(e) => setEditImageFile(e.target.files?.[0] ?? null)} />
@@ -712,22 +712,22 @@ export default function App() {
               <h2 className="section-title">新しいカードを登録</h2>
             </div>
             <div className="form-grid">
-              <input type="text" placeholder="カード名（必須）" value={form.name ?? ""} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+              <input type="text" placeholder="カード名（必須）" value={form.name ?? ""} onChange={(e) => setForm((p: Partial<Card>) => ({ ...p, name: e.target.value }))} />
               <div className="form-row">
-                <input type="text" placeholder="カード番号（任意）" value={form.number ?? ""} onChange={(e) => setForm((p) => ({ ...p, number: e.target.value }))} />
-                <select value={form.color ?? "黄"} onChange={(e) => setForm((p) => ({ ...p, color: e.target.value }))}>
+                <input type="text" placeholder="カード番号（任意）" value={form.number ?? ""} onChange={(e) => setForm((p: Partial<Card>) => ({ ...p, number: e.target.value }))} />
+                <select value={form.color ?? "黄"} onChange={(e) => setForm((p: Partial<Card>) => ({ ...p, color: e.target.value }))}>
                   {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
               <div className="form-row">
-                <select value={form.type ?? "キャラ"} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value }))}>
+                <select value={form.type ?? "キャラ"} onChange={(e) => setForm((p: Partial<Card>) => ({ ...p, type: e.target.value }))}>
                   {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
                 </select>
-                <select value={form.level ?? "1"} onChange={(e) => setForm((p) => ({ ...p, level: e.target.value }))}>
+                <select value={form.level ?? "1"} onChange={(e) => setForm((p: Partial<Card>) => ({ ...p, level: e.target.value }))}>
                   {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
                 </select>
               </div>
-              <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p) => ({ ...p, memo: e.target.value }))} rows={3} />
+              <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p: Partial<Card>) => ({ ...p, memo: e.target.value }))} rows={3} />
               <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
               <button className="btn-primary" onClick={saveCard}>✅ カードを保存</button>
             </div>
