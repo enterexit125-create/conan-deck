@@ -134,6 +134,13 @@ body {
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  max-width: 100%;
+}
+
+@media (min-width: 1200px) {
+  .section {
+    max-width: none;
+  }
 }
 
 .section-header {
