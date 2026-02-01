@@ -1208,88 +1208,82 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(9, 1fr)",
-                    gap: "1rem",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+                    gap: "0.75rem",
                     padding: "1rem 0"
                   }}>
-                    {LEVEL_OPTIONS.map((level) => (
-                      <div key={level} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                        {/* レベルヘッダー */}
-                        <div style={{
-                          fontSize: "0.9rem",
-                          fontWeight: "bold",
-                          color: "#667eea",
-                          textAlign: "center",
-                          padding: "0.25rem",
-                          background: "linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%)",
-                          borderRadius: "6px"
-                        }}>
-                          Lv{level}
-                        </div>
-
-                        {/* カード */}
-                        {cardsByLevel[level].map(({ card, count }) => (
-                          <div
-                            key={card.id}
-                            onClick={() => openEditDeckCard(card.id!)}
-                            style={{
-                              position: "relative",
-                              cursor: "pointer",
-                              borderRadius: "8px",
-                              overflow: "hidden",
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                              transition: "transform 0.2s, box-shadow 0.2s"
-                            }}
-                            onMouseOver={(e) => {
-                              e.currentTarget.style.transform = "translateY(-4px)";
-                              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
-                            }}
-                            onMouseOut={(e) => {
-                              e.currentTarget.style.transform = "translateY(0)";
-                              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-                            }}
-                          >
-                            <div style={{ aspectRatio: "0.7", position: "relative" }}>
-                              {card.image ? (
-                                <img
-                                  src={URL.createObjectURL(card.image)}
-                                  alt={card.name}
-                                  style={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover"
-                                  }}
-                                />
-                              ) : (
-                                <div style={{
+                    {/* レベル順にソートしてから全カードを表示 */}
+                    {LEVEL_OPTIONS.flatMap((level) => 
+                      cardsByLevel[level].map(({ card, count }) => (
+                        <div
+                          key={card.id}
+                          onClick={() => openEditDeckCard(card.id!)}
+                          style={{
+                            position: "relative",
+                            cursor: "pointer",
+                            borderRadius: "8px",
+                            overflow: "visible",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                            transition: "transform 0.2s, box-shadow 0.2s"
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.transform = "translateY(-4px)";
+                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.transform = "translateY(0)";
+                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                          }}
+                        >
+                          <div style={{ aspectRatio: "0.7", position: "relative", borderRadius: "8px", overflow: "hidden" }}>
+                            {card.image ? (
+                              <img
+                                src={URL.createObjectURL(card.image)}
+                                alt={card.name}
+                                style={{
                                   width: "100%",
                                   height: "100%",
-                                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  color: "white",
-                                  fontSize: "2rem"
-                                }}>
-                                  🃏
-                                </div>
-                              )}
-                            </div>
-                            {/* 枚数表示（カードの下） */}
+                                  objectFit: "cover"
+                                }}
+                              />
+                            ) : (
+                              <div style={{
+                                width: "100%",
+                                height: "100%",
+                                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                                fontSize: "2rem"
+                              }}>
+                                🃏
+                              </div>
+                            )}
+                            {/* 枚数バッジ（カード上にオーバーレイ） */}
                             <div style={{
-                              textAlign: "center",
-                              padding: "0.25rem",
-                              background: "rgba(0, 0, 0, 0.8)",
+                              position: "absolute",
+                              bottom: "6px",
+                              right: "6px",
+                              background: "rgba(0, 0, 0, 0.85)",
                               color: "white",
+                              borderRadius: "50%",
+                              width: "32px",
+                              height: "32px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                               fontSize: "0.9rem",
-                              fontWeight: "bold"
+                              fontWeight: "bold",
+                              boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
+                              border: "2px solid white"
                             }}>
                               ×{count}
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ))}
+                        </div>
+                      ))
+                    )}
                   </div>
                 )}
               </div>
