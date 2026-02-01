@@ -122,10 +122,12 @@ body {
 
 .screen {
   display: none;
+  width: 100%;
 }
 
 .screen.active {
   display: block;
+  width: 100%;
 }
 
 /* ==================== セクション ==================== */
@@ -135,6 +137,8 @@ body {
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-header {
@@ -247,6 +251,7 @@ button {
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 0.75rem;
   margin-top: 1rem;
+  width: 100%;
 }
 
 /* レスポンシブ: 画面サイズに応じて最適化 */
@@ -265,7 +270,7 @@ button {
 
 @media (min-width: 1600px) {
   .cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   }
 }
 
@@ -569,7 +574,8 @@ button {
 }
 
 /* ==================== レスポンシブ ==================== */
-@media (max-width: 768px) {
+@media (width: 100%;
+  max-width: none;) {
   .menu-toggle {
     display: block;
   }
@@ -618,7 +624,8 @@ button {
   }
 }
 
-@media (max-width: 480px) {
+@media ( width: 100%;
+  max-width: none;) {
   .app-header {
     padding: 0.75rem 1rem;
   }
@@ -718,7 +725,8 @@ button {
   background: white;
   border-radius: 16px;
   padding: 2rem;
-  max-width: 500px;
+  width: 100%;
+  max-width: none;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
