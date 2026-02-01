@@ -196,10 +196,6 @@ export default function App() {
     return dist;
   }, [deckCards, cards]);
 
-  const maxLevelCount = useMemo(() => {
-    return Math.max(...Object.values(levelDistribution), 1);
-  }, [levelDistribution]);
-
   // パートナーと事件を取得
   const partnerCard = useMemo(() => {
     const partnerDc = deckCards.find(dc => {
