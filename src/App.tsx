@@ -179,23 +179,6 @@ export default function App() {
     return m;
   }, [deckCards]);
 
-  // レベル分布の計算
-  const levelDistribution = useMemo(() => {
-    const dist: Record<string, number> = {};
-    for (let i = 1; i <= 9; i++) {
-      dist[i.toString()] = 0;
-    }
-    
-    for (const dc of deckCards) {
-      const card = cards.find(c => c.id === dc.cardId);
-      if (card?.level) {
-        dist[card.level] = (dist[card.level] || 0) + dc.count;
-      }
-    }
-    
-    return dist;
-  }, [deckCards, cards]);
-
   // パートナーと事件を取得
   const partnerCard = useMemo(() => {
     const partnerDc = deckCards.find(dc => {
