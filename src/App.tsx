@@ -107,6 +107,14 @@ export default function App() {
   // デッキカード編集用
   const [editingDeckCard, setEditingDeckCard] = useState<{ cardId: number; count: number } | null>(null);
 
+  // カード選択モーダル用
+  const [showCardSelectModal, setShowCardSelectModal] = useState(false);
+  const [cardSelectFilter, setCardSelectFilter] = useState<"all" | "partner" | "incident">("all");
+  const [cardSelectSearch, setCardSelectSearch] = useState("");
+  const [cardSelectColor, setCardSelectColor] = useState("");
+  const [cardSelectType, setCardSelectType] = useState("");
+  const [cardSelectLevel, setCardSelectLevel] = useState("");
+
   // 初回：デッキが無ければ作る
   useEffect(() => {
     const run = async () => {
@@ -191,6 +199,70 @@ export default function App() {
   const maxLevelCount = useMemo(() => {
     return Math.max(...Object.values(levelDistribution), 1);
   }, [levelDistribution]);
+
+  // パートナーと事件を取得
+  const partnerCard = useMemo(() => {
+    const partnerDc = deckCards.find(dc => {
+      const card = cards.find(c => c.id === dc.cardId);
+      return card?.type === "パートナー";
+    });
+    return partnerDc ? cards.find(c => c.id === partnerDc.cardId) : null;
+  }, [deckCards, cards]);
+
+  const incidentCard = useMemo(() => {
+    const incidentDc = deckCards.find(dc => {
+      const card = cards.find(c => c.id === dc.cardId);
+      return card?.type === "事件";
+    });
+    return incidentDc ? cards.find(c => c.id === incidentDc.cardId) : null;
+  }, [deckCards, cards]);
+
+  // キャラとイベントの枚数を計算
+  const characterCount = useMemo(() => {
+    return deckCards.reduce((sum, dc) => {
+      const card = cards.find(c => c.id === dc.cardId);
+      return card?.type === "キャラ" ? sum + dc.count : sum;
+    }, 0);
+  }, [deckCards, cards]);
+
+  const eventCount = useMemo(() => {
+    return deckCards.reduce((sum, dc) => {
+      const card = cards.find(c => c.id === dc.cardId);
+      return card?.type === "イベント" ? sum + dc.count : sum;
+    }, 0);
+  }, [deckCards, cards]);
+
+  // レベル別にグループ化したカード（パートナーと事件を除く）
+  const cardsByLevel = useMemo(() => {
+    const grouped: Record<string, Array<{ card: Card; count: number }>> = {};
+    LEVEL_OPTIONS.forEach(level => {
+      grouped[level] = [];
+    });
+
+    deckCards.forEach(dc => {
+      const card = cards.find(c => c.id === dc.cardId);
+      if (card && card.type !== "パートナー" && card.type !== "事件" && card.level) {
+        grouped[card.level].push({ card, count: dc.count });
+      }
+    });
+
+    return grouped;
+  }, [deckCards, cards]);
+
+  // カード選択モーダル用のフィルタリングされたカード一覧
+  const filteredCardsForModal = useMemo(() => {
+    const q = cardSelectSearch.trim().toLowerCase();
+    return cards.filter((c) => {
+      const name = (c.name ?? "").toLowerCase();
+      const num = (c.number ?? "").toLowerCase();
+      const matchText = !q || name.includes(q) || num.includes(q);
+      const matchColor = !cardSelectColor || c.color === cardSelectColor;
+      const matchType = !cardSelectType || c.type === cardSelectType;
+      const matchLevel = !cardSelectLevel || c.level === cardSelectLevel;
+      
+      return matchText && matchColor && matchType && matchLevel;
+    });
+  }, [cards, cardSelectSearch, cardSelectColor, cardSelectType, cardSelectLevel]);
 
   async function refreshAll() {
     const allDecks = await db.decks.toArray();
@@ -407,6 +479,29 @@ export default function App() {
     await db.deckCards.where("cardId").equals(cardId).delete();
     await db.cards.delete(cardId);
     await refreshAll();
+  }
+
+  // カード選択モーダルを開く
+  function openCardSelectModal(filter: "all" | "partner" | "incident") {
+    setCardSelectFilter(filter);
+    setCardSelectSearch("");
+    setCardSelectColor("");
+    setCardSelectType(filter === "partner" ? "パートナー" : filter === "incident" ? "事件" : "");
+    setCardSelectLevel("");
+    setShowCardSelectModal(true);
+  }
+
+  // カード選択モーダルを閉じる
+  function closeCardSelectModal() {
+    setShowCardSelectModal(false);
+  }
+
+  // モーダルからカードを選択してデッキに追加
+  async function selectCardFromModal(cardId: number) {
+    await addCardToDeck(cardId);
+    if (cardSelectFilter === "partner" || cardSelectFilter === "incident") {
+      closeCardSelectModal();
+    }
   }
 
   async function saveCard() {
@@ -758,6 +853,101 @@ export default function App() {
         </div>
       )}
 
+      {/* カード選択モーダル */}
+      {showCardSelectModal && (
+        <div className="modal-overlay" onClick={closeCardSelectModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "900px", maxHeight: "90vh" }}>
+            <div className="modal-header">
+              <span>{cardSelectFilter === "partner" ? "パートナーを選択" : cardSelectFilter === "incident" ? "事件を選択" : "カードを追加"}</span>
+              <button className="modal-close" onClick={closeCardSelectModal}>✕</button>
+            </div>
+
+            {/* 検索・フィルター */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div className="search-bar" style={{ marginBottom: "0.75rem" }}>
+                <input 
+                  type="text" 
+                  placeholder="🔍 カード名・番号で検索..." 
+                  value={cardSelectSearch} 
+                  onChange={(e) => setCardSelectSearch(e.target.value)} 
+                />
+              </div>
+              {cardSelectFilter === "all" ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+                  <select value={cardSelectColor} onChange={(e) => setCardSelectColor(e.target.value)}>
+                    <option value="">色: 全て</option>
+                    {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <select value={cardSelectType} onChange={(e) => setCardSelectType(e.target.value)}>
+                    <option value="">種類: 全て</option>
+                    <option value="キャラ">キャラ</option>
+                    <option value="イベント">イベント</option>
+                  </select>
+                  <select value={cardSelectLevel} onChange={(e) => setCardSelectLevel(e.target.value)}>
+                    <option value="">レベル: 全て</option>
+                    {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
+                  </select>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "0.5rem" }}>
+                  <select value={cardSelectColor} onChange={(e) => setCardSelectColor(e.target.value)}>
+                    <option value="">色: 全て</option>
+                    {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* カード一覧 */}
+            <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+              {filteredCardsForModal.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🔍</div>
+                  <div>カードが見つかりません</div>
+                </div>
+              ) : (
+                <div className="cards-grid">
+                  {filteredCardsForModal.map((card) => {
+                    const inDeck = deckCardMap.get(card.id!);
+                    return (
+                      <div
+                        key={card.id}
+                        className="card-item"
+                        onClick={() => selectCardFromModal(card.id!)}
+                        style={{
+                          opacity: inDeck ? 0.7 : 1,
+                          border: inDeck ? "3px solid #667eea" : "2px solid #e0e0e0"
+                        }}
+                      >
+                        <Thumb blob={card.image} alt={card.name ?? "card"} size="large" />
+                        {card.color && <div className="card-color-badge" style={{ backgroundColor: colorMap[card.color] }} />}
+                        <div className="card-name">{card.name}</div>
+                        <div className="card-number">{card.number ? `No.${card.number}` : ""}</div>
+                        {inDeck && (
+                          <div style={{
+                            position: "absolute",
+                            top: "8px",
+                            left: "8px",
+                            background: "rgba(102, 126, 234, 0.9)",
+                            color: "white",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "12px",
+                            fontSize: "0.8rem",
+                            fontWeight: "bold"
+                          }}>
+                            ×{inDeck.count}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="app-content">
         <div className={`screen ${activeTab === "cards" ? "active" : ""}`}>
           <div className="section">
@@ -857,72 +1047,85 @@ export default function App() {
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
             <>
-              <div className="deck-stats">
-                <div className="deck-stats-title">
-                  {activeDeck.name}
-                  <button className="btn-secondary" style={{ marginLeft: "1rem", padding: "0.5rem 1rem", fontSize: "0.9rem" }} onClick={renameActiveDeck}>✏️ 名前変更</button>
+              {/* ヘッダー: パートナー、事件、統計 */}
+              <div style={{
+                background: "white",
+                border: "2px solid #e0e0e0",
+                borderRadius: "12px",
+                padding: "1.5rem",
+                marginBottom: "1.5rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "2rem",
+                flexWrap: "wrap"
+              }}>
+                {/* パートナー */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
+                  <div style={{
+                    width: "100px",
+                    height: "140px",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    border: "2px solid #e0e0e0",
+                    background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer"
+                  }} onClick={() => {
+                    openCardSelectModal("partner");
+                  }}>
+                    {partnerCard?.image ? (
+                      <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ fontSize: "2rem", opacity: 0.3 }}>🃏</div>
+                    )}
+                  </div>
+                  {partnerCard && <div style={{ fontSize: "0.8rem", color: "#999", textAlign: "center" }}>{partnerCard.name}</div>}
                 </div>
-                <div className="deck-stats-info">
-                  <div>📊 合計: <strong>{totalInDeck} / {TARGET_DECK_SIZE}枚</strong></div>
-                  <div>🎴 種類: <strong>{deckCards.length}種類</strong></div>
-                </div>
-              </div>
 
-              {/* レベル分布グラフ */}
-              <div className="section">
-                <div className="section-header">
-                  <h2 className="section-title">📊 レベル分布</h2>
+                {/* 事件 */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666" }}>事件</div>
+                  <div style={{
+                    width: "100px",
+                    height: "140px",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    border: "2px solid #e0e0e0",
+                    background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer"
+                  }} onClick={() => {
+                    openCardSelectModal("incident");
+                  }}>
+                    {incidentCard?.image ? (
+                      <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ fontSize: "2rem", opacity: 0.3 }}>🃏</div>
+                    )}
+                  </div>
+                  {incidentCard && <div style={{ fontSize: "0.8rem", color: "#999", textAlign: "center" }}>{incidentCard.name}</div>}
                 </div>
-                
-                <div style={{ 
-                  display: "flex", 
-                  alignItems: "flex-end", 
-                  gap: "0.5rem", 
-                  height: "200px",
-                  padding: "1rem",
-                  background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
-                  borderRadius: "12px",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
-                }}>
-                  {LEVEL_OPTIONS.map((level) => {
-                    const count = levelDistribution[level] || 0;
-                    const height = maxLevelCount > 0 ? (count / maxLevelCount) * 160 : 0;
-                    
-                    return (
-                      <div key={level} style={{ 
-                        flex: 1, 
-                        display: "flex", 
-                        flexDirection: "column", 
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                        gap: "0.5rem"
-                      }}>
-                        <div style={{
-                          fontSize: "0.9rem",
-                          fontWeight: "bold",
-                          color: count > 0 ? "#ff9a9e" : "#999",
-                          minHeight: "1.5rem"
-                        }}>
-                          {count > 0 ? count : ""}
-                        </div>
-                        <div style={{
-                          width: "100%",
-                          height: `${height}px`,
-                          background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
-                          borderRadius: "4px 4px 0 0",
-                          transition: "all 0.3s ease",
-                          boxShadow: count > 0 ? "0 2px 4px rgba(255, 154, 158, 0.3)" : "none"
-                        }} />
-                        <div style={{
-                          fontSize: "0.9rem",
-                          fontWeight: "bold",
-                          color: "#333"
-                        }}>
-                          Lv{level}
-                        </div>
-                      </div>
-                    );
-                  })}
+
+                {/* 統計情報 */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem", minWidth: "200px" }}>
+                  <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#d4716b" }}>{activeDeck.name}</div>
+                  <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                    <div style={{ fontSize: "0.95rem" }}>
+                      <span style={{ color: "#666" }}>キャラ:</span> <strong style={{ fontSize: "1.1rem", color: "#667eea" }}>{characterCount}</strong>
+                    </div>
+                    <div style={{ fontSize: "0.95rem" }}>
+                      <span style={{ color: "#666" }}>イベント:</span> <strong style={{ fontSize: "1.1rem", color: "#ff9a9e" }}>{eventCount}</strong>
+                    </div>
+                    <div style={{ fontSize: "0.95rem" }}>
+                      <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "1.1rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
+                    </div>
+                  </div>
+                  <button className="btn-secondary" style={{ padding: "0.5rem 1rem", fontSize: "0.9rem", alignSelf: "flex-start" }} onClick={renameActiveDeck}>✏️ 名前変更</button>
                 </div>
               </div>
 
@@ -933,11 +1136,16 @@ export default function App() {
                 </div>
               )}
 
+              {/* レベル別カードグリッド */}
               <div className="section">
                 <div className="section-header">
                   <h2 className="section-title">デッキ内カード</h2>
+                  <button className="btn-primary" onClick={() => openCardSelectModal("all")}>➕ カード追加</button>
                 </div>
-                {deckCards.length === 0 ? (
+                {deckCards.filter(dc => {
+                  const card = cards.find(c => c.id === dc.cardId);
+                  return card?.type !== "パートナー" && card?.type !== "事件";
+                }).length === 0 ? (
                   <div className="empty-state">
                     <div className="empty-state-icon">📦</div>
                     <div>デッキにカードがありません</div>
@@ -946,81 +1154,88 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                    gridTemplateColumns: "repeat(9, 1fr)",
                     gap: "1rem",
                     padding: "1rem 0"
                   }}>
-                    {deckCards.map((dc) => {
-                      const c = cards.find((x) => x.id === dc.cardId);
-                      return (
-                        <div
-                          key={dc.cardId}
-                          onClick={() => openEditDeckCard(dc.cardId)}
-                          style={{
-                            position: "relative",
-                            cursor: "pointer",
-                            borderRadius: "8px",
-                            overflow: "hidden",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                            transition: "transform 0.2s, box-shadow 0.2s"
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.transform = "translateY(-4px)";
-                            e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.transform = "translateY(0)";
-                            e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
-                          }}
-                        >
-                          <div style={{ aspectRatio: "0.7", position: "relative" }}>
-                            {c?.image ? (
-                              <img
-                                src={URL.createObjectURL(c.image)}
-                                alt={c.name}
-                                style={{
+                    {LEVEL_OPTIONS.map((level) => (
+                      <div key={level} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                        {/* レベルヘッダー */}
+                        <div style={{
+                          fontSize: "0.9rem",
+                          fontWeight: "bold",
+                          color: "#667eea",
+                          textAlign: "center",
+                          padding: "0.25rem",
+                          background: "linear-gradient(135deg, #f5f7fa 0%, #e8eaf6 100%)",
+                          borderRadius: "6px"
+                        }}>
+                          Lv{level}
+                        </div>
+
+                        {/* カード */}
+                        {cardsByLevel[level].map(({ card, count }) => (
+                          <div
+                            key={card.id}
+                            onClick={() => openEditDeckCard(card.id!)}
+                            style={{
+                              position: "relative",
+                              cursor: "pointer",
+                              borderRadius: "8px",
+                              overflow: "hidden",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                              transition: "transform 0.2s, box-shadow 0.2s"
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.transform = "translateY(-4px)";
+                              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.transform = "translateY(0)";
+                              e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.1)";
+                            }}
+                          >
+                            <div style={{ aspectRatio: "0.7", position: "relative" }}>
+                              {card.image ? (
+                                <img
+                                  src={URL.createObjectURL(card.image)}
+                                  alt={card.name}
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    objectFit: "cover"
+                                  }}
+                                />
+                              ) : (
+                                <div style={{
                                   width: "100%",
                                   height: "100%",
-                                  objectFit: "cover"
-                                }}
-                              />
-                            ) : (
-                              <div style={{
-                                width: "100%",
-                                height: "100%",
-                                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "white",
-                                fontSize: "3rem"
-                              }}>
-                                🃏
-                              </div>
-                            )}
-                            {/* 枚数バッジ */}
+                                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "white",
+                                  fontSize: "2rem"
+                                }}>
+                                  🃏
+                                </div>
+                              )}
+                            </div>
+                            {/* 枚数表示（カードの下） */}
                             <div style={{
-                              position: "absolute",
-                              bottom: "8px",
-                              right: "8px",
+                              textAlign: "center",
+                              padding: "0.25rem",
                               background: "rgba(0, 0, 0, 0.8)",
                               color: "white",
-                              borderRadius: "50%",
-                              width: "32px",
-                              height: "32px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.1rem",
-                              fontWeight: "bold",
-                              boxShadow: "0 2px 4px rgba(0,0,0,0.3)"
+                              fontSize: "0.9rem",
+                              fontWeight: "bold"
                             }}>
-                              {dc.count}
+                              ×{count}
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
