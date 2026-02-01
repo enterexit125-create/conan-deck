@@ -196,6 +196,27 @@ export default function App() {
     return incidentDc ? cards.find(c => c.id === incidentDc.cardId) : null;
   }, [deckCards, cards]);
 
+  // レベル分布の計算（グラフ用）
+  const levelDistribution = useMemo(() => {
+    const dist: Record<string, number> = {};
+    LEVEL_OPTIONS.forEach(level => {
+      dist[level] = 0;
+    });
+    
+    deckCards.forEach(dc => {
+      const card = cards.find(c => c.id === dc.cardId);
+      if (card?.level && card.type !== "パートナー" && card.type !== "事件") {
+        dist[card.level] = (dist[card.level] || 0) + dc.count;
+      }
+    });
+    
+    return dist;
+  }, [deckCards, cards]);
+
+  const maxLevelCount = useMemo(() => {
+    return Math.max(...Object.values(levelDistribution), 1);
+  }, [levelDistribution]);
+
   // キャラとイベントの枚数を計算
   const characterCount = useMemo(() => {
     return deckCards.reduce((sum, dc) => {
@@ -1026,7 +1047,7 @@ export default function App() {
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
             <>
-              {/* ヘッダー: パートナー、事件、統計 */}
+              {/* ヘッダー: パートナー、事件、グラフ、統計 */}
               <div style={{
                 background: "white",
                 border: "2px solid #e0e0e0",
@@ -1088,6 +1109,60 @@ export default function App() {
                     )}
                   </div>
                   {incidentCard && <div style={{ fontSize: "0.8rem", color: "#999", textAlign: "center" }}>{incidentCard.name}</div>}
+                </div>
+
+                {/* レベル分布グラフ */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666", textAlign: "center" }}>レベル</div>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "flex-end",
+                    gap: "0.25rem",
+                    height: "100px",
+                    padding: "0.5rem",
+                    background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
+                    borderRadius: "8px",
+                    border: "2px solid #ffd4dc"
+                  }}>
+                    {LEVEL_OPTIONS.map((level) => {
+                      const count = levelDistribution[level] || 0;
+                      const height = maxLevelCount > 0 ? (count / maxLevelCount) * 70 : 0;
+                      
+                      return (
+                        <div key={level} style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "0.25rem",
+                          minWidth: "28px"
+                        }}>
+                          <div style={{
+                            fontSize: "0.7rem",
+                            fontWeight: "bold",
+                            color: count > 0 ? "#ff9a9e" : "#ccc",
+                            minHeight: "1rem"
+                          }}>
+                            {count > 0 ? count : ""}
+                          </div>
+                          <div style={{
+                            width: "100%",
+                            height: `${height}px`,
+                            background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
+                            borderRadius: "3px 3px 0 0",
+                            transition: "all 0.3s ease",
+                            minHeight: "3px"
+                          }} />
+                          <div style={{
+                            fontSize: "0.65rem",
+                            fontWeight: "bold",
+                            color: "#666"
+                          }}>
+                            {level}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* 統計情報 */}
