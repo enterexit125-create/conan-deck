@@ -952,31 +952,6 @@ export default function App() {
 
       <div className="app-content">
         <div className={`screen ${activeTab === "cards" ? "active" : ""}`}>
-          <div className="section">
-            <div className="section-header">
-              <h2 className="section-title">新しいカードを登録</h2>
-            </div>
-            <div className="form-grid">
-              <input type="text" placeholder="カード名（必須）" value={form.name ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, name: e.target.value }))} />
-              <div className="form-row">
-                <input type="text" placeholder="カード番号（必須）" value={form.number ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, number: e.target.value }))} />
-                <select value={form.color ?? "黄"} onChange={(e) => setForm((p: any) => ({ ...p, color: e.target.value }))}>
-                  {COLOR_OPTIONS.map(c => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="form-row">
-                <select value={form.type ?? "キャラ"} onChange={(e) => setForm((p: any) => ({ ...p, type: e.target.value }))}>
-                  {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
-                </select>
-                <select value={form.level ?? "1"} onChange={(e) => setForm((p: any) => ({ ...p, level: e.target.value }))}>
-                  {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
-                </select>
-              </div>
-              <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, memo: e.target.value }))} rows={3} />
-              <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
-              <button className="btn-primary" onClick={saveCard}>✅ カードを保存</button>
-            </div>
-          </div>
 
           <div className="section">
             <div className="section-header">
