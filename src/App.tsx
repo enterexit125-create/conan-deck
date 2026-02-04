@@ -94,7 +94,7 @@ export default function App() {
     memo: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "sync">("cards");
+  const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "play" | "sync">("cards");
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -650,7 +650,7 @@ export default function App() {
     setMobileMenuOpen(!mobileMenuOpen);
   }
 
-  function switchTab(tab: "cards" | "decks" | "editor" | "sync") {
+  function switchTab(tab: "cards" | "decks" | "editor" | "play" | "sync") {
     setActiveTab(tab);
     setMobileMenuOpen(false);
   }
@@ -706,13 +706,13 @@ export default function App() {
               borderRadius: "8px", fontSize: "1rem",
               fontWeight: activeTab === "decks" ? "bold" : "normal", textAlign: "left",
             }}>📦 デッキ</button>
-            <button onClick={() => switchTab("editor")} style={{
+            <button onClick={() => switchTab("play")} style={{
               width: "100%", padding: "1rem", marginBottom: "0.5rem",
-              border: activeTab === "editor" ? "2px solid #667eea" : "2px solid #e0e0e0",
-              background: activeTab === "editor" ? "#f5f7fa" : "white",
+              border: activeTab === "play" ? "2px solid #667eea" : "2px solid #e0e0e0",
+              background: activeTab === "play" ? "#f5f7fa" : "white",
               borderRadius: "8px", fontSize: "1rem",
-              fontWeight: activeTab === "editor" ? "bold" : "normal", textAlign: "left",
-            }}>✏️ デッキ編集</button>
+              fontWeight: activeTab === "play" ? "bold" : "normal", textAlign: "left",
+            }}>🎮 一人回し</button>
             <button onClick={() => switchTab("sync")} style={{
               width: "100%", padding: "1rem",
               border: activeTab === "sync" ? "2px solid #667eea" : "2px solid #e0e0e0",
@@ -728,7 +728,7 @@ export default function App() {
         <ul className="nav-tabs">
           <li><button className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`} onClick={() => setActiveTab("cards")}>カード</button></li>
           <li><button className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`} onClick={() => setActiveTab("decks")}>デッキ</button></li>
-          <li><button className={`nav-tab-button ${activeTab === "editor" ? "active" : ""}`} onClick={() => setActiveTab("editor")}>デッキ編集</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "play" ? "active" : ""}`} onClick={() => setActiveTab("play")}>🎮 一人回し</button></li>
           <li><button className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`} onClick={() => setActiveTab("sync")}>☁️ 同期</button></li>
         </ul>
       </nav>
@@ -1301,6 +1301,21 @@ export default function App() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* 一人回し画面 */}
+        <div className={`screen ${activeTab === "play" ? "active" : ""}`}>
+          <div className="section">
+            <div className="section-header">
+              <h2 className="section-title">🎮 一人回し（準備中）</h2>
+            </div>
+            <div className="info-panel">
+              <div className="info-panel-title">機能を準備中です</div>
+              <div className="info-panel-text">
+                一人回し機能は現在開発中です。しばらくお待ちください。
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className={`screen ${activeTab === "sync" ? "active" : ""}`}>
