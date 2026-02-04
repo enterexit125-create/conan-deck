@@ -544,6 +544,7 @@ export default function App() {
       memo: "" 
     });
     setImageFile(null);
+    setShowCardForm(false);
     await refreshAll();
   }
 
