@@ -959,7 +959,9 @@ export default function App() {
               <button className="btn-primary" onClick={() => setShowCardForm(!showCardForm)}>
                 {showCardForm ? "✕ 閉じる" : "➕ カード追加"}
               </button>
-              {showCardForm && (
+            </div>
+
+            {showCardForm && (
               <div className="form-grid" style={{ marginBottom: "1.5rem", background: "#f5f7fa", padding: "1rem", borderRadius: "8px" }}>
                 <input type="text" placeholder="カード名（必須）" value={form.name ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, name: e.target.value }))} />
                 <div className="form-row">
@@ -981,7 +983,7 @@ export default function App() {
                 <button className="btn-primary" onClick={saveCard}>✅ カードを保存</button>
               </div>
             )}
-            </div>
+
             <div className="search-bar">
               <input type="text" placeholder="🔍 カード名・番号で検索..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
