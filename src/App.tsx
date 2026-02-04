@@ -698,14 +698,14 @@ export default function App() {
               background: activeTab === "cards" ? "#f5f7fa" : "white",
               borderRadius: "8px", fontSize: "1rem",
               fontWeight: activeTab === "cards" ? "bold" : "normal", textAlign: "left",
-            }}>🃏 カード管理</button>
+            }}>🃏 カード</button>
             <button onClick={() => switchTab("decks")} style={{
               width: "100%", padding: "1rem", marginBottom: "0.5rem",
               border: activeTab === "decks" ? "2px solid #667eea" : "2px solid #e0e0e0",
               background: activeTab === "decks" ? "#f5f7fa" : "white",
               borderRadius: "8px", fontSize: "1rem",
               fontWeight: activeTab === "decks" ? "bold" : "normal", textAlign: "left",
-            }}>📦 デッキ一覧</button>
+            }}>📦 デッキ</button>
             <button onClick={() => switchTab("editor")} style={{
               width: "100%", padding: "1rem", marginBottom: "0.5rem",
               border: activeTab === "editor" ? "2px solid #667eea" : "2px solid #e0e0e0",
@@ -726,8 +726,8 @@ export default function App() {
 
       <nav className="app-nav">
         <ul className="nav-tabs">
-          <li><button className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`} onClick={() => setActiveTab("cards")}>カード管理</button></li>
-          <li><button className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`} onClick={() => setActiveTab("decks")}>デッキ一覧</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`} onClick={() => setActiveTab("cards")}>カード</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`} onClick={() => setActiveTab("decks")}>デッキ</button></li>
           <li><button className={`nav-tab-button ${activeTab === "editor" ? "active" : ""}`} onClick={() => setActiveTab("editor")}>デッキ編集</button></li>
           <li><button className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`} onClick={() => setActiveTab("sync")}>☁️ 同期</button></li>
         </ul>
