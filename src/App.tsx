@@ -98,6 +98,7 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showCardForm, setShowCardForm] = useState(false);
   
   // 編集用の状態
   const [editingCard, setEditingCard] = useState<Card | null>(null);
@@ -979,6 +980,9 @@ export default function App() {
           <div className="section">
             <div className="section-header">
               <h2 className="section-title">カード一覧</h2>
+              <button className="btn-primary" onClick={() => setShowCardForm(!showCardForm)}>
+                {showCardForm ? "✕ 閉じる" : "➕ カード追加"}
+              </button>
             </div>
             <div className="search-bar">
               <input type="text" placeholder="🔍 カード名・番号で検索..." value={search} onChange={(e) => setSearch(e.target.value)} />
