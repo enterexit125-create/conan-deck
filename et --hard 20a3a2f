@@ -1,0 +1,50 @@
+[33md349f8c[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix: 一人回し機能の構文エラーを修正
+[33m71bf41b[m Remove duplicate closing tags
+[33m4c3c3a8[m Move log modal outside ternary operator
+[33mffa3079[m Add missing closing parenthesis for ternary operator
+[33m5dff103[m Remove extra closing parenthesis
+[33mf2c6d30[m Fix modal position in play screen
+[33m7bd8f28[m Fix JSX closing tags in play screen
+[33mbf9e6ee[m Fix JSX syntax errors in play screen
+[33mecff18f[m Remove duplicate closing tags
+[33mae838ea[m Remove duplicate closing tags
+[33m85b5b5b[m Remove duplicate closing tags
+[33m355c062[m Remove duplicate closing tags
+[33md9cae49[m Remove duplicate closing tags
+[33m054090d[m Remove duplicate closing tags
+[33m9e5580e[m Remove duplicate closing tags
+[33m577f083[m Fix remaining JSX syntax errors
+[33m63c5c8a[m Fix JSX syntax errors in play screen
+[33ma0b808b[m Fix: Remove unused variable warnings
+[33mdaf2a97[m Fix: Remove unused variable warnings
+[33m84eea1d[m Fix: Remove unused variable warnings
+[33mc8aaf4c[m Fix: Remove unused variable warnings
+[33m076f35f[m Fix: Remove unused variable warnings
+[33mc8917c2[m Fix: Remove unused variable warnings
+[33m6576f9b[m Add solo play feature
+[33m20a3a2f[m Fix: Remove unused levelDistribution variable
+[33mf589729[m Fix: Remove unused levelDistribution variable
+[33me6335c1[m Fix: Remove unused levelDistribution variable
+[33m22b9dcc[m Fix: Remove unused maxLevelCount variable
+[33md20bb32[m Add card selection modal to deck editor
+[33mbcee54f[m Fix layout width issue
+[33mbf59c45[m Fix layout width issue
+[33m6572d81[m app-content幅を100%に設定（確定版）
+[33mbdabdb2[m セクション幅制限を完全削除
+[33m2c883a7[m セクション幅を全画面対応
+[33m68a194a[m ワークフロー修正
+[33m4e97619[m GitHub Actions 強制実行
+[33mc574856[m カードグリッド最適化（数百枚対応）
+[33m840d41d[m 全画面レスポンシブ対応
+[33m1c0ab17[m カード番号必須化＆番号別3枚制限
+[33mc450d4b[m 不要ファイル削除
+[33m79e20cb[m 型エラー修正（再）
+[33m0990716[m TypeScript型エラー修正
+[33mc6d69ef[m 完全桃色テーマ＆デバッグ削除
+[33m49f6d96[m 配色を桃色＆茶色に変更
+[33m078f93f[m 不要な関数を削除
+[33mf9bf47b[m デッキ編集画面をグリッド表示に変更
+[33m5264c78[m デバッグ情報追加
+[33mc01f338[m デバッグ情報追加
+[33m544bab9[m レベル1-9対応、レア削除、デッキ名編集、レベル分布グラフ追加
+[33m7fe4359[m カード項目追加と検索フィルター実装

@@ -94,7 +94,17 @@ export default function App() {
     memo: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "play" | "sync">("cards");
+  const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "play" | "sync">(() => {
+    // localStorageから前回のタブを復元
+    const saved = localStorage.getItem("activeTab");
+    console.log("activeTab初期化:", saved);
+    if (saved && ["cards", "decks", "editor", "play", "sync"].includes(saved)) {
+      console.log("復元:", saved);
+      return saved as "cards" | "decks" | "editor" | "play" | "sync";
+    }
+    console.log("デフォルト: cards");
+    return "cards";
+  });
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -158,7 +168,34 @@ export default function App() {
     refresh();
   }, [activeDeckId]);
 
-  const totalInDeck = useMemo(() => sumCounts(deckCards), [deckCards]);
+  const totalInDeck = useMemo(() => {
+    // パートナーと事件を除いた枚数
+    console.log("totalInDeck再計算:", { 
+      deckCardsLength: deckCards?.length, 
+      cardsLength: cards?.length 
+    });
+    
+    if (!deckCards || deckCards.length === 0) {
+      console.log("deckCardsが空");
+      return 0;
+    }
+    if (!cards || cards.length === 0) {
+      console.log("cardsが空");
+      return 0;
+    }
+    
+    const total = deckCards.reduce((sum, dc) => {
+      const card = cards.find(c => c.id === dc.cardId);
+      // パートナーと事件を除外
+      if (card && card.type !== "パートナー" && card.type !== "事件") {
+        return sum + dc.count;
+      }
+      return sum;
+    }, 0);
+    
+    console.log("計算結果:", total);
+    return total;
+  }, [deckCards, cards]);
 
   const filteredCards = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -651,7 +688,10 @@ export default function App() {
   }
 
   function switchTab(tab: "cards" | "decks" | "editor" | "play" | "sync") {
+    console.log("switchTab:", tab);
     setActiveTab(tab);
+    localStorage.setItem("activeTab", tab); // タブを保存
+    console.log("localStorage保存:", tab);
     setMobileMenuOpen(false);
   }
 
@@ -726,10 +766,10 @@ export default function App() {
 
       <nav className="app-nav">
         <ul className="nav-tabs">
-          <li><button className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`} onClick={() => setActiveTab("cards")}>カード</button></li>
-          <li><button className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`} onClick={() => setActiveTab("decks")}>デッキ</button></li>
-          <li><button className={`nav-tab-button ${activeTab === "play" ? "active" : ""}`} onClick={() => setActiveTab("play")}>🎮 一人回し</button></li>
-          <li><button className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`} onClick={() => setActiveTab("sync")}>☁️ 同期</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`} onClick={() => switchTab("cards")}>カード</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`} onClick={() => switchTab("decks")}>デッキ</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "play" ? "active" : ""}`} onClick={() => switchTab("play")}>🎮 一人回し</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`} onClick={() => switchTab("sync")}>☁️ 同期</button></li>
         </ul>
       </nav>
 
@@ -1039,7 +1079,7 @@ export default function App() {
             </div>
             <div className="deck-list">
               {decks.map((d) => (
-                <div key={d.id} className={`deck-chip ${d.id === activeDeckId ? "active" : ""}`} onClick={() => { setActiveDeckId(d.id!); setActiveTab("editor"); }} onDoubleClick={() => renameDeck(d.id!)} title="クリックで選択・ダブルクリックでリネーム">
+                <div key={d.id} className={`deck-chip ${d.id === activeDeckId ? "active" : ""}`} onClick={() => { setActiveDeckId(d.id!); switchTab("editor"); }} onDoubleClick={() => renameDeck(d.id!)} title="クリックで選択・ダブルクリックでリネーム">
                   <span>{d.name}</span>
                   <button className="deck-delete-btn" onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} title="削除">✕</button>
                 </div>
@@ -1093,8 +1133,8 @@ export default function App() {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
                   <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666" }}>事件</div>
                   <div style={{
-                    width: "100px",
-                    height: "140px",
+                    width: "140px",  // 横長に
+                    height: "100px", // 縦短く
                     borderRadius: "8px",
                     overflow: "hidden",
                     border: "2px solid #e0e0e0",
@@ -1171,7 +1211,13 @@ export default function App() {
 
                 {/* 統計情報 */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem", minWidth: "200px" }}>
-                  <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#d4716b" }}>{activeDeck.name}</div>
+                  <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#d4716b" }}>
+                    {(() => {
+                      console.log("activeDeck:", activeDeck);
+                      console.log("activeDeck.name:", activeDeck.name);
+                      return activeDeck.name;
+                    })()}
+                  </div>
                   <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
                     <div style={{ fontSize: "0.95rem" }}>
                       <span style={{ color: "#666" }}>キャラ:</span> <strong style={{ fontSize: "1.1rem", color: "#667eea" }}>{characterCount}</strong>
@@ -1179,7 +1225,7 @@ export default function App() {
                     <div style={{ fontSize: "0.95rem" }}>
                       <span style={{ color: "#666" }}>イベント:</span> <strong style={{ fontSize: "1.1rem", color: "#ff9a9e" }}>{eventCount}</strong>
                     </div>
-                    <div style={{ fontSize: "0.95rem" }}>
+                    <div style={{ fontSize: "0.95rem" }} key={`deck-count-${totalInDeck}`}>
                       <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "1.1rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
                     </div>
                   </div>
