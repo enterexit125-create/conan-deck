@@ -1189,7 +1189,7 @@ export default function App() {
             <div className="section-header">
               <h2 className="section-title">カード一覧</h2>
               <button className="btn-primary" onClick={() => setShowCardForm(!showCardForm)}>
-                {showCardForm ? "✕ 閉じる" : "➕ カード追加"}
+                {showCardForm ? "✕" : "➕"}
               </button>
             </div>
 
@@ -1212,7 +1212,7 @@ export default function App() {
                 </div>
                 <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, memo: e.target.value }))} rows={2} />
                 <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
-                <button className="btn-primary" onClick={saveCard}>✅ カードを保存</button>
+                <button className="btn-primary" onClick={saveCard}>✅ 保存</button>
               </div>
             )}
 
@@ -1252,9 +1252,9 @@ export default function App() {
                       {c.level ? ` • Lv${c.level}` : ""}
                     </div>
                     <div className="card-actions">
-                      <button className="btn-secondary" style={{ padding: "0.4rem", fontSize: "0.85rem" }} onClick={() => openEditCard(c)}>✏️ 編集</button>
-                      <button className="btn-primary" style={{ flex: 1, padding: "0.4rem", fontSize: "0.85rem" }} onClick={() => addCardToDeck(c.id!)}>➕ デッキへ</button>
-                      <button className="btn-danger btn-icon" style={{ padding: "0.4rem" }} onClick={() => deleteCard(c.id!)}>🗑</button>
+                      <button className="btn-secondary" style={{ padding: "0.4rem", fontSize: "1.1rem" }} onClick={() => openEditCard(c)}>✏️</button>
+                      <button className="btn-primary" style={{ flex: 1, padding: "0.4rem", fontSize: "1.1rem" }} onClick={() => addCardToDeck(c.id!)}>➕</button>
+                      <button className="btn-danger btn-icon" style={{ padding: "0.4rem", fontSize: "1.1rem" }} onClick={() => deleteCard(c.id!)}>🗑</button>
                     </div>
                   </div>
                 ))}
@@ -1267,7 +1267,7 @@ export default function App() {
           <div className="section">
             <div className="section-header">
               <h2 className="section-title">デッキ管理</h2>
-              <button className="btn-primary" onClick={createDeck}>➕ 新規デッキ作成</button>
+              <button className="btn-primary" onClick={createDeck}>➕</button>
             </div>
             <div className="deck-list">
               {decks.map((d) => (
@@ -1421,7 +1421,7 @@ export default function App() {
                       <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "1.1rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
                     </div>
                   </div>
-                  <button className="btn-secondary" style={{ padding: "0.5rem 1rem", fontSize: "0.9rem", alignSelf: "flex-start" }} onClick={renameActiveDeck}>✏️ 名前変更</button>
+                  <button className="btn-secondary" style={{ padding: "0.5rem 1rem", fontSize: "1.1rem", alignSelf: "flex-start" }} onClick={renameActiveDeck}>✏️</button>
                 </div>
               </div>
 
@@ -1436,7 +1436,7 @@ export default function App() {
               <div className="section">
                 <div className="section-header">
                   <h2 className="section-title">デッキ内カード</h2>
-                  <button className="btn-primary" onClick={() => openCardSelectModal("all")}>➕ カード追加</button>
+                  <button className="btn-primary" onClick={() => openCardSelectModal("all")}>➕</button>
                 </div>
                 {deckCards.filter(dc => {
                   const card = cards.find(c => c.id === dc.cardId);
