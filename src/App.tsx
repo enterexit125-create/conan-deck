@@ -1642,60 +1642,62 @@ export default function App() {
               {/* 統計情報 */}
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
-                gap: "0.5rem",
-                marginBottom: "0.75rem"
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "0.4rem",
+                marginBottom: "0.5rem"
               }}>
                 <div style={{
-                  padding: "0.5rem",
+                  padding: "0.4rem",
                   background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>手札</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playHand.length}</div>
+                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>手札</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playHand.length}</div>
                 </div>
                 <div style={{
-                  padding: "0.5rem",
+                  padding: "0.4rem",
                   background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>現場</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playField.length}</div>
+                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>現場</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playField.length}</div>
                 </div>
                 <div style={{
-                  padding: "0.5rem",
+                  padding: "0.4rem",
                   background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>リムーブ</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playRemove.length}</div>
+                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>リムーブ</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playRemove.length}</div>
                 </div>
                 <div style={{
-                  padding: "0.5rem",
+                  padding: "0.4rem",
                   background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>山札</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playDeck.length}</div>
+                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>山札</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playDeck.length}</div>
                 </div>
                 <div style={{
-                  padding: "0.5rem",
+                  padding: "0.4rem",
                   background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>ドロー数</div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playDrawn}</div>
+                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>ドロー</div>
+                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playDrawn}</div>
                 </div>
+                {/* 空のセル（レイアウト調整用） */}
+                <div style={{ padding: "0.4rem" }}></div>
               </div>
 
               {/* ドローボタン */}
