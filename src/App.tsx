@@ -1194,7 +1194,7 @@ export default function App() {
             </div>
 
             {showCardForm && (
-              <div className="form-grid" style={{ marginBottom: "1.5rem", background: "#f5f7fa", padding: "1rem", borderRadius: "8px" }}>
+              <div className="form-grid" style={{ marginBottom: "1rem", background: "#f5f7fa", padding: "0.75rem", borderRadius: "8px" }}>
                 <input type="text" placeholder="カード名（必須）" value={form.name ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, name: e.target.value }))} />
                 <div className="form-row">
                   <input type="text" placeholder="カード番号（必須）" value={form.number ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, number: e.target.value }))} />
@@ -1210,7 +1210,7 @@ export default function App() {
                     {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
                   </select>
                 </div>
-                <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, memo: e.target.value }))} rows={3} />
+                <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, memo: e.target.value }))} rows={2} />
                 <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
                 <button className="btn-primary" onClick={saveCard}>✅ カードを保存</button>
               </div>
@@ -1219,7 +1219,7 @@ export default function App() {
             <div className="search-bar">
               <input type="text" placeholder="🔍 カード名・番号で検索..." value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <div className="form-grid" style={{ marginTop: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+            <div className="form-grid" style={{ marginTop: "0.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "0.5rem" }}>
               <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)}>
                 <option value="">色: 全て</option>
                 {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
@@ -1252,9 +1252,9 @@ export default function App() {
                       {c.level ? ` • Lv${c.level}` : ""}
                     </div>
                     <div className="card-actions">
-                      <button className="btn-secondary" style={{ padding: "0.5rem" }} onClick={() => openEditCard(c)}>✏️ 編集</button>
-                      <button className="btn-primary" style={{ flex: 1, padding: "0.5rem" }} onClick={() => addCardToDeck(c.id!)}>➕ デッキへ</button>
-                      <button className="btn-danger btn-icon" onClick={() => deleteCard(c.id!)}>🗑</button>
+                      <button className="btn-secondary" style={{ padding: "0.4rem", fontSize: "0.85rem" }} onClick={() => openEditCard(c)}>✏️ 編集</button>
+                      <button className="btn-primary" style={{ flex: 1, padding: "0.4rem", fontSize: "0.85rem" }} onClick={() => addCardToDeck(c.id!)}>➕ デッキへ</button>
+                      <button className="btn-danger btn-icon" style={{ padding: "0.4rem" }} onClick={() => deleteCard(c.id!)}>🗑</button>
                     </div>
                   </div>
                 ))}
@@ -1450,9 +1450,9 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                    gap: "0.75rem",
-                    padding: "1rem 0"
+                    gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                    gap: "0.5rem",
+                    padding: "0.5rem 0"
                   }}>
                     {/* レベル順にソートしてから全カードを表示 */}
                     {LEVEL_OPTIONS.flatMap((level) => 
