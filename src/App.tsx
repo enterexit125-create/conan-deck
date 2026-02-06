@@ -1795,9 +1795,9 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                    gap: "0.75rem",
-                    padding: "1rem",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))",
+                    gap: "0.5rem",
+                    padding: "0.75rem",
                     background: "#f5f5f5",
                     borderRadius: "8px"
                   }}>
@@ -1834,12 +1834,12 @@ export default function App() {
                               justifyContent: "center",
                               flexDirection: "column",
                               color: "white",
-                              padding: "0.5rem"
+                              padding: "0.25rem"
                             }}>
-                              <div style={{ fontSize: "0.7rem", marginBottom: "0.25rem" }}>
+                              <div style={{ fontSize: "0.55rem", marginBottom: "0.1rem" }}>
                                 Lv.{card.level}
                               </div>
-                              <div style={{ fontSize: "0.8rem", fontWeight: "bold", textAlign: "center" }}>
+                              <div style={{ fontSize: "0.65rem", fontWeight: "bold", textAlign: "center", lineHeight: "1.1" }}>
                                 {card.name}
                               </div>
                             </div>
@@ -1869,9 +1869,9 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-                    gap: "1rem",
-                    padding: "1rem",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                    gap: "0.5rem",
+                    padding: "0.75rem",
                     background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
                     borderRadius: "8px"
                   }}>
@@ -1914,12 +1914,12 @@ export default function App() {
                               justifyContent: "center",
                               flexDirection: "column",
                               color: "white",
-                              padding: "0.5rem"
+                              padding: "0.25rem"
                             }}>
-                              <div style={{ fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+                              <div style={{ fontSize: "0.6rem", marginBottom: "0.1rem" }}>
                                 Lv.{card.level}
                               </div>
-                              <div style={{ fontSize: "0.9rem", fontWeight: "bold", textAlign: "center" }}>
+                              <div style={{ fontSize: "0.7rem", fontWeight: "bold", textAlign: "center", lineHeight: "1.1" }}>
                                 {card.name}
                               </div>
                             </div>
@@ -1943,9 +1943,9 @@ export default function App() {
               ) : (
                 <div style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-                  gap: "1rem",
-                  padding: "1rem 0"
+                  gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                  gap: "0.5rem",
+                  padding: "0.5rem 0"
                 }}>
                   {playHand.map((card, idx) => {
                     const isSelected = selectedForMulligan.includes(idx);
@@ -1992,13 +1992,13 @@ export default function App() {
                               justifyContent: "center",
                               flexDirection: "column",
                               color: "white",
-                              padding: "0.5rem",
+                              padding: "0.25rem",
                               opacity: isSelected ? 0.7 : 1
                             }}>
-                              <div style={{ fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+                              <div style={{ fontSize: "0.6rem", marginBottom: "0.1rem" }}>
                                 Lv.{card.level}
                               </div>
-                              <div style={{ fontSize: "0.9rem", fontWeight: "bold", textAlign: "center" }}>
+                              <div style={{ fontSize: "0.7rem", fontWeight: "bold", textAlign: "center", lineHeight: "1.1" }}>
                                 {card.name}
                               </div>
                             </div>
