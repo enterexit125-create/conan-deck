@@ -1020,10 +1020,10 @@ export default function App() {
                   <div style={{ fontSize: "1.2rem", fontWeight: "bold", margin: "1rem 0" }}>
                     {card?.name}
                   </div>
-                  <div style={{ color: "#666", marginBottom: "1.5rem" }}>
-                    {card?.number ? `No.${card.number}` : ""}
-                    {card?.type ? ` • ${card.type}` : ""}
-                    {card?.level ? ` • Lv${card.level}` : ""}
+                  <div style={{ color: "#666", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
+                    {card?.number || "---"}
+                    {card?.type ? `/${card.type === "キャラ" ? "キ" : card.type === "イベント" ? "イ" : card.type === "パートナー" ? "パ" : "事"}` : ""}
+                    {card?.level ? `/${card.level}` : ""}
                   </div>
                   <div style={{
                     display: "flex",
@@ -1156,7 +1156,11 @@ export default function App() {
                         <Thumb blob={card.image} alt={card.name ?? "card"} size="large" />
                         {card.color && <div className="card-color-badge" style={{ backgroundColor: colorMap[card.color] }} />}
                         <div className="card-name">{card.name}</div>
-                        <div className="card-number">{card.number ? `No.${card.number}` : ""}</div>
+                        <div className="card-number" style={{ fontSize: "0.8rem" }}>
+                          {card.number || "---"}
+                          {card.type ? `/${card.type === "キャラ" ? "キ" : card.type === "イベント" ? "イ" : card.type === "パートナー" ? "パ" : "事"}` : ""}
+                          {card.level ? `/${card.level}` : ""}
+                        </div>
                         {inDeck && (
                           <div style={{
                             position: "absolute",
@@ -1246,10 +1250,10 @@ export default function App() {
                     {c.color && <div className="card-color-badge" style={{ background: colorMap[c.color] || "#9e9e9e" }} />}
                     <Thumb blob={c.image} alt={c.name ?? "card"} size="large" />
                     <div className="card-name">{c.name}</div>
-                    <div className="card-number">
-                      {c.number ? `No.${c.number}` : ""}
-                      {c.type ? ` • ${c.type}` : ""}
-                      {c.level ? ` • Lv${c.level}` : ""}
+                    <div className="card-number" style={{ fontSize: "0.8rem" }}>
+                      {c.number || "---"}
+                      {c.type ? `/${c.type === "キャラ" ? "キ" : c.type === "イベント" ? "イ" : c.type === "パートナー" ? "パ" : "事"}` : ""}
+                      {c.level ? `/${c.level}` : ""}
                     </div>
                     <div className="card-actions">
                       <button className="btn-secondary" style={{ padding: "0.4rem", fontSize: "1.1rem" }} onClick={() => openEditCard(c)}>✏️</button>
