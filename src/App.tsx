@@ -126,6 +126,21 @@ export default function App() {
   const [cardSelectType, setCardSelectType] = useState("");
   const [cardSelectLevel, setCardSelectLevel] = useState("");
 
+  // 一人回し用
+  const [playDeckId, setPlayDeckId] = useState<number | null>(null);
+  const [playDeck, setPlayDeck] = useState<Card[]>([]);
+  const [playHand, setPlayHand] = useState<Card[]>([]);
+  const [playDrawn, setPlayDrawn] = useState(0);
+  const [playField, setPlayField] = useState<Card[]>([]); // 現場
+  const [playRemove, setPlayRemove] = useState<Card[]>([]); // リムーブエリア
+  const [isMulliganMode, setIsMulliganMode] = useState(false); // マリガン中かどうか
+  const [mulliganDone, setMulliganDone] = useState(false); // マリガン済みかどうか
+  const [selectedForMulligan, setSelectedForMulligan] = useState<number[]>([]); // マリガン選択中のカードindex
+  
+  // カードメニュー用
+  const [showCardMenu, setShowCardMenu] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<{ card: Card; index: number; location: "hand" | "field" | "remove" } | null>(null);
+
   // 初回：デッキが無ければ作る
   useEffect(() => {
     const run = async () => {
@@ -693,6 +708,187 @@ export default function App() {
     localStorage.setItem("activeTab", tab); // タブを保存
     console.log("localStorage保存:", tab);
     setMobileMenuOpen(false);
+  }
+
+  // 一人回し機能
+  async function startPlay(deckId: number) {
+    console.log("startPlay開始:", deckId);
+    
+    // デッキカードを取得
+    const dcs = await db.deckCards.where("deckId").equals(deckId).toArray();
+    console.log("デッキカード取得:", dcs.length);
+    
+    // カード情報を取得し、デッキを構築（パートナーと事件を除く）
+    const allPlayCards: Card[] = [];
+    for (const dc of dcs) {
+      const card = await db.cards.get(dc.cardId);
+      console.log("カード取得:", card?.name, card?.type, "枚数:", dc.count);
+      if (card && card.type !== "パートナー" && card.type !== "事件") {
+        // 枚数分カードを追加
+        for (let i = 0; i < dc.count; i++) {
+          allPlayCards.push(card);
+        }
+      }
+    }
+    console.log("デッキ構築完了:", allPlayCards.length, "枚");
+
+    // シャッフル（Fisher-Yatesアルゴリズム）
+    const shuffled = [...allPlayCards];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    console.log("シャッフル完了");
+
+    // 最初の5枚を手札に
+    const hand = shuffled.slice(0, 5);
+    const deck = shuffled.slice(5);
+    console.log("手札:", hand.length, "山札:", deck.length);
+
+    setPlayDeckId(deckId);
+    setPlayDeck(deck);
+    setPlayHand(hand);
+    setPlayDrawn(5);
+    console.log("状態更新完了");
+  }
+
+  function drawCard() {
+    if (playDeck.length === 0) {
+      alert("デッキにカードがありません！");
+      return;
+    }
+
+    const newCard = playDeck[0];
+    const newDeck = playDeck.slice(1);
+    
+    setPlayHand([...playHand, newCard]);
+    setPlayDeck(newDeck);
+    setPlayDrawn(playDrawn + 1);
+  }
+
+  function playCardToField(index: number) {
+    // マリガン中は現場に出せない
+    if (isMulliganMode) return;
+    
+    // 手札から現場に出す
+    const card = playHand[index];
+    const newHand = playHand.filter((_, i) => i !== index);
+    
+    setPlayHand(newHand);
+    setPlayField([...playField, card]);
+    setShowCardMenu(false);
+  }
+
+  function moveCardToRemove(index: number) {
+    // 現場からリムーブエリアに送る
+    const card = playField[index];
+    const newField = playField.filter((_, i) => i !== index);
+    
+    setPlayField(newField);
+    setPlayRemove([...playRemove, card]);
+    setShowCardMenu(false);
+  }
+
+  function openCardMenu(card: Card, index: number, location: "hand" | "field" | "remove") {
+    setSelectedCard({ card, index, location });
+    setShowCardMenu(true);
+  }
+
+  function closeCardMenu() {
+    setShowCardMenu(false);
+    setSelectedCard(null);
+  }
+
+  function handleMenuAction(action: "play" | "remove" | "view") {
+    if (!selectedCard) return;
+
+    switch (action) {
+      case "play":
+        if (selectedCard.location === "hand") {
+          playCardToField(selectedCard.index);
+        }
+        break;
+      case "remove":
+        if (selectedCard.location === "field") {
+          moveCardToRemove(selectedCard.index);
+        }
+        break;
+      case "view":
+        // 拡大表示（後で実装）
+        alert(`${selectedCard.card.name}の詳細表示（未実装）`);
+        closeCardMenu();
+        break;
+    }
+  }
+
+  function startMulligan() {
+    const confirm = window.confirm("マリガンを開始しますか？");
+    
+    if (!confirm) return;
+    
+    setIsMulliganMode(true);
+    setSelectedForMulligan([]);
+  }
+
+  function toggleMulliganSelect(index: number) {
+    if (selectedForMulligan.includes(index)) {
+      // 選択解除
+      setSelectedForMulligan(selectedForMulligan.filter(i => i !== index));
+    } else {
+      // 選択追加（最大5枚まで）
+      if (selectedForMulligan.length < 5) {
+        setSelectedForMulligan([...selectedForMulligan, index]);
+      }
+    }
+  }
+
+  function cancelMulligan() {
+    setIsMulliganMode(false);
+    setSelectedForMulligan([]);
+    setMulliganDone(true); // キャンセルしてもマリガン済み扱い
+  }
+
+  async function executeMulligan() {
+    if (selectedForMulligan.length === 0) {
+      alert("マリガンするカードを選択してください");
+      return;
+    }
+
+    // 選択したカードを山札に戻す
+    const cardsToReturn = selectedForMulligan.map(i => playHand[i]);
+    const remainingHand = playHand.filter((_, i) => !selectedForMulligan.includes(i));
+
+    // 山札に戻してシャッフル
+    const newDeck = [...playDeck, ...cardsToReturn];
+    
+    // Fisher-Yatesシャッフル
+    for (let i = newDeck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
+    }
+
+    // 同じ枚数ドロー
+    const drawCount = selectedForMulligan.length;
+    const drawnCards = newDeck.slice(0, drawCount);
+    const finalDeck = newDeck.slice(drawCount);
+
+    setPlayHand([...remainingHand, ...drawnCards]);
+    setPlayDeck(finalDeck);
+    setIsMulliganMode(false);
+    setSelectedForMulligan([]);
+    setMulliganDone(true);
+  }
+
+  function resetPlay() {
+    setPlayDeckId(null);
+    setPlayDeck([]);
+    setPlayHand([]);
+    setPlayDrawn(0);
+    setPlayField([]);
+    setPlayRemove([]);
+    setIsMulliganMode(false);
+    setMulliganDone(false);
+    setSelectedForMulligan([]);
   }
 
   const activeDeck = decks.find((d) => d.id === activeDeckId);
@@ -1351,17 +1547,496 @@ export default function App() {
 
         {/* 一人回し画面 */}
         <div className={`screen ${activeTab === "play" ? "active" : ""}`}>
-          <div className="section">
-            <div className="section-header">
-              <h2 className="section-title">🎮 一人回し（準備中）</h2>
-            </div>
-            <div className="info-panel">
-              <div className="info-panel-title">機能を準備中です</div>
-              <div className="info-panel-text">
-                一人回し機能は現在開発中です。しばらくお待ちください。
+          {playDeckId === null ? (
+            // デッキ選択画面
+            <div className="section">
+              <div className="section-header">
+                <h2 className="section-title">🎮 一人回し</h2>
               </div>
+              <div className="info-panel">
+                <div className="info-panel-title">デッキを選択してください</div>
+                <div className="info-panel-text">
+                  一人回しを開始するデッキを選んでください。
+                </div>
+              </div>
+              
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
+                gap: "1rem",
+                marginTop: "1.5rem"
+              }}>
+                {decks.map((deck) => {
+                  // このデッキの枚数を計算（簡易版 - クリック時に正確にチェック）
+                  return (
+                    <div
+                      key={deck.id}
+                      onClick={async () => {
+                        console.log("デッキクリック:", deck.id, deck.name);
+                        // クリック時に正確な枚数を計算
+                        const dcs = await db.deckCards.where("deckId").equals(deck.id!).toArray();
+                        console.log("デッキカード数:", dcs.length);
+                        let total = 0;
+                        for (const dc of dcs) {
+                          const card = await db.cards.get(dc.cardId);
+                          if (card && card.type !== "パートナー" && card.type !== "事件") {
+                            total += dc.count;
+                          }
+                        }
+                        console.log("合計枚数:", total);
+                        
+                        if (total === TARGET_DECK_SIZE) {
+                          console.log("40枚OK、startPlay呼び出し");
+                          await startPlay(deck.id!);
+                        } else {
+                          alert(`デッキが40枚ではありません（現在${total}枚）`);
+                        }
+                      }}
+                      style={{
+                        padding: "1.5rem",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        borderRadius: "12px",
+                        cursor: "pointer",
+                        color: "white",
+                        transition: "transform 0.2s, box-shadow 0.2s",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = "translateY(-4px)";
+                        e.currentTarget.style.boxShadow = "0 8px 20px rgba(0,0,0,0.25)";
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+                      }}
+                    >
+                      <div style={{ fontSize: "1.3rem", fontWeight: "bold", marginBottom: "0.5rem" }}>
+                        {deck.name}
+                      </div>
+                      <div style={{ fontSize: "0.95rem", opacity: 0.9 }}>
+                        クリックして開始
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {decks.length === 0 && (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🎴</div>
+                  <div>デッキがありません</div>
+                  <div style={{ marginTop: "1rem" }}>
+                    <button className="btn-primary" onClick={createDeck}>➕ 新しいデッキを作成</button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            // プレイ画面
+            <div className="section">
+              <div className="section-header">
+                <h2 className="section-title">
+                  🎮 {decks.find(d => d.id === playDeckId)?.name ?? "一人回し"}
+                </h2>
+                <button className="btn-secondary" onClick={resetPlay}>
+                  🔙 デッキ選択に戻る
+                </button>
+              </div>
+
+              {/* 統計情報 */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+                gap: "1rem",
+                marginBottom: "1.5rem"
+              }}>
+                <div style={{
+                  padding: "1rem",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  borderRadius: "8px",
+                  color: "white",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>手札</div>
+                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playHand.length}</div>
+                </div>
+                <div style={{
+                  padding: "1rem",
+                  background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+                  borderRadius: "8px",
+                  color: "white",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>現場</div>
+                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playField.length}</div>
+                </div>
+                <div style={{
+                  padding: "1rem",
+                  background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+                  borderRadius: "8px",
+                  color: "white",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>リムーブ</div>
+                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playRemove.length}</div>
+                </div>
+                <div style={{
+                  padding: "1rem",
+                  background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                  borderRadius: "8px",
+                  color: "white",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>山札</div>
+                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playDeck.length}</div>
+                </div>
+                <div style={{
+                  padding: "1rem",
+                  background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+                  borderRadius: "8px",
+                  color: "white",
+                  textAlign: "center"
+                }}>
+                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>ドロー数</div>
+                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playDrawn}</div>
+                </div>
+              </div>
+
+              {/* ドローボタン */}
+              <div style={{ marginBottom: "1.5rem" }}>
+                {isMulliganMode ? (
+                  // マリガンモード中
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button 
+                      className="btn-secondary" 
+                      onClick={cancelMulligan}
+                      style={{ 
+                        flex: 1,
+                        padding: "1rem",
+                        fontSize: "1.1rem"
+                      }}
+                    >
+                      ❌ キャンセル
+                    </button>
+                    <button 
+                      className="btn-primary" 
+                      onClick={executeMulligan}
+                      style={{ 
+                        flex: 2,
+                        padding: "1rem",
+                        fontSize: "1.1rem"
+                      }}
+                    >
+                      ✅ マリガン実行 ({selectedForMulligan.length}枚)
+                    </button>
+                  </div>
+                ) : (
+                  // 通常モード
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <button 
+                      className="btn-primary" 
+                      onClick={drawCard}
+                      disabled={playDeck.length === 0}
+                      style={{ 
+                        flex: 2,
+                        padding: "1rem",
+                        fontSize: "1.2rem",
+                        opacity: playDeck.length === 0 ? 0.5 : 1
+                      }}
+                    >
+                      🎴 カードをドロー
+                    </button>
+                    {!mulliganDone && (
+                      <button 
+                        className="btn-secondary" 
+                        onClick={startMulligan}
+                        style={{ 
+                          flex: 1,
+                          padding: "1rem",
+                          fontSize: "1.1rem"
+                        }}
+                      >
+                        🔄 マリガン
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* マリガン説明 */}
+              {isMulliganMode && (
+                <div style={{
+                  padding: "1rem",
+                  background: "linear-gradient(135deg, #fff9c4 0%, #fff59d 100%)",
+                  borderRadius: "8px",
+                  marginBottom: "1.5rem",
+                  border: "2px solid #fbc02d"
+                }}>
+                  <div style={{ fontWeight: "bold", marginBottom: "0.5rem", color: "#f57f17" }}>
+                    🔄 マリガン中
+                  </div>
+                  <div style={{ fontSize: "0.95rem", color: "#f57f17" }}>
+                    手札から戻したいカードを選択してください（最大5枚）
+                  </div>
+                </div>
+              )}
+
+              {/* リムーブエリア */}
+              <div style={{ marginBottom: "2rem" }}>
+                <div className="section-header" style={{ marginBottom: "1rem" }}>
+                  <h3 className="section-title">🗑️ リムーブエリア</h3>
+                </div>
+                {playRemove.length === 0 ? (
+                  <div style={{
+                    padding: "2rem",
+                    background: "#f5f5f5",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    color: "#999"
+                  }}>
+                    リムーブエリアは空です
+                  </div>
+                ) : (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+                    gap: "0.75rem",
+                    padding: "1rem",
+                    background: "#f5f5f5",
+                    borderRadius: "8px"
+                  }}>
+                    {playRemove.map((card, idx) => (
+                      <div
+                        key={`remove-${card.id}-${idx}`}
+                        onClick={() => openCardMenu(card, idx, "remove")}
+                        style={{
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                          opacity: 0.8,
+                          cursor: "pointer"
+                        }}
+                      >
+                        <div style={{ aspectRatio: "0.7", position: "relative" }}>
+                          {card.image ? (
+                            <img
+                              src={URL.createObjectURL(card.image)}
+                              alt={card.name}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover"
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "100%",
+                              height: "100%",
+                              background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexDirection: "column",
+                              color: "white",
+                              padding: "0.5rem"
+                            }}>
+                              <div style={{ fontSize: "0.7rem", marginBottom: "0.25rem" }}>
+                                Lv.{card.level}
+                              </div>
+                              <div style={{ fontSize: "0.8rem", fontWeight: "bold", textAlign: "center" }}>
+                                {card.name}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 現場（フィールド） */}
+              <div style={{ marginBottom: "2rem" }}>
+                <div className="section-header" style={{ marginBottom: "1rem" }}>
+                  <h3 className="section-title">🎴 現場</h3>
+                </div>
+                {playField.length === 0 ? (
+                  <div style={{
+                    padding: "2rem",
+                    background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                    color: "#1976d2"
+                  }}>
+                    カードを出してください
+                  </div>
+                ) : (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                    gap: "1rem",
+                    padding: "1rem",
+                    background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
+                    borderRadius: "8px"
+                  }}>
+                    {playField.map((card, idx) => (
+                      <div
+                        key={`field-${card.id}-${idx}`}
+                        onClick={() => openCardMenu(card, idx, "field")}
+                        style={{
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                          transition: "transform 0.2s",
+                          cursor: "pointer"
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = "translateY(-8px)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                      >
+                        <div style={{ aspectRatio: "0.7", position: "relative" }}>
+                          {card.image ? (
+                            <img
+                              src={URL.createObjectURL(card.image)}
+                              alt={card.name}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover"
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "100%",
+                              height: "100%",
+                              background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexDirection: "column",
+                              color: "white",
+                              padding: "0.5rem"
+                            }}>
+                              <div style={{ fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+                                Lv.{card.level}
+                              </div>
+                              <div style={{ fontSize: "0.9rem", fontWeight: "bold", textAlign: "center" }}>
+                                {card.name}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 手札表示 */}
+              <div className="section-header">
+                <h3 className="section-title">🃏 手札</h3>
+              </div>
+              {playHand.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🃏</div>
+                  <div>手札がありません</div>
+                </div>
+              ) : (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+                  gap: "1rem",
+                  padding: "1rem 0"
+                }}>
+                  {playHand.map((card, idx) => {
+                    const isSelected = selectedForMulligan.includes(idx);
+                    return (
+                      <div
+                        key={`hand-${card.id}-${idx}`}
+                        onClick={() => isMulliganMode ? toggleMulliganSelect(idx) : openCardMenu(card, idx, "hand")}
+                        style={{
+                          borderRadius: "8px",
+                          overflow: "hidden",
+                          boxShadow: isSelected 
+                            ? "0 0 0 4px #fbc02d, 0 4px 12px rgba(0,0,0,0.15)"
+                            : "0 4px 12px rgba(0,0,0,0.15)",
+                          transition: "transform 0.2s, box-shadow 0.2s",
+                          cursor: "pointer",
+                          position: "relative"
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = "translateY(-8px)";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                      >
+                        <div style={{ aspectRatio: "0.7", position: "relative" }}>
+                          {card.image ? (
+                            <img
+                              src={URL.createObjectURL(card.image)}
+                              alt={card.name}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                                opacity: isSelected ? 0.7 : 1
+                              }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "100%",
+                              height: "100%",
+                              background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexDirection: "column",
+                              color: "white",
+                              padding: "0.5rem",
+                              opacity: isSelected ? 0.7 : 1
+                            }}>
+                              <div style={{ fontSize: "0.8rem", marginBottom: "0.25rem" }}>
+                                Lv.{card.level}
+                              </div>
+                              <div style={{ fontSize: "0.9rem", fontWeight: "bold", textAlign: "center" }}>
+                                {card.name}
+                              </div>
+                            </div>
+                          )}
+                          {isSelected && (
+                            <div style={{
+                              position: "absolute",
+                              top: "50%",
+                              left: "50%",
+                              transform: "translate(-50%, -50%)",
+                              background: "rgba(251, 192, 45, 0.95)",
+                              color: "white",
+                              borderRadius: "50%",
+                              width: "50px",
+                              height: "50px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "1.5rem",
+                              fontWeight: "bold",
+                              border: "3px solid white",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+                            }}>
+                              ✓
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className={`screen ${activeTab === "sync" ? "active" : ""}`}>
@@ -1392,6 +2067,94 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* カードメニューモーダル */}
+      {showCardMenu && selectedCard && (
+        <div 
+          className="modal-overlay" 
+          onClick={closeCardMenu}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000
+          }}
+        >
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "1.5rem",
+              maxWidth: "90%",
+              width: "400px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
+            }}
+          >
+            {/* メニューボタン */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {selectedCard.location === "hand" && (
+                <button
+                  className="btn-primary"
+                  onClick={() => handleMenuAction("play")}
+                  style={{
+                    width: "100%",
+                    padding: "1rem",
+                    fontSize: "1.1rem"
+                  }}
+                >
+                  🎴 現場に出す
+                </button>
+              )}
+              
+              {selectedCard.location === "field" && (
+                <button
+                  className="btn-primary"
+                  onClick={() => handleMenuAction("remove")}
+                  style={{
+                    width: "100%",
+                    padding: "1rem",
+                    fontSize: "1.1rem"
+                  }}
+                >
+                  🗑️ リムーブエリアへ
+                </button>
+              )}
+              
+              <button
+                className="btn-secondary"
+                onClick={() => handleMenuAction("view")}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1.1rem"
+                }}
+              >
+                🔍 拡大表示
+              </button>
+              
+              <button
+                className="btn-secondary"
+                onClick={closeCardMenu}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1.1rem"
+                }}
+              >
+                ❌ キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
