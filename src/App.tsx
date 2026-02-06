@@ -1642,64 +1642,64 @@ export default function App() {
               {/* 統計情報 */}
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
-                gap: "1rem",
-                marginBottom: "1.5rem"
+                gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
+                gap: "0.5rem",
+                marginBottom: "0.75rem"
               }}>
                 <div style={{
-                  padding: "1rem",
+                  padding: "0.5rem",
                   background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   borderRadius: "8px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>手札</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playHand.length}</div>
+                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>手札</div>
+                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playHand.length}</div>
                 </div>
                 <div style={{
-                  padding: "1rem",
+                  padding: "0.5rem",
                   background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
                   borderRadius: "8px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>現場</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playField.length}</div>
+                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>現場</div>
+                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playField.length}</div>
                 </div>
                 <div style={{
-                  padding: "1rem",
+                  padding: "0.5rem",
                   background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
                   borderRadius: "8px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>リムーブ</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playRemove.length}</div>
+                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>リムーブ</div>
+                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playRemove.length}</div>
                 </div>
                 <div style={{
-                  padding: "1rem",
+                  padding: "0.5rem",
                   background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
                   borderRadius: "8px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>山札</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playDeck.length}</div>
+                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>山札</div>
+                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playDeck.length}</div>
                 </div>
                 <div style={{
-                  padding: "1rem",
+                  padding: "0.5rem",
                   background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
                   borderRadius: "8px",
                   color: "white",
                   textAlign: "center"
                 }}>
-                  <div style={{ fontSize: "0.9rem", opacity: 0.9 }}>ドロー数</div>
-                  <div style={{ fontSize: "1.8rem", fontWeight: "bold" }}>{playDrawn}</div>
+                  <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>ドロー数</div>
+                  <div style={{ fontSize: "1.4rem", fontWeight: "bold" }}>{playDrawn}</div>
                 </div>
               </div>
 
               {/* ドローボタン */}
-              <div style={{ marginBottom: "1.5rem" }}>
+              <div style={{ marginBottom: "0.75rem" }}>
                 {isMulliganMode ? (
                   // マリガンモード中
                   <div style={{ display: "flex", gap: "0.5rem" }}>
@@ -1708,8 +1708,8 @@ export default function App() {
                       onClick={cancelMulligan}
                       style={{ 
                         flex: 1,
-                        padding: "1rem",
-                        fontSize: "1.1rem"
+                        padding: "0.75rem",
+                        fontSize: "1rem"
                       }}
                     >
                       ❌ キャンセル
@@ -1719,8 +1719,8 @@ export default function App() {
                       onClick={executeMulligan}
                       style={{ 
                         flex: 2,
-                        padding: "1rem",
-                        fontSize: "1.1rem"
+                        padding: "0.75rem",
+                        fontSize: "1rem"
                       }}
                     >
                       ✅ マリガン実行 ({selectedForMulligan.length}枚)
@@ -1735,8 +1735,8 @@ export default function App() {
                       disabled={playDeck.length === 0}
                       style={{ 
                         flex: 2,
-                        padding: "1rem",
-                        fontSize: "1.2rem",
+                        padding: "0.75rem",
+                        fontSize: "1.1rem",
                         opacity: playDeck.length === 0 ? 0.5 : 1
                       }}
                     >
@@ -1748,8 +1748,8 @@ export default function App() {
                         onClick={startMulligan}
                         style={{ 
                           flex: 1,
-                          padding: "1rem",
-                          fontSize: "1.1rem"
+                          padding: "0.75rem",
+                          fontSize: "1rem"
                         }}
                       >
                         🔄 マリガン
@@ -1762,33 +1762,34 @@ export default function App() {
               {/* マリガン説明 */}
               {isMulliganMode && (
                 <div style={{
-                  padding: "1rem",
+                  padding: "0.75rem",
                   background: "linear-gradient(135deg, #fff9c4 0%, #fff59d 100%)",
                   borderRadius: "8px",
-                  marginBottom: "1.5rem",
+                  marginBottom: "0.75rem",
                   border: "2px solid #fbc02d"
                 }}>
-                  <div style={{ fontWeight: "bold", marginBottom: "0.5rem", color: "#f57f17" }}>
+                  <div style={{ fontWeight: "bold", marginBottom: "0.25rem", color: "#f57f17", fontSize: "0.9rem" }}>
                     🔄 マリガン中
                   </div>
-                  <div style={{ fontSize: "0.95rem", color: "#f57f17" }}>
+                  <div style={{ fontSize: "0.85rem", color: "#f57f17" }}>
                     手札から戻したいカードを選択してください（最大5枚）
                   </div>
                 </div>
               )}
 
               {/* リムーブエリア */}
-              <div style={{ marginBottom: "2rem" }}>
-                <div className="section-header" style={{ marginBottom: "1rem" }}>
+              <div style={{ marginBottom: "1rem" }}>
+                <div className="section-header" style={{ marginBottom: "0.5rem" }}>
                   <h3 className="section-title">🗑️ リムーブエリア</h3>
                 </div>
                 {playRemove.length === 0 ? (
                   <div style={{
-                    padding: "2rem",
+                    padding: "1rem",
                     background: "#f5f5f5",
                     borderRadius: "8px",
                     textAlign: "center",
-                    color: "#999"
+                    color: "#999",
+                    fontSize: "0.9rem"
                   }}>
                     リムーブエリアは空です
                   </div>
@@ -1852,17 +1853,18 @@ export default function App() {
               </div>
 
               {/* 現場（フィールド） */}
-              <div style={{ marginBottom: "2rem" }}>
-                <div className="section-header" style={{ marginBottom: "1rem" }}>
+              <div style={{ marginBottom: "1rem" }}>
+                <div className="section-header" style={{ marginBottom: "0.5rem" }}>
                   <h3 className="section-title">🎴 現場</h3>
                 </div>
                 {playField.length === 0 ? (
                   <div style={{
-                    padding: "2rem",
+                    padding: "1rem",
                     background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
                     borderRadius: "8px",
                     textAlign: "center",
-                    color: "#1976d2"
+                    color: "#1976d2",
+                    fontSize: "0.9rem"
                   }}>
                     カードを出してください
                   </div>
