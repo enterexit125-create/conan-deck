@@ -1802,7 +1802,7 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
                     gap: "0.5rem",
                     padding: "0.75rem",
                     background: "#f5f5f5",
@@ -1877,7 +1877,7 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
                     gap: "0.5rem",
                     padding: "0.75rem",
                     background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
@@ -1951,7 +1951,7 @@ export default function App() {
               ) : (
                 <div style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
                   gap: "0.5rem",
                   padding: "0.5rem 0"
                 }}>
