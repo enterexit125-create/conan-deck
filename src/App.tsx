@@ -1220,21 +1220,36 @@ export default function App() {
               </div>
             )}
 
-            <div className="search-bar">
-              <input type="text" placeholder="🔍 カード名・番号で検索..." value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-            <div className="form-grid" style={{ marginTop: "0.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: "0.5rem" }}>
-              <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)}>
-                <option value="">色: 全て</option>
+            {/* 検索とフィルターを1行に統合 */}
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: "2fr 1fr 1fr 1fr", 
+              gap: "0.4rem",
+              marginBottom: "1rem"
+            }}>
+              <input 
+                type="text" 
+                placeholder="🔍 検索..." 
+                value={search} 
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  padding: "0.5rem",
+                  border: "2px solid #e0e0e0",
+                  borderRadius: "8px",
+                  fontSize: "0.9rem"
+                }}
+              />
+              <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} style={{ fontSize: "0.85rem", padding: "0.5rem" }}>
+                <option value="">色</option>
                 {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-                <option value="">種類: 全て</option>
+              <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ fontSize: "0.85rem", padding: "0.5rem" }}>
+                <option value="">種類</option>
                 {TYPE_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)}>
-                <option value="">レベル: 全て</option>
-                {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
+              <select value={filterLevel} onChange={(e) => setFilterLevel(e.target.value)} style={{ fontSize: "0.85rem", padding: "0.5rem" }}>
+                <option value="">Lv</option>
+                {LEVEL_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             {filteredCards.length === 0 ? (
