@@ -1877,8 +1877,8 @@ export default function App() {
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                    gap: "0.5rem",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(95px, 1fr))",
+                    gap: "0.4rem",
                     padding: "0.75rem",
                     background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
                     borderRadius: "8px"
@@ -1951,8 +1951,8 @@ export default function App() {
               ) : (
                 <div style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                  gap: "0.5rem",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(95px, 1fr))",
+                  gap: "0.4rem",
                   padding: "0.5rem 0"
                 }}>
                   {playHand.map((card, idx) => {
