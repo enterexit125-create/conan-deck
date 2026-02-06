@@ -69,10 +69,6 @@ const LEVEL_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const TARGET_DECK_SIZE = 40;
 const SAME_NAME_LIMIT = 3;
 
-function sumCounts(items: DeckCard[]) {
-  return items.reduce((acc, x) => acc + x.count, 0);
-}
-
 export default function App() {
   const [activeDeckId, setActiveDeckId] = useState<number | null>(null);
   const [decks, setDecks] = useState<Deck[]>([]);
