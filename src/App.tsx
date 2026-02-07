@@ -1273,7 +1273,7 @@ export default function App() {
                     <div className="card-actions">
                       <button className="btn-secondary" style={{ padding: "0.4rem", fontSize: "1.1rem" }} onClick={() => openEditCard(c)}>✏️</button>
                       <button className="btn-primary" style={{ flex: 1, padding: "0.4rem", fontSize: "1.1rem" }} onClick={() => addCardToDeck(c.id!)}>➕</button>
-                      <button className="btn-danger btn-icon" style={{ padding: "0.4rem", fontSize: "1.1rem", background: "#c19a6b", borderColor: "#c19a6b" }} onClick={() => deleteCard(c.id!)}>🗑</button>
+                      <button className="btn-danger btn-icon" style={{ padding: "0.4rem", fontSize: "1.1rem", background: "#ffb74d", borderColor: "#ffb74d" }} onClick={() => deleteCard(c.id!)}>🗑</button>
                     </div>
                   </div>
                 ))}
