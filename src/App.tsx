@@ -1328,20 +1328,20 @@ export default function App() {
                 background: "white",
                 border: "2px solid #e0e0e0",
                 borderRadius: "12px",
-                padding: "1.5rem",
-                marginBottom: "1.5rem",
+                padding: "0.75rem",
+                marginBottom: "1rem",
                 display: "flex",
                 alignItems: "center",
-                gap: "2rem",
+                gap: "1rem",
                 flexWrap: "wrap"
               }}>
                 {/* パートナー */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
                   <div style={{
-                    width: "100px",
-                    height: "140px",
-                    borderRadius: "8px",
+                    width: "70px",
+                    height: "98px",
+                    borderRadius: "6px",
                     overflow: "hidden",
                     border: "2px solid #e0e0e0",
                     background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
@@ -1355,19 +1355,19 @@ export default function App() {
                     {partnerCard?.image ? (
                       <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
-                      <div style={{ fontSize: "2rem", opacity: 0.3 }}>🃏</div>
+                      <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>🃏</div>
                     )}
                   </div>
-                  {partnerCard && <div style={{ fontSize: "0.8rem", color: "#999", textAlign: "center" }}>{partnerCard.name}</div>}
+                  {partnerCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "70px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{partnerCard.name}</div>}
                 </div>
 
                 {/* 事件 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666" }}>事件</div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>事件</div>
                   <div style={{
-                    width: "140px",  // 横長に
-                    height: "100px", // 縦短く
-                    borderRadius: "8px",
+                    width: "98px",
+                    height: "70px",
+                    borderRadius: "6px",
                     overflow: "hidden",
                     border: "2px solid #e0e0e0",
                     background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
@@ -1381,42 +1381,42 @@ export default function App() {
                     {incidentCard?.image ? (
                       <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
-                      <div style={{ fontSize: "2rem", opacity: 0.3 }}>🃏</div>
+                      <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>🃏</div>
                     )}
                   </div>
-                  {incidentCard && <div style={{ fontSize: "0.8rem", color: "#999", textAlign: "center" }}>{incidentCard.name}</div>}
+                  {incidentCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "98px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{incidentCard.name}</div>}
                 </div>
 
                 {/* レベル分布グラフ */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666", textAlign: "center" }}>レベル</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", textAlign: "center" }}>レベル</div>
                   <div style={{
                     display: "flex",
                     alignItems: "flex-end",
-                    gap: "0.25rem",
-                    height: "100px",
-                    padding: "0.5rem",
+                    gap: "0.2rem",
+                    height: "70px",
+                    padding: "0.4rem",
                     background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
-                    borderRadius: "8px",
+                    borderRadius: "6px",
                     border: "2px solid #ffd4dc"
                   }}>
                     {LEVEL_OPTIONS.map((level) => {
                       const count = levelDistribution[level] || 0;
-                      const height = maxLevelCount > 0 ? (count / maxLevelCount) * 70 : 0;
+                      const height = maxLevelCount > 0 ? (count / maxLevelCount) * 50 : 0;
                       
                       return (
                         <div key={level} style={{
                           display: "flex",
                           flexDirection: "column",
                           alignItems: "center",
-                          gap: "0.25rem",
-                          minWidth: "28px"
+                          gap: "0.15rem",
+                          minWidth: "20px"
                         }}>
                           <div style={{
-                            fontSize: "0.7rem",
+                            fontSize: "0.6rem",
                             fontWeight: "bold",
                             color: count > 0 ? "#ff9a9e" : "#ccc",
-                            minHeight: "1rem"
+                            minHeight: "0.8rem"
                           }}>
                             {count > 0 ? count : ""}
                           </div>
@@ -1442,33 +1442,29 @@ export default function App() {
                 </div>
 
                 {/* 統計情報 */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem", minWidth: "200px" }}>
-                  <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "#d4716b" }}>
-                    {(() => {
-                      console.log("activeDeck:", activeDeck);
-                      console.log("activeDeck.name:", activeDeck.name);
-                      return activeDeck.name;
-                    })()}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.4rem", minWidth: "140px" }}>
+                  <div style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#d4716b" }}>
+                    {activeDeck.name}
                   </div>
-                  <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                    <div style={{ fontSize: "0.95rem" }}>
-                      <span style={{ color: "#666" }}>キャラ:</span> <strong style={{ fontSize: "1.1rem", color: "#667eea" }}>{characterCount}</strong>
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                    <div style={{ fontSize: "0.8rem" }}>
+                      <span style={{ color: "#666" }}>キャラ:</span> <strong style={{ fontSize: "0.9rem", color: "#667eea" }}>{characterCount}</strong>
                     </div>
-                    <div style={{ fontSize: "0.95rem" }}>
-                      <span style={{ color: "#666" }}>イベント:</span> <strong style={{ fontSize: "1.1rem", color: "#ff9a9e" }}>{eventCount}</strong>
+                    <div style={{ fontSize: "0.8rem" }}>
+                      <span style={{ color: "#666" }}>イベント:</span> <strong style={{ fontSize: "0.9rem", color: "#ff9a9e" }}>{eventCount}</strong>
                     </div>
-                    <div style={{ fontSize: "0.95rem" }} key={`deck-count-${totalInDeck}`}>
-                      <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "1.1rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
+                    <div style={{ fontSize: "0.8rem" }} key={`deck-count-${totalInDeck}`}>
+                      <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "0.9rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
                     </div>
                   </div>
-                  <button className="btn-secondary" style={{ padding: "0.5rem 1rem", fontSize: "1.1rem", alignSelf: "flex-start" }} onClick={renameActiveDeck}>✏️</button>
+                  <button className="btn-secondary" style={{ padding: "0.4rem 0.75rem", fontSize: "1rem", alignSelf: "flex-start" }} onClick={renameActiveDeck}>✏️</button>
                 </div>
               </div>
 
               {totalInDeck === TARGET_DECK_SIZE && (
-                <div className="success-panel info-panel">
-                  <div className="info-panel-title">✅ デッキ完成！</div>
-                  <div className="info-panel-text">40枚のデッキが完成しました。対戦の準備ができています！</div>
+                <div className="success-panel info-panel" style={{ padding: "0.75rem", marginBottom: "1rem" }}>
+                  <div className="info-panel-title" style={{ fontSize: "0.9rem" }}>✅ デッキ完成！</div>
+                  <div className="info-panel-text" style={{ fontSize: "0.85rem" }}>40枚のデッキが完成しました。</div>
                 </div>
               )}
 
