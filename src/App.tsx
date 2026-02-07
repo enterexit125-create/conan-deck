@@ -1323,61 +1323,64 @@ export default function App() {
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
             <>
-              {/* ヘッダー: パートナー、事件、グラフ、統計 */}
+              {/* ヘッダー: パートナー、事件、統計情報を縦並び */}
               <div style={{
                 background: "white",
                 border: "2px solid #e0e0e0",
                 borderRadius: "12px",
                 padding: "0.75rem",
-                marginBottom: "1rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem",
-                flexWrap: "wrap"
+                marginBottom: "1rem"
               }}>
-                {/* パートナー */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
-                  <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
-                  <div style={{
-                    width: "70px",
-                    height: "98px",
-                    borderRadius: "6px",
-                    overflow: "hidden",
-                    border: "2px solid #e0e0e0",
-                    background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer"
-                  }} onClick={() => {
-                    openCardSelectModal("partner");
-                  }}>
-                    {partnerCard?.image ? (
-                      <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>🃏</div>
-                    )}
+                {/* 1行目：パートナーと事件 */}
+                <div style={{
+                  display: "flex",
+                  gap: "1rem",
+                  marginBottom: "0.75rem",
+                  alignItems: "flex-start"
+                }}>
+                  {/* パートナー */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
+                    <div style={{
+                      width: "70px",
+                      height: "98px",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      border: "2px solid #e0e0e0",
+                      background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer"
+                    }} onClick={() => {
+                      openCardSelectModal("partner");
+                    }}>
+                      {partnerCard?.image ? (
+                        <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>🃏</div>
+                      )}
+                    </div>
+                    {partnerCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "70px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{partnerCard.name}</div>}
                   </div>
-                  {partnerCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "70px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{partnerCard.name}</div>}
-                </div>
 
-                {/* 事件 */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
-                  <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>事件</div>
-                  <div style={{
-                    width: "98px",
-                    height: "70px",
-                    borderRadius: "6px",
-                    overflow: "hidden",
-                    border: "2px solid #e0e0e0",
-                    background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer"
-                  }} onClick={() => {
-                    openCardSelectModal("incident");
-                  }}>
+                  {/* 事件 */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
+                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>事件</div>
+                    <div style={{
+                      width: "98px",
+                      height: "70px",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      border: "2px solid #e0e0e0",
+                      background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer"
+                    }} onClick={() => {
+                      openCardSelectModal("incident");
+                    }}>
                     {incidentCard?.image ? (
                       <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
@@ -1385,16 +1388,38 @@ export default function App() {
                     )}
                   </div>
                   {incidentCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "98px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{incidentCard.name}</div>}
+                  </div>
+
+                  {/* 統計情報（右側） */}
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem", justifyContent: "center" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                      <div style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#d4716b", flex: 1 }}>
+                        {activeDeck.name}
+                      </div>
+                      <button className="btn-secondary" style={{ padding: "0.3rem 0.5rem", fontSize: "0.9rem" }} onClick={renameActiveDeck}>✏️</button>
+                    </div>
+                    <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                      <div style={{ fontSize: "0.8rem" }}>
+                        <span style={{ color: "#666" }}>キャラ:</span> <strong style={{ fontSize: "0.9rem", color: "#667eea" }}>{characterCount}</strong>
+                      </div>
+                      <div style={{ fontSize: "0.8rem" }}>
+                        <span style={{ color: "#666" }}>イベント:</span> <strong style={{ fontSize: "0.9rem", color: "#ff9a9e" }}>{eventCount}</strong>
+                      </div>
+                      <div style={{ fontSize: "0.8rem" }} key={`deck-count-${totalInDeck}`}>
+                        <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "0.9rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* レベル分布グラフ */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>
-                  <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", textAlign: "center" }}>レベル</div>
+                {/* 2行目：レベル分布グラフ */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>レベル分布</div>
                   <div style={{
                     display: "flex",
                     alignItems: "flex-end",
                     gap: "0.2rem",
-                    height: "70px",
+                    height: "60px",
                     padding: "0.4rem",
                     background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
                     borderRadius: "6px",
@@ -1402,7 +1427,7 @@ export default function App() {
                   }}>
                     {LEVEL_OPTIONS.map((level) => {
                       const count = levelDistribution[level] || 0;
-                      const height = maxLevelCount > 0 ? (count / maxLevelCount) * 50 : 0;
+                      const height = maxLevelCount > 0 ? (count / maxLevelCount) * 40 : 0;
                       
                       return (
                         <div key={level} style={{
@@ -1410,7 +1435,7 @@ export default function App() {
                           flexDirection: "column",
                           alignItems: "center",
                           gap: "0.15rem",
-                          minWidth: "20px"
+                          flex: 1
                         }}>
                           <div style={{
                             fontSize: "0.6rem",
