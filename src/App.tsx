@@ -39,14 +39,14 @@ function Thumb({ blob, alt, size = "small" }: { blob?: Blob; alt: string; size?:
   if (size === "large") {
     return (
       <div className="card-image-container">
-        <img src={url} alt={alt} style={{ objectFit: "contain", width: "100%", height: "100%" }} />
+        <img src={url} alt={alt} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
       </div>
     );
   }
 
   return (
     <div className="deck-card-thumb">
-      <img src={url} alt={alt} style={{ objectFit: "contain", width: "100%", height: "100%" }} />
+      <img src={url} alt={alt} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
     </div>
   );
 }
@@ -1336,7 +1336,7 @@ export default function App() {
                     openCardSelectModal("partner");
                   }}>
                     {partnerCard?.image ? (
-                      <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ fontSize: "2rem", opacity: 0.3 }}>🃏</div>
                     )}
@@ -1362,7 +1362,7 @@ export default function App() {
                     openCardSelectModal("incident");
                   }}>
                     {incidentCard?.image ? (
-                      <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ fontSize: "2rem", opacity: 0.3 }}>🃏</div>
                     )}
@@ -1508,7 +1508,7 @@ export default function App() {
                                 style={{
                                   width: "100%",
                                   height: "100%",
-                                  objectFit: "contain"
+                                  objectFit: "cover"
                                 }}
                               />
                             ) : (
@@ -1847,7 +1847,7 @@ export default function App() {
                               style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "contain"
+                                objectFit: "cover"
                               }}
                             />
                           ) : (
@@ -1928,7 +1928,7 @@ export default function App() {
                               style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "contain"
+                                objectFit: "cover"
                               }}
                             />
                           ) : (
@@ -2005,7 +2005,7 @@ export default function App() {
                               style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "contain",
+                                objectFit: "cover",
                                 opacity: isSelected ? 0.7 : 1
                               }}
                             />
