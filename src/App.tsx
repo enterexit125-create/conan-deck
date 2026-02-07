@@ -1329,7 +1329,9 @@ export default function App() {
                 border: "2px solid #e0e0e0",
                 borderRadius: "12px",
                 padding: "0.75rem",
-                marginBottom: "1rem"
+                marginBottom: "1rem",
+                maxWidth: "600px",
+                margin: "0 auto 1rem auto"
               }}>
                 {/* 1行目：パートナーと事件 */}
                 <div style={{
@@ -1468,7 +1470,7 @@ export default function App() {
               </div>
 
               {totalInDeck === TARGET_DECK_SIZE && (
-                <div className="success-panel info-panel" style={{ padding: "0.75rem", marginBottom: "1rem" }}>
+                <div className="success-panel info-panel" style={{ padding: "0.75rem", marginBottom: "1rem", maxWidth: "600px", margin: "0 auto 1rem auto" }}>
                   <div className="info-panel-title" style={{ fontSize: "0.9rem" }}>✅ デッキ完成！</div>
                   <div className="info-panel-text" style={{ fontSize: "0.85rem" }}>40枚のデッキが完成しました。</div>
                 </div>
