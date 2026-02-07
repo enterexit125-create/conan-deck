@@ -1493,12 +1493,110 @@ export default function App() {
               <button className="btn-primary" onClick={createDeck}>➕</button>
             </div>
             <div className="deck-list">
-              {decks.map((d) => (
-                <div key={d.id} className={`deck-chip ${d.id === activeDeckId ? "active" : ""}`} onClick={() => { setActiveDeckId(d.id!); switchTab("editor"); }} onDoubleClick={() => renameDeck(d.id!)} title="クリックで選択・ダブルクリックでリネーム">
-                  <span>{d.name}</span>
-                  <button className="deck-delete-btn" onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} title="削除">✕</button>
-                </div>
-              ))}
+              {decks.map((d) => {
+                // このデッキのカード情報を取得
+                const getDeckInfo = () => {
+                  const dcs = deckCards.filter(dc => {
+                    // このデッキのカードかチェック（activeDeckIdと比較）
+                    return false; // 後で実装
+                  });
+                  
+                  // 簡易的に各デッキの情報を表示するため、
+                  // デッキIDごとにdeckCardsを取得する必要がある
+                  // 現在のdeckCardsはactiveDeckIdのみなので、
+                  // 別途取得が必要
+                  return { partner: null, incident: null, total: 0 };
+                };
+                
+                return (
+                  <div 
+                    key={d.id} 
+                    className={`deck-chip ${d.id === activeDeckId ? "active" : ""}`} 
+                    onClick={() => { setActiveDeckId(d.id!); switchTab("editor"); }} 
+                    onDoubleClick={() => renameDeck(d.id!)} 
+                    title="クリックで選択・ダブルクリックでリネーム"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "1rem",
+                      padding: "0.75rem"
+                    }}
+                  >
+                    <span style={{ flex: 1 }}>{d.name}</span>
+                    
+                    {/* デッキプレビュー（右側） */}
+                    {d.id === activeDeckId && (
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        fontSize: "0.75rem"
+                      }}>
+                        {/* パートナー */}
+                        {partnerCard && (
+                          <div style={{
+                            width: "30px",
+                            height: "42px",
+                            borderRadius: "3px",
+                            overflow: "hidden",
+                            border: "1px solid #e0e0e0",
+                            background: "#f5f5f5"
+                          }}>
+                            {partnerCard.image && (
+                              <img 
+                                src={URL.createObjectURL(partnerCard.image)} 
+                                alt={partnerCard.name} 
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                              />
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* 事件 */}
+                        {incidentCard && (
+                          <div style={{
+                            width: "42px",
+                            height: "30px",
+                            borderRadius: "3px",
+                            overflow: "hidden",
+                            border: "1px solid #e0e0e0",
+                            background: "#f5f5f5"
+                          }}>
+                            {incidentCard.image && (
+                              <img 
+                                src={URL.createObjectURL(incidentCard.image)} 
+                                alt={incidentCard.name} 
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                              />
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* 枚数 */}
+                        <div style={{
+                          padding: "0.25rem 0.5rem",
+                          background: totalInDeck === TARGET_DECK_SIZE ? "#c8e6c9" : "#e0e0e0",
+                          borderRadius: "8px",
+                          fontWeight: "bold",
+                          color: totalInDeck === TARGET_DECK_SIZE ? "#1b5e20" : "#666",
+                          fontSize: "0.7rem"
+                        }}>
+                          {totalInDeck}/40
+                        </div>
+                      </div>
+                    )}
+                    
+                    <button 
+                      className="deck-delete-btn" 
+                      onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} 
+                      title="削除"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
