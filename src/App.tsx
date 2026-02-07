@@ -1036,7 +1036,7 @@ export default function App() {
                   {/* 枚数調整と完了ボタン（上部・一行） */}
                   <div style={{
                     padding: "0.75rem",
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    background: "#ffe0f0",
                     borderRadius: "12px",
                     marginBottom: "1rem",
                     display: "flex",
@@ -1056,24 +1056,33 @@ export default function App() {
                         style={{
                           width: "36px",
                           height: "36px",
-                          borderRadius: "50%",
-                          border: "2px solid white",
-                          background: "rgba(255, 255, 255, 0.2)",
-                          color: "white",
-                          fontSize: "1.2rem",
+                          borderRadius: "8px",
+                          border: "2px solid #ff8ab8",
+                          background: "white",
+                          color: "#ff8ab8",
+                          fontSize: "1.5rem",
                           cursor: "pointer",
                           transition: "all 0.2s",
-                          fontWeight: "bold"
+                          fontWeight: "bold",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
                         }}
-                        onMouseOver={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"}
-                        onMouseOut={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)"}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.background = "#ff8ab8";
+                          e.currentTarget.style.color = "white";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.background = "white";
+                          e.currentTarget.style.color = "#ff8ab8";
+                        }}
                       >
                         −
                       </button>
                       <div style={{
                         fontSize: "1.8rem",
                         fontWeight: "bold",
-                        color: "white",
+                        color: "#ff8ab8",
                         minWidth: "50px",
                         textAlign: "center"
                       }}>
@@ -1084,17 +1093,26 @@ export default function App() {
                         style={{
                           width: "36px",
                           height: "36px",
-                          borderRadius: "50%",
-                          border: "2px solid white",
-                          background: "rgba(255, 255, 255, 0.2)",
-                          color: "white",
-                          fontSize: "1.2rem",
+                          borderRadius: "8px",
+                          border: "2px solid #ff8ab8",
+                          background: "white",
+                          color: "#ff8ab8",
+                          fontSize: "1.5rem",
                           cursor: "pointer",
                           transition: "all 0.2s",
-                          fontWeight: "bold"
+                          fontWeight: "bold",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
                         }}
-                        onMouseOver={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"}
-                        onMouseOut={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)"}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.background = "#ff8ab8";
+                          e.currentTarget.style.color = "white";
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.background = "white";
+                          e.currentTarget.style.color = "#ff8ab8";
+                        }}
                       >
                         +
                       </button>
@@ -1106,8 +1124,8 @@ export default function App() {
                       style={{
                         padding: "0.5rem 1.25rem",
                         background: "white",
-                        color: "#667eea",
-                        border: "none",
+                        color: "#ff8ab8",
+                        border: "2px solid #ff8ab8",
                         borderRadius: "20px",
                         fontSize: "1rem",
                         fontWeight: "bold",
@@ -1116,10 +1134,12 @@ export default function App() {
                         whiteSpace: "nowrap"
                       }}
                       onMouseOver={(e) => {
-                        e.currentTarget.style.background = "#f0f0f0";
+                        e.currentTarget.style.background = "#ff8ab8";
+                        e.currentTarget.style.color = "white";
                       }}
                       onMouseOut={(e) => {
                         e.currentTarget.style.background = "white";
+                        e.currentTarget.style.color = "#ff8ab8";
                       }}
                     >
                       完了
