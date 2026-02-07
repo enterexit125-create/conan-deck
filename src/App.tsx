@@ -132,7 +132,7 @@ export default function App() {
   const [playRemove, setPlayRemove] = useState<Card[]>([]); // リムーブエリア
   const [playEvidence, setPlayEvidence] = useState<Card[]>([]); // 証拠エリア
   const [playFile, setPlayFile] = useState<Card[]>([]); // FILEエリア
-  const [evidenceFaceUp, setEvidenceFaceUp] = useState<Set<string>>(new Set()); // 証拠エリアで表向きのカードID
+  const [evidenceFaceUp, setEvidenceFaceUp] = useState<Set<number | undefined>>(new Set()); // 証拠エリアで表向きのカードID（修正：string → number | undefined）
   const [isEvidenceCollapsed, setIsEvidenceCollapsed] = useState(false); // 証拠エリアの折りたたみ状態
   const [isMulliganMode, setIsMulliganMode] = useState(false); // マリガン中かどうか
   const [mulliganDone, setMulliganDone] = useState(false); // マリガン済みかどうか
