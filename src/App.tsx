@@ -1492,7 +1492,7 @@ export default function App() {
               <h2 className="section-title">デッキ管理</h2>
               <button className="btn-primary" onClick={createDeck}>➕</button>
             </div>
-            <div className="deck-list">
+            <div className="deck-list" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               {decks.map((d) => {
                 // 選択中のデッキの色分布を計算
                 let colorDistribution: Record<string, number> = {};
@@ -1517,7 +1517,8 @@ export default function App() {
                       flexDirection: "column",
                       alignItems: "stretch",
                       gap: "0.5rem",
-                      padding: "0.75rem"
+                      padding: "0.75rem",
+                      cursor: "pointer"
                     }}
                   >
                     {/* 1行目: デッキ名と削除ボタン */}
@@ -1526,7 +1527,7 @@ export default function App() {
                       alignItems: "center",
                       justifyContent: "space-between"
                     }}>
-                      <span style={{ flex: 1, fontWeight: "bold" }}>{d.name}</span>
+                      <span style={{ flex: 1, fontWeight: "bold", fontSize: "1rem" }}>{d.name}</span>
                       <button 
                         className="deck-delete-btn" 
                         onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} 
@@ -1536,59 +1537,24 @@ export default function App() {
                       </button>
                     </div>
                     
-                    {/* 2行目: レベル分布と色分布（選択中のデッキのみ） */}
+                    {/* 2行目: 色分布とレベル分布（選択中のデッキのみ） */}
                     {d.id === activeDeckId && (
                       <div style={{
                         display: "flex",
                         gap: "0.75rem",
                         alignItems: "center"
                       }}>
-                        {/* レベル分布ミニグラフ */}
-                        <div style={{
-                          display: "flex",
-                          alignItems: "flex-end",
-                          gap: "2px",
-                          height: "30px",
-                          padding: "0.25rem",
-                          background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
-                          borderRadius: "4px",
-                          border: "1px solid #ffd4dc",
-                          flex: 1
-                        }}>
-                          {LEVEL_OPTIONS.map((level) => {
-                            const count = levelDistribution[level] || 0;
-                            const height = maxLevelCount > 0 ? (count / maxLevelCount) * 20 : 0;
-                            
-                            return (
-                              <div key={level} style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "1px",
-                                flex: 1
-                              }}>
-                                <div style={{
-                                  width: "100%",
-                                  height: `${Math.max(height, 2)}px`,
-                                  background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
-                                  borderRadius: "2px 2px 0 0",
-                                  transition: "all 0.3s ease"
-                                }} />
-                              </div>
-                            );
-                          })}
-                        </div>
-                        
-                        {/* 色分布バー */}
+                        {/* 色分布バー（左側・小さめ） */}
                         <div style={{
                           display: "flex",
                           gap: "2px",
-                          height: "30px",
+                          height: "40px",
                           padding: "0.25rem",
                           background: "#f5f5f5",
                           borderRadius: "4px",
                           border: "1px solid #e0e0e0",
-                          minWidth: "80px"
+                          minWidth: "60px",
+                          width: "60px"
                         }}>
                           {COLOR_OPTIONS.map((color) => {
                             const count = colorDistribution[color] || 0;
@@ -1610,6 +1576,42 @@ export default function App() {
                                 }}
                                 title={`${color}: ${count}枚`}
                               />
+                            );
+                          })}
+                        </div>
+                        
+                        {/* レベル分布ミニグラフ（右側・大きめ） */}
+                        <div style={{
+                          display: "flex",
+                          alignItems: "flex-end",
+                          gap: "3px",
+                          height: "40px",
+                          padding: "0.35rem",
+                          background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
+                          borderRadius: "4px",
+                          border: "1px solid #ffd4dc",
+                          flex: 1
+                        }}>
+                          {LEVEL_OPTIONS.map((level) => {
+                            const count = levelDistribution[level] || 0;
+                            const height = maxLevelCount > 0 ? (count / maxLevelCount) * 30 : 0;
+                            
+                            return (
+                              <div key={level} style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "1px",
+                                flex: 1
+                              }}>
+                                <div style={{
+                                  width: "100%",
+                                  height: `${Math.max(height, 3)}px`,
+                                  background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
+                                  borderRadius: "2px 2px 0 0",
+                                  transition: "all 0.3s ease"
+                                }} />
+                              </div>
                             );
                           })}
                         </div>
