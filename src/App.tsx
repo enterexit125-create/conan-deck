@@ -1494,6 +1494,17 @@ export default function App() {
             </div>
             <div className="deck-list">
               {decks.map((d) => {
+                // 選択中のデッキの色分布を計算
+                let colorDistribution: Record<string, number> = {};
+                if (d.id === activeDeckId) {
+                  deckCards.forEach(dc => {
+                    const card = cards.find(c => c.id === dc.cardId);
+                    if (card?.color && card.type !== "パートナー" && card.type !== "事件") {
+                      colorDistribution[card.color] = (colorDistribution[card.color] || 0) + dc.count;
+                    }
+                  });
+                }
+                
                 return (
                   <div 
                     key={d.id} 
@@ -1503,73 +1514,107 @@ export default function App() {
                     title="クリックで選択・ダブルクリックでリネーム"
                     style={{
                       display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: "0.75rem",
+                      flexDirection: "column",
+                      alignItems: "stretch",
+                      gap: "0.5rem",
                       padding: "0.75rem"
                     }}
                   >
-                    <span style={{ flex: 1 }}>{d.name}</span>
+                    {/* 1行目: デッキ名と削除ボタン */}
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between"
+                    }}>
+                      <span style={{ flex: 1, fontWeight: "bold" }}>{d.name}</span>
+                      <button 
+                        className="deck-delete-btn" 
+                        onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} 
+                        title="削除"
+                      >
+                        ✕
+                      </button>
+                    </div>
                     
-                    {/* レベル分布ミニグラフ（選択中のデッキのみ） */}
+                    {/* 2行目: レベル分布と色分布（選択中のデッキのみ） */}
                     {d.id === activeDeckId && (
                       <div style={{
                         display: "flex",
-                        alignItems: "flex-end",
-                        gap: "2px",
-                        height: "30px",
-                        padding: "0.25rem",
-                        background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
-                        borderRadius: "4px",
-                        border: "1px solid #ffd4dc"
+                        gap: "0.75rem",
+                        alignItems: "center"
                       }}>
-                        {LEVEL_OPTIONS.map((level) => {
-                          const count = levelDistribution[level] || 0;
-                          const height = maxLevelCount > 0 ? (count / maxLevelCount) * 20 : 0;
-                          
-                          return (
-                            <div key={level} style={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              gap: "1px",
-                              width: "12px"
-                            }}>
-                              <div style={{
-                                width: "100%",
-                                height: `${Math.max(height, 2)}px`,
-                                background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
-                                borderRadius: "2px 2px 0 0",
-                                transition: "all 0.3s ease"
-                              }} />
-                            </div>
-                          );
-                        })}
-                        
-                        {/* 枚数表示 */}
+                        {/* レベル分布ミニグラフ */}
                         <div style={{
-                          marginLeft: "0.5rem",
-                          padding: "0.25rem 0.5rem",
-                          background: totalInDeck === TARGET_DECK_SIZE ? "#c8e6c9" : "white",
-                          borderRadius: "6px",
-                          fontWeight: "bold",
-                          color: totalInDeck === TARGET_DECK_SIZE ? "#1b5e20" : "#666",
-                          fontSize: "0.7rem",
-                          whiteSpace: "nowrap",
-                          border: totalInDeck === TARGET_DECK_SIZE ? "1px solid #43a047" : "1px solid #e0e0e0"
+                          display: "flex",
+                          alignItems: "flex-end",
+                          gap: "2px",
+                          height: "30px",
+                          padding: "0.25rem",
+                          background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
+                          borderRadius: "4px",
+                          border: "1px solid #ffd4dc",
+                          flex: 1
                         }}>
-                          {totalInDeck}/40
+                          {LEVEL_OPTIONS.map((level) => {
+                            const count = levelDistribution[level] || 0;
+                            const height = maxLevelCount > 0 ? (count / maxLevelCount) * 20 : 0;
+                            
+                            return (
+                              <div key={level} style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                gap: "1px",
+                                flex: 1
+                              }}>
+                                <div style={{
+                                  width: "100%",
+                                  height: `${Math.max(height, 2)}px`,
+                                  background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
+                                  borderRadius: "2px 2px 0 0",
+                                  transition: "all 0.3s ease"
+                                }} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                        
+                        {/* 色分布バー */}
+                        <div style={{
+                          display: "flex",
+                          gap: "2px",
+                          height: "30px",
+                          padding: "0.25rem",
+                          background: "#f5f5f5",
+                          borderRadius: "4px",
+                          border: "1px solid #e0e0e0",
+                          minWidth: "80px"
+                        }}>
+                          {COLOR_OPTIONS.map((color) => {
+                            const count = colorDistribution[color] || 0;
+                            const total = Object.values(colorDistribution).reduce((sum, c) => sum + c, 0);
+                            const widthPercent = total > 0 ? (count / total) * 100 : 0;
+                            
+                            if (count === 0) return null;
+                            
+                            return (
+                              <div 
+                                key={color} 
+                                style={{
+                                  height: "100%",
+                                  width: `${widthPercent}%`,
+                                  background: colorMap[color],
+                                  borderRadius: "2px",
+                                  transition: "all 0.3s ease",
+                                  minWidth: "4px"
+                                }}
+                                title={`${color}: ${count}枚`}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     )}
-                    
-                    <button 
-                      className="deck-delete-btn" 
-                      onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} 
-                      title="削除"
-                    >
-                      ✕
-                    </button>
                   </div>
                 );
               })}
