@@ -1022,7 +1022,7 @@ export default function App() {
       {/* デッキカード枚数編集モーダル */}
       {editingDeckCard && (
         <div className="modal-overlay" onClick={closeEditDeckCard}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px", maxHeight: "90vh", overflowY: "auto" }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "350px", maxHeight: "90vh", overflowY: "auto" }}>
             <div className="modal-header">
               <span>枚数を変更</span>
               <button className="modal-close" onClick={closeEditDeckCard}>✕</button>
@@ -2340,7 +2340,7 @@ export default function App() {
               background: "white",
               borderRadius: "16px",
               padding: "1.5rem",
-              maxWidth: "500px",
+              maxWidth: "350px",
               width: "100%",
               maxHeight: "90vh",
               overflowY: "auto"
