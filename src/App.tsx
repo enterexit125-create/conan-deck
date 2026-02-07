@@ -1022,78 +1022,192 @@ export default function App() {
       {/* デッキカード枚数編集モーダル */}
       {editingDeckCard && (
         <div className="modal-overlay" onClick={closeEditDeckCard}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px" }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px", maxHeight: "90vh", overflowY: "auto" }}>
             <div className="modal-header">
               <span>枚数を変更</span>
               <button className="modal-close" onClick={closeEditDeckCard}>✕</button>
             </div>
             {(() => {
               const card = cards.find(c => c.id === editingDeckCard.cardId);
+              if (!card) return null;
+              
               return (
-                <div style={{ textAlign: "center" }}>
-                  <Thumb blob={card?.image} alt={card?.name ?? "card"} size="large" />
-                  <div style={{ fontSize: "1.2rem", fontWeight: "bold", margin: "1rem 0" }}>
-                    {card?.name}
-                  </div>
-                  <div style={{ color: "#666", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-                    {card?.number || "---"}
-                    {card?.type ? `/${card.type === "キャラ" ? "キ" : card.type === "イベント" ? "イ" : card.type === "パートナー" ? "パ" : "事"}` : ""}
-                    {card?.level ? `/${card.level}` : ""}
-                  </div>
+                <div>
+                  {/* カード画像 */}
                   <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "1.5rem",
-                    fontSize: "1.5rem"
+                    marginBottom: "1rem",
+                    borderRadius: "12px",
+                    overflow: "hidden",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
                   }}>
-                    <button
-                      onClick={decrementDeckCard}
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        borderRadius: "50%",
-                        border: "2px solid #667eea",
-                        background: "white",
-                        fontSize: "1.5rem",
-                        cursor: "pointer",
-                        transition: "all 0.2s"
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
-                      onMouseOut={(e) => e.currentTarget.style.background = "white"}
-                    >
-                      −
-                    </button>
-                    <div style={{
-                      fontSize: "2.5rem",
-                      fontWeight: "bold",
-                      color: "#667eea",
-                      minWidth: "60px"
-                    }}>
-                      {editingDeckCard.count}
+                    {card.image ? (
+                      <img
+                        src={URL.createObjectURL(card.image)}
+                        alt={card.name}
+                        style={{
+                          width: "100%",
+                          height: "auto",
+                          display: "block"
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        aspectRatio: "0.7",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "3rem"
+                      }}>
+                        🃏
+                      </div>
+                    )}
+                  </div>
+
+                  {/* カード情報 */}
+                  <div style={{ marginBottom: "1.5rem" }}>
+                    <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "0.75rem", color: "#333", textAlign: "center" }}>
+                      {card.name}
+                    </h2>
+                    
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem", justifyContent: "center" }}>
+                      {card.number && (
+                        <span style={{
+                          padding: "0.25rem 0.75rem",
+                          background: "#e0e0e0",
+                          borderRadius: "12px",
+                          fontSize: "0.9rem",
+                          fontWeight: "bold"
+                        }}>
+                          No.{card.number}
+                        </span>
+                      )}
+                      {card.color && (
+                        <span style={{
+                          padding: "0.25rem 0.75rem",
+                          background: colorMap[card.color],
+                          color: "white",
+                          borderRadius: "12px",
+                          fontSize: "0.9rem",
+                          fontWeight: "bold"
+                        }}>
+                          {card.color}
+                        </span>
+                      )}
+                      {card.type && (
+                        <span style={{
+                          padding: "0.25rem 0.75rem",
+                          background: "#667eea",
+                          color: "white",
+                          borderRadius: "12px",
+                          fontSize: "0.9rem",
+                          fontWeight: "bold"
+                        }}>
+                          {card.type}
+                        </span>
+                      )}
+                      {card.level && (
+                        <span style={{
+                          padding: "0.25rem 0.75rem",
+                          background: "#f093fb",
+                          color: "white",
+                          borderRadius: "12px",
+                          fontSize: "0.9rem",
+                          fontWeight: "bold"
+                        }}>
+                          Lv.{card.level}
+                        </span>
+                      )}
                     </div>
-                    <button
-                      onClick={incrementDeckCard}
-                      style={{
-                        width: "50px",
-                        height: "50px",
-                        borderRadius: "50%",
-                        border: "2px solid #667eea",
-                        background: "white",
-                        fontSize: "1.5rem",
-                        cursor: "pointer",
-                        transition: "all 0.2s"
-                      }}
-                      onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
-                      onMouseOut={(e) => e.currentTarget.style.background = "white"}
-                    >
-                      +
-                    </button>
+
+                    {card.memo && (
+                      <div style={{
+                        padding: "0.75rem",
+                        background: "#f5f7fa",
+                        borderRadius: "8px",
+                        fontSize: "0.95rem",
+                        color: "#666",
+                        whiteSpace: "pre-wrap",
+                        marginBottom: "1rem"
+                      }}>
+                        {card.memo}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 枚数調整 */}
+                  <div style={{
+                    padding: "1.5rem",
+                    background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+                    borderRadius: "12px",
+                    marginBottom: "1rem"
+                  }}>
+                    <div style={{
+                      fontSize: "1rem",
+                      fontWeight: "bold",
+                      color: "#333",
+                      marginBottom: "1rem",
+                      textAlign: "center"
+                    }}>
+                      デッキ内枚数
+                    </div>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "1.5rem",
+                      fontSize: "1.5rem"
+                    }}>
+                      <button
+                        onClick={decrementDeckCard}
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          borderRadius: "50%",
+                          border: "2px solid #667eea",
+                          background: "white",
+                          fontSize: "1.5rem",
+                          cursor: "pointer",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                      >
+                        −
+                      </button>
+                      <div style={{
+                        fontSize: "2.5rem",
+                        fontWeight: "bold",
+                        color: "#667eea",
+                        minWidth: "60px",
+                        textAlign: "center"
+                      }}>
+                        {editingDeckCard.count}
+                      </div>
+                      <button
+                        onClick={incrementDeckCard}
+                        style={{
+                          width: "50px",
+                          height: "50px",
+                          borderRadius: "50%",
+                          border: "2px solid #667eea",
+                          background: "white",
+                          fontSize: "1.5rem",
+                          cursor: "pointer",
+                          transition: "all 0.2s"
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
             })()}
-            <div className="modal-actions" style={{ marginTop: "2rem" }}>
+            <div className="modal-actions">
               <button className="btn-primary" onClick={closeEditDeckCard} style={{ width: "100%" }}>
                 完了
               </button>
