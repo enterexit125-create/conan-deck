@@ -1038,7 +1038,9 @@ export default function App() {
                     marginBottom: "1rem",
                     borderRadius: "12px",
                     overflow: "hidden",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                    maxWidth: "200px",
+                    margin: "0 auto 1rem auto"
                   }}>
                     {card.image ? (
                       <img
@@ -1058,7 +1060,7 @@ export default function App() {
                         alignItems: "center",
                         justifyContent: "center",
                         color: "white",
-                        fontSize: "3rem"
+                        fontSize: "2rem"
                       }}>
                         🃏
                       </div>
@@ -2385,7 +2387,9 @@ export default function App() {
               marginBottom: "1rem",
               borderRadius: "12px",
               overflow: "hidden",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              maxWidth: "200px",
+              margin: "0 auto 1rem auto"
             }}>
               {detailCard.image ? (
                 <img
@@ -2405,7 +2409,7 @@ export default function App() {
                   alignItems: "center",
                   justifyContent: "center",
                   color: "white",
-                  fontSize: "3rem"
+                  fontSize: "2rem"
                 }}>
                   🃏
                 </div>
