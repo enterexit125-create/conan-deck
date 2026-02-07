@@ -1494,20 +1494,6 @@ export default function App() {
             </div>
             <div className="deck-list">
               {decks.map((d) => {
-                // このデッキのカード情報を取得
-                const getDeckInfo = () => {
-                  const dcs = deckCards.filter(dc => {
-                    // このデッキのカードかチェック（activeDeckIdと比較）
-                    return false; // 後で実装
-                  });
-                  
-                  // 簡易的に各デッキの情報を表示するため、
-                  // デッキIDごとにdeckCardsを取得する必要がある
-                  // 現在のdeckCardsはactiveDeckIdのみなので、
-                  // 別途取得が必要
-                  return { partner: null, incident: null, total: 0 };
-                };
-                
                 return (
                   <div 
                     key={d.id} 
@@ -1519,13 +1505,13 @@ export default function App() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      gap: "1rem",
+                      gap: "0.75rem",
                       padding: "0.75rem"
                     }}
                   >
                     <span style={{ flex: 1 }}>{d.name}</span>
                     
-                    {/* デッキプレビュー（右側） */}
+                    {/* デッキプレビュー（選択中のデッキのみ） */}
                     {d.id === activeDeckId && (
                       <div style={{
                         display: "flex",
@@ -1534,7 +1520,7 @@ export default function App() {
                         fontSize: "0.75rem"
                       }}>
                         {/* パートナー */}
-                        {partnerCard && (
+                        {partnerCard?.image && (
                           <div style={{
                             width: "30px",
                             height: "42px",
@@ -1543,18 +1529,16 @@ export default function App() {
                             border: "1px solid #e0e0e0",
                             background: "#f5f5f5"
                           }}>
-                            {partnerCard.image && (
-                              <img 
-                                src={URL.createObjectURL(partnerCard.image)} 
-                                alt={partnerCard.name} 
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                              />
-                            )}
+                            <img 
+                              src={URL.createObjectURL(partnerCard.image)} 
+                              alt={partnerCard.name} 
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                            />
                           </div>
                         )}
                         
                         {/* 事件 */}
-                        {incidentCard && (
+                        {incidentCard?.image && (
                           <div style={{
                             width: "42px",
                             height: "30px",
@@ -1563,13 +1547,11 @@ export default function App() {
                             border: "1px solid #e0e0e0",
                             background: "#f5f5f5"
                           }}>
-                            {incidentCard.image && (
-                              <img 
-                                src={URL.createObjectURL(incidentCard.image)} 
-                                alt={incidentCard.name} 
-                                style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                              />
-                            )}
+                            <img 
+                              src={URL.createObjectURL(incidentCard.image)} 
+                              alt={incidentCard.name} 
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                            />
                           </div>
                         )}
                         
@@ -1580,7 +1562,8 @@ export default function App() {
                           borderRadius: "8px",
                           fontWeight: "bold",
                           color: totalInDeck === TARGET_DECK_SIZE ? "#1b5e20" : "#666",
-                          fontSize: "0.7rem"
+                          fontSize: "0.7rem",
+                          whiteSpace: "nowrap"
                         }}>
                           {totalInDeck}/40
                         </div>
