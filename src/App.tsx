@@ -830,7 +830,7 @@ export default function App() {
     setPlayFile([...playFile, topCard]);
   }
 
-  function toggleEvidenceFaceUp(cardId: string) {
+  function toggleEvidenceFaceUp(cardId: number | undefined) {
     // 証拠エリアのカードの表裏を切り替え
     setEvidenceFaceUp(prev => {
       const newSet = new Set(prev);
