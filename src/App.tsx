@@ -1035,7 +1035,14 @@ export default function App() {
       {/* デッキカード枚数編集モーダル */}
       {editingDeckCard && (
         <div className="modal-overlay" onClick={closeEditDeckCard}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "350px", maxHeight: "90vh", overflowY: "auto" }}>
+          <div className="modal-content deck-edit-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "350px", maxHeight: "90vh", overflowY: "auto" }}>
+            <style>{`
+              @media (min-width: 768px) {
+                .deck-edit-modal {
+                  max-width: 500px !important;
+                }
+              }
+            `}</style>
             <div className="modal-header">
               <span>枚数を変更</span>
               <button className="modal-close" onClick={closeEditDeckCard}>✕</button>
@@ -1160,14 +1167,23 @@ export default function App() {
                   </div>
 
                   {/* カード画像 */}
-                  <div style={{
-                    marginBottom: "1rem",
-                    borderRadius: "12px",
-                    overflow: "hidden",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                    maxWidth: "200px",
-                    margin: "0 auto 1rem auto"
-                  }}>
+                  <div 
+                    className="deck-card-image"
+                    style={{
+                      marginBottom: "1rem",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                      maxWidth: "200px",
+                      margin: "0 auto 1rem auto"
+                    }}>
+                    <style>{`
+                      @media (min-width: 768px) {
+                        .deck-card-image {
+                          max-width: 280px !important;
+                        }
+                      }
+                    `}</style>
                     {card.image ? (
                       <img
                         src={URL.createObjectURL(card.image)}
@@ -2418,6 +2434,13 @@ export default function App() {
               position: "relative"
             }}
           >
+            <style>{`
+              @media (min-width: 768px) {
+                .modal-content {
+                  max-width: 500px !important;
+                }
+              }
+            `}</style>
             {/* 閉じるボタン（右上） */}
             <button
               onClick={closeCardDetail}
@@ -2492,14 +2515,23 @@ export default function App() {
             )}
 
             {/* カード画像 */}
-            <div style={{
-              marginBottom: "1rem",
-              borderRadius: "12px",
-              overflow: "hidden",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-              maxWidth: "200px",
-              margin: "0 auto 1rem auto"
-            }}>
+            <div 
+              className="card-detail-image"
+              style={{
+                marginBottom: "1rem",
+                borderRadius: "12px",
+                overflow: "hidden",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                maxWidth: "200px",
+                margin: "0 auto 1rem auto"
+              }}>
+              <style>{`
+                @media (min-width: 768px) {
+                  .card-detail-image {
+                    max-width: 280px !important;
+                  }
+                }
+              `}</style>
               {detailCard.image ? (
                 <img
                   src={URL.createObjectURL(detailCard.image)}
