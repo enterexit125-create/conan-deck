@@ -1039,7 +1039,7 @@ export default function App() {
             <style>{`
               @media (min-width: 768px) {
                 .deck-edit-modal {
-                  max-width: 500px !important;
+                  max-width: 600px !important;
                 }
               }
             `}</style>
@@ -1180,7 +1180,7 @@ export default function App() {
                     <style>{`
                       @media (min-width: 768px) {
                         .deck-card-image {
-                          max-width: 280px !important;
+                          max-width: 350px !important;
                         }
                       }
                     `}</style>
@@ -2437,7 +2437,7 @@ export default function App() {
             <style>{`
               @media (min-width: 768px) {
                 .modal-content {
-                  max-width: 500px !important;
+                  max-width: 600px !important;
                 }
               }
             `}</style>
@@ -2528,7 +2528,7 @@ export default function App() {
               <style>{`
                 @media (min-width: 768px) {
                   .card-detail-image {
-                    max-width: 280px !important;
+                    max-width: 350px !important;
                   }
                 }
               `}</style>
