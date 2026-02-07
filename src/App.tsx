@@ -988,8 +988,8 @@ export default function App() {
         <ul className="nav-tabs">
           <li><button className={`nav-tab-button ${activeTab === "cards" ? "active" : ""}`} onClick={() => switchTab("cards")}>カード</button></li>
           <li><button className={`nav-tab-button ${activeTab === "decks" ? "active" : ""}`} onClick={() => switchTab("decks")}>デッキ</button></li>
-          <li><button className={`nav-tab-button ${activeTab === "play" ? "active" : ""}`} onClick={() => switchTab("play")}>🎮 一人回し</button></li>
-          <li><button className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`} onClick={() => switchTab("sync")}>☁️ 同期</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "play" ? "active" : ""}`} onClick={() => switchTab("play")}>一人回し</button></li>
+          <li><button className={`nav-tab-button ${activeTab === "sync" ? "active" : ""}`} onClick={() => switchTab("sync")}>同期</button></li>
         </ul>
       </nav>
 
