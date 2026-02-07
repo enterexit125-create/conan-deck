@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { db, fullSync, syncFromSupabase, syncToSupabase } from "./db";
 import type { Card, Deck, DeckCard } from "./db";
 import "./App.css";
+import cardBackImage from "/card-back.png";
 
 // デバッグツール（スマホ用）- 開発時のみ
 if (window.location.hostname !== 'localhost') {
@@ -129,13 +130,18 @@ export default function App() {
   const [playDrawn, setPlayDrawn] = useState(0);
   const [playField, setPlayField] = useState<Card[]>([]); // 現場
   const [playRemove, setPlayRemove] = useState<Card[]>([]); // リムーブエリア
+  const [playEvidence, setPlayEvidence] = useState<Card[]>([]); // 証拠エリア
+  const [playFile, setPlayFile] = useState<Card[]>([]); // FILEエリア
+  const [evidenceFaceUp, setEvidenceFaceUp] = useState<Set<string>>(new Set()); // 証拠エリアで表向きのカードID
+  const [isEvidenceCollapsed, setIsEvidenceCollapsed] = useState(false); // 証拠エリアの折りたたみ状態
   const [isMulliganMode, setIsMulliganMode] = useState(false); // マリガン中かどうか
   const [mulliganDone, setMulliganDone] = useState(false); // マリガン済みかどうか
   const [selectedForMulligan, setSelectedForMulligan] = useState<number[]>([]); // マリガン選択中のカードindex
   
   // カードメニュー用
   const [showCardMenu, setShowCardMenu] = useState(false);
-  const [selectedCard, setSelectedCard] = useState<{ card: Card; index: number; location: "hand" | "field" | "remove" } | null>(null);
+  const [selectedCard, setSelectedCard] = useState<{ card: Card; index: number; location: "hand" | "field" | "remove" | "evidence" } | null>(null);
+  const [showMoveDestination, setShowMoveDestination] = useState(false); // 移動先選択モーダル
   
   // カード拡大表示用
   const [showCardDetail, setShowCardDetail] = useState(false);
@@ -802,7 +808,75 @@ export default function App() {
     setShowCardMenu(false);
   }
 
-  function openCardMenu(card: Card, index: number, location: "hand" | "field" | "remove") {
+  function moveCardToEvidence(index: number) {
+    // 現場から証拠エリアに送る
+    const card = playField[index];
+    const newField = playField.filter((_, i) => i !== index);
+    
+    setPlayField(newField);
+    setPlayEvidence([...playEvidence, card]);
+    setShowCardMenu(false);
+  }
+
+  function moveDeckToFile() {
+    // 山札の一番上から1枚FILEエリアに移動
+    if (playDeck.length === 0) {
+      alert("山札にカードがありません");
+      return;
+    }
+    
+    const [topCard, ...remainingDeck] = playDeck;
+    setPlayDeck(remainingDeck);
+    setPlayFile([...playFile, topCard]);
+  }
+
+  function toggleEvidenceFaceUp(cardId: string) {
+    // 証拠エリアのカードの表裏を切り替え
+    setEvidenceFaceUp(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  }
+
+  function moveEvidenceCard(fromIndex: number, destination: "hand" | "field" | "remove" | "deck") {
+    // 証拠エリアから他のエリアへ移動
+    const card = playEvidence[fromIndex];
+    const newEvidence = playEvidence.filter((_, i) => i !== fromIndex);
+    
+    setPlayEvidence(newEvidence);
+    
+    // 表裏状態もクリア
+    setEvidenceFaceUp(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(card.id);
+      return newSet;
+    });
+    
+    switch (destination) {
+      case "hand":
+        setPlayHand([...playHand, card]);
+        break;
+      case "field":
+        setPlayField([...playField, card]);
+        break;
+      case "remove":
+        setPlayRemove([...playRemove, card]);
+        break;
+      case "deck":
+        setPlayDeck([...playDeck, card]); // 一番下に追加
+        break;
+    }
+    
+    setShowCardMenu(false);
+    setShowMoveDestination(false);
+  }
+
+  function openCardMenu(card: Card, index: number, location: "hand" | "field" | "remove" | "evidence") {
     setSelectedCard({ card, index, location });
     setShowCardMenu(true);
   }
@@ -812,7 +886,7 @@ export default function App() {
     setSelectedCard(null);
   }
 
-  function handleMenuAction(action: "play" | "remove" | "view") {
+  function handleMenuAction(action: "play" | "remove" | "evidence" | "view" | "toggleFace" | "move") {
     if (!selectedCard) return;
 
     switch (action) {
@@ -825,6 +899,22 @@ export default function App() {
         if (selectedCard.location === "field") {
           moveCardToRemove(selectedCard.index);
         }
+        break;
+      case "evidence":
+        if (selectedCard.location === "field") {
+          moveCardToEvidence(selectedCard.index);
+        }
+        break;
+      case "toggleFace":
+        // 証拠エリアのカードの表裏を切り替え
+        if (selectedCard.location === "evidence") {
+          toggleEvidenceFaceUp(selectedCard.card.id);
+          setShowCardMenu(false);
+        }
+        break;
+      case "move":
+        // 移動先選択モーダルを表示
+        setShowMoveDestination(true);
         break;
       case "view":
         // 拡大表示
@@ -910,6 +1000,10 @@ export default function App() {
     setPlayDrawn(0);
     setPlayField([]);
     setPlayRemove([]);
+    setPlayEvidence([]);
+    setPlayFile([]);
+    setEvidenceFaceUp(new Set());
+    setIsEvidenceCollapsed(false);
     setIsMulliganMode(false);
     setMulliganDone(false);
     setSelectedForMulligan([]);
@@ -1945,363 +2039,395 @@ export default function App() {
               )}
             </div>
           ) : (
-            // プレイ画面
-            <div className="section">
-              <div className="section-header">
-                <h2 className="section-title">
+            // プレイ画面（対戦型レイアウト）
+            <div className="section" style={{ 
+              height: "calc(100vh - 130px)", 
+              display: "flex", 
+              flexDirection: "column",
+              overflow: "hidden",
+              padding: "0.5rem"
+            }}>
+              {/* ヘッダー */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.5rem",
+                padding: "0.5rem",
+                background: "white",
+                borderRadius: "8px",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+              }}>
+                <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "bold" }}>
                   🎮 {decks.find(d => d.id === playDeckId)?.name ?? "一人回し"}
                 </h2>
-                <button className="btn-secondary" onClick={resetPlay}>
-                  🔙 デッキ選択に戻る
+                <button className="btn-secondary" onClick={resetPlay} style={{ padding: "0.5rem 1rem" }}>
+                  🔙 戻る
                 </button>
               </div>
 
-              {/* 統計情報 */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "0.4rem",
-                marginBottom: "0.5rem"
-              }}>
-                <div style={{
-                  padding: "0.4rem",
-                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                  borderRadius: "6px",
-                  color: "white",
-                  textAlign: "center"
-                }}>
-                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>手札</div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playHand.length}</div>
-                </div>
-                <div style={{
-                  padding: "0.4rem",
-                  background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
-                  borderRadius: "6px",
-                  color: "white",
-                  textAlign: "center"
-                }}>
-                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>現場</div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playField.length}</div>
-                </div>
-                <div style={{
-                  padding: "0.4rem",
-                  background: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                  borderRadius: "6px",
-                  color: "white",
-                  textAlign: "center"
-                }}>
-                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>リムーブ</div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playRemove.length}</div>
-                </div>
-                <div style={{
-                  padding: "0.4rem",
-                  background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                  borderRadius: "6px",
-                  color: "white",
-                  textAlign: "center"
-                }}>
-                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>山札</div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playDeck.length}</div>
-                </div>
-                <div style={{
-                  padding: "0.4rem",
-                  background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-                  borderRadius: "6px",
-                  color: "white",
-                  textAlign: "center"
-                }}>
-                  <div style={{ fontSize: "0.65rem", opacity: 0.9 }}>ドロー</div>
-                  <div style={{ fontSize: "1.1rem", fontWeight: "bold" }}>{playDrawn}</div>
-                </div>
-                {/* 空のセル（レイアウト調整用） */}
-                <div style={{ padding: "0.4rem" }}></div>
-              </div>
-
-              {/* ドローボタン */}
-              <div style={{ marginBottom: "0.75rem" }}>
-                {isMulliganMode ? (
-                  // マリガンモード中
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button 
-                      className="btn-secondary" 
-                      onClick={cancelMulligan}
-                      style={{ 
-                        flex: 1,
-                        padding: "0.75rem",
-                        fontSize: "1rem"
-                      }}
-                    >
-                      ❌ キャンセル
-                    </button>
-                    <button 
-                      className="btn-primary" 
-                      onClick={executeMulligan}
-                      style={{ 
-                        flex: 2,
-                        padding: "0.75rem",
-                        fontSize: "1rem"
-                      }}
-                    >
-                      ✅ マリガン実行 ({selectedForMulligan.length}枚)
-                    </button>
-                  </div>
-                ) : (
-                  // 通常モード
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <button 
-                      className="btn-primary" 
-                      onClick={drawCard}
-                      disabled={playDeck.length === 0}
-                      style={{ 
-                        flex: 2,
-                        padding: "0.75rem",
-                        fontSize: "1.1rem",
-                        opacity: playDeck.length === 0 ? 0.5 : 1
-                      }}
-                    >
-                      🎴 カードをドロー
-                    </button>
-                    {!mulliganDone && (
-                      <button 
-                        className="btn-secondary" 
-                        onClick={startMulligan}
-                        style={{ 
-                          flex: 1,
-                          padding: "0.75rem",
-                          fontSize: "1rem"
-                        }}
-                      >
-                        🔄 マリガン
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* マリガン説明 */}
+              {/* マリガンモーダル */}
               {isMulliganMode && (
                 <div style={{
-                  padding: "0.75rem",
-                  background: "linear-gradient(135deg, #fff9c4 0%, #fff59d 100%)",
-                  borderRadius: "8px",
-                  marginBottom: "0.75rem",
-                  border: "2px solid #fbc02d"
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: "rgba(0, 0, 0, 0.8)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 1000,
+                  padding: "1rem"
                 }}>
-                  <div style={{ fontWeight: "bold", marginBottom: "0.25rem", color: "#f57f17", fontSize: "0.9rem" }}>
-                    🔄 マリガン中
-                  </div>
-                  <div style={{ fontSize: "0.85rem", color: "#f57f17" }}>
-                    手札から戻したいカードを選択してください（最大5枚）
+                  <div style={{
+                    background: "white",
+                    borderRadius: "12px",
+                    padding: "1.5rem",
+                    maxWidth: "90%",
+                    maxHeight: "90vh",
+                    overflow: "auto"
+                  }}>
+                    <h3 style={{ marginTop: 0, textAlign: "center" }}>🔄 マリガン</h3>
+                    <p style={{ textAlign: "center", color: "#666", marginBottom: "1rem" }}>
+                      山札に戻すカードを選択（最大5枚）
+                    </p>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+                      gap: "0.5rem",
+                      marginBottom: "1rem"
+                    }}>
+                      {playHand.map((card, idx) => {
+                        const isSelected = selectedForMulligan.includes(idx);
+                        return (
+                          <div
+                            key={`mulligan-${card.id}-${idx}`}
+                            onClick={() => toggleMulliganSelect(idx)}
+                            style={{
+                              borderRadius: "8px",
+                              overflow: "hidden",
+                              border: isSelected ? "3px solid #fbc02d" : "3px solid transparent",
+                              cursor: "pointer",
+                              position: "relative",
+                              transition: "all 0.2s"
+                            }}
+                          >
+                            <div style={{ aspectRatio: "0.7" }}>
+                              {card.image ? (
+                                <img
+                                  src={URL.createObjectURL(card.image)}
+                                  alt={card.name}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover", opacity: isSelected ? 0.7 : 1 }}
+                                />
+                              ) : (
+                                <div style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  color: "white",
+                                  fontSize: "0.7rem",
+                                  fontWeight: "bold",
+                                  padding: "0.25rem",
+                                  opacity: isSelected ? 0.7 : 1
+                                }}>
+                                  {card.name}
+                                </div>
+                              )}
+                              {isSelected && (
+                                <div style={{
+                                  position: "absolute",
+                                  top: "50%",
+                                  left: "50%",
+                                  transform: "translate(-50%, -50%)",
+                                  background: "#fbc02d",
+                                  color: "white",
+                                  borderRadius: "50%",
+                                  width: "40px",
+                                  height: "40px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "1.5rem",
+                                  fontWeight: "bold"
+                                }}>
+                                  ✓
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button className="btn-secondary" onClick={cancelMulligan} style={{ flex: 1 }}>
+                        キャンセル
+                      </button>
+                      <button className="btn-primary" onClick={executeMulligan} style={{ flex: 1 }}>
+                        マリガン実行 ({selectedForMulligan.length}枚)
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* リムーブエリア */}
-              <div style={{ marginBottom: "1rem" }}>
-                <div className="section-header" style={{ marginBottom: "0.5rem" }}>
-                  <h3 className="section-title">🗑️ リムーブエリア</h3>
-                </div>
-                {playRemove.length === 0 ? (
+              {/* メインフィールド（Gridレイアウト） */}
+              <div style={{
+                flex: 1,
+                display: "grid",
+                gridTemplateColumns: "140px 1fr 120px",
+                gridTemplateRows: "1fr auto auto",
+                gap: "0.5rem",
+                minHeight: 0
+              }}>
+                {/* 左列（事件・証拠エリア） */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {/* 事件 */}
                   <div style={{
-                    padding: "1rem",
-                    background: "#f5f5f5",
+                    background: "linear-gradient(135deg, #e67e22 0%, #f39c12 100%)",
                     borderRadius: "8px",
-                    textAlign: "center",
-                    color: "#999",
-                    fontSize: "0.9rem"
+                    padding: "0.5rem",
+                    border: "2px solid #d35400",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center"
                   }}>
-                    リムーブエリアは空です
+                    <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white", marginBottom: "0.25rem" }}>
+                      事件
+                    </div>
+                    <div 
+                      style={{
+                        width: "100%",
+                        aspectRatio: "0.7",
+                        borderRadius: "6px",
+                        overflow: "hidden",
+                        background: "rgba(255,255,255,0.2)",
+                        cursor: incidentCard ? "pointer" : "default"
+                      }}
+                      onClick={() => {
+                        if (incidentCard) {
+                          openCardDetail(incidentCard);
+                        }
+                      }}
+                    >
+                      {incidentCard?.image ? (
+                        <img
+                          src={URL.createObjectURL(incidentCard.image)}
+                          alt={incidentCard.name}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "white",
+                          fontSize: "1.5rem"
+                        }}>
+                          📋
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : (
+
+                  {/* 証拠エリア */}
                   <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
-                    gap: "0.5rem",
-                    padding: "0.75rem",
-                    background: "#f5f5f5",
-                    borderRadius: "8px"
+                    flex: 1,
+                    background: "#78909c",
+                    borderRadius: "8px",
+                    padding: "0.5rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    border: "2px solid #546e7a",
+                    overflow: "hidden"
                   }}>
-                    {playRemove.map((card, idx) => (
-                      <div
-                        key={`remove-${card.id}-${idx}`}
-                        onClick={() => openCardMenu(card, idx, "remove")}
-                        style={{
-                          borderRadius: "8px",
-                          overflow: "hidden",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                          opacity: 0.8,
-                          cursor: "pointer"
-                        }}
-                      >
-                        <div style={{ aspectRatio: "0.7", position: "relative" }}>
-                          {card.image ? (
-                            <img
-                              src={URL.createObjectURL(card.image)}
-                              alt={card.name}
+                    {/* ヘッダー（クリックで開閉） */}
+                    <div 
+                      onClick={() => setIsEvidenceCollapsed(!isEvidenceCollapsed)}
+                      style={{ 
+                        display: "flex", 
+                        justifyContent: "space-between", 
+                        alignItems: "center",
+                        marginBottom: isEvidenceCollapsed ? "0" : "0.25rem",
+                        cursor: "pointer",
+                        userSelect: "none"
+                      }}
+                    >
+                      <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                        <span>{isEvidenceCollapsed ? "▶" : "▼"}</span>
+                        証拠エリア
+                      </div>
+                      <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "white" }}>
+                        {playEvidence.length}枚
+                      </div>
+                    </div>
+                    
+                    {/* カード表示エリア（折りたたみ可能） */}
+                    {!isEvidenceCollapsed && (
+                      <div style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                        overflowX: "hidden",
+                        overflowY: "auto",
+                        alignItems: "flex-start",
+                        paddingBottom: "2px"
+                      }}>
+                        {playEvidence.map((card, idx) => {
+                          const isFaceUp = evidenceFaceUp.has(card.id);
+                          return (
+                            <div
+                              key={`evidence-${card.id}-${idx}`}
+                              onClick={() => openCardMenu(card, idx, "evidence")}
                               style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover"
+                                width: "100px",
+                                height: "70px",
+                                borderRadius: "4px",
+                                overflow: "visible",
+                                cursor: "pointer",
+                                position: "relative",
+                                flexShrink: 0
                               }}
-                            />
-                          ) : (
-                            <div style={{
-                              width: "100%",
-                              height: "100%",
-                              background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexDirection: "column",
-                              color: "white",
-                              padding: "0.25rem"
-                            }}>
-                              <div style={{ fontSize: "0.55rem", marginBottom: "0.1rem" }}>
-                                Lv.{card.level}
-                              </div>
-                              <div style={{ fontSize: "0.65rem", fontWeight: "bold", textAlign: "center", lineHeight: "1.1" }}>
-                                {card.name}
+                            >
+                              <div style={{
+                                width: "70px",
+                                height: "100px",
+                                background: isFaceUp ? "transparent" : "linear-gradient(135deg, #8b6914 0%, #6b5010 100%)",
+                                border: "2px solid #4a3508",
+                                borderRadius: "4px",
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
+                                transform: "translate(-50%, -50%) rotate(90deg)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                overflow: "hidden"
+                              }}
+                            >
+                              {isFaceUp ? (
+                                // 表面：実際のカード画像
+                                card.image ? (
+                                  <img
+                                    src={URL.createObjectURL(card.image)}
+                                    alt={card.name}
+                                    style={{ 
+                                      width: "100%", 
+                                      height: "100%", 
+                                      objectFit: "cover"
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100())`,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    flexDirection: "column",
+                                    color: "white",
+                                    padding: "0.25rem",
+                                    fontSize: "0.5rem"
+                                  }}>
+                                    <div>Lv.{card.level}</div>
+                                    <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.6rem" }}>{card.name}</div>
+                                  </div>
+                                )
+                              ) : (
+                                // 裏面：裏面画像
+                                <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                                  <img
+                                    src={cardBackImage}
+                                    alt="カード裏面"
+                                    style={{ 
+                                      width: "100%", 
+                                      height: "100%", 
+                                      objectFit: "cover",
+                                      position: "absolute",
+                                      top: 0,
+                                      left: 0
+                                    }}
+                                    onLoad={() => console.log("✅ 画像読み込み成功")}
+                                    onError={(e) => {
+                                      console.error("❌ 画像読み込み失敗:", (e.target as HTMLImageElement).src);
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                  <div style={{
+                                    position: "absolute",
+                                    top: "50%",
+                                    left: "50%",
+                                    transform: "translate(-50%, -50%)",
+                                    fontSize: "0.5rem",
+                                    color: "#d4a574",
+                                    fontWeight: "bold",
+                                    textAlign: "center",
+                                    textShadow: "0 1px 2px rgba(0,0,0,0.5)",
+                                    opacity: 0.3,
+                                    whiteSpace: "nowrap"
+                                  }}>
+                                    DETECTIVE<br/>CONAN
+                                  </div>
+                                </div>
+                              )}
                               </div>
                             </div>
-                          )}
-                        </div>
+                          );
+                        })}
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* 現場（フィールド） */}
-              <div style={{ marginBottom: "1rem" }}>
-                <div className="section-header" style={{ marginBottom: "0.5rem" }}>
-                  <h3 className="section-title">🎴 現場</h3>
                 </div>
-                {playField.length === 0 ? (
+
+                {/* 中央エリア */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {/* 現場エリア */}
                   <div style={{
-                    padding: "1rem",
-                    background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
+                    flex: 1,
+                    background: "linear-gradient(135deg, #b0bec5 0%, #90a4ae 100%)",
                     borderRadius: "8px",
-                    textAlign: "center",
-                    color: "#1976d2",
-                    fontSize: "0.9rem"
+                    padding: "0.5rem",
+                    border: "2px solid #78909c",
+                    overflow: "hidden",
+                    display: "flex",
+                    flexDirection: "column"
                   }}>
-                    カードを出してください
-                  </div>
-                ) : (
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(85px, 1fr))",
-                    gap: "0.3rem",
-                    padding: "0.75rem",
-                    background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
-                    borderRadius: "8px"
-                  }}>
-                    {playField.map((card, idx) => (
-                      <div
-                        key={`field-${card.id}-${idx}`}
-                        onClick={() => openCardMenu(card, idx, "field")}
-                        style={{
-                          borderRadius: "8px",
-                          overflow: "hidden",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                          transition: "transform 0.2s",
-                          cursor: "pointer"
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = "translateY(-8px)";
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
-                      >
-                        <div style={{ aspectRatio: "0.7", position: "relative" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: "bold", color: "white", marginBottom: "0.5rem", textAlign: "center" }}>
+                      現場
+                    </div>
+                    <div style={{
+                      flex: 1,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(5, 1fr)",
+                      gap: "0.3rem",
+                      overflow: "auto",
+                      alignContent: "start"
+                    }}>
+                      {playField.map((card, idx) => (
+                        <div
+                          key={`field-${card.id}-${idx}`}
+                          onClick={() => openCardMenu(card, idx, "field")}
+                          style={{
+                            aspectRatio: "0.7",
+                            borderRadius: "6px",
+                            overflow: "hidden",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                            cursor: "pointer"
+                          }}
+                        >
                           {card.image ? (
                             <img
                               src={URL.createObjectURL(card.image)}
                               alt={card.name}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover"
-                              }}
-                            />
-                          ) : (
-                            <div style={{
-                              width: "100%",
-                              height: "100%",
-                              background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexDirection: "column",
-                              color: "white",
-                              padding: "0.25rem"
-                            }}>
-                              <div style={{ fontSize: "0.6rem", marginBottom: "0.1rem" }}>
-                                Lv.{card.level}
-                              </div>
-                              <div style={{ fontSize: "0.7rem", fontWeight: "bold", textAlign: "center", lineHeight: "1.1" }}>
-                                {card.name}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* 手札表示 */}
-              <div className="section-header">
-                <h3 className="section-title">🃏 手札</h3>
-              </div>
-              {playHand.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-state-icon">🃏</div>
-                  <div>手札がありません</div>
-                </div>
-              ) : (
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(85px, 1fr))",
-                  gap: "0.3rem",
-                  padding: "0.5rem 0"
-                }}>
-                  {playHand.map((card, idx) => {
-                    const isSelected = selectedForMulligan.includes(idx);
-                    return (
-                      <div
-                        key={`hand-${card.id}-${idx}`}
-                        onClick={() => isMulliganMode ? toggleMulliganSelect(idx) : openCardMenu(card, idx, "hand")}
-                        style={{
-                          borderRadius: "8px",
-                          overflow: "hidden",
-                          boxShadow: isSelected 
-                            ? "0 0 0 4px #fbc02d, 0 4px 12px rgba(0,0,0,0.15)"
-                            : "0 4px 12px rgba(0,0,0,0.15)",
-                          transition: "transform 0.2s, box-shadow 0.2s",
-                          cursor: "pointer",
-                          position: "relative"
-                        }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = "translateY(-8px)";
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = "translateY(0)";
-                        }}
-                      >
-                        <div style={{ aspectRatio: "0.7", position: "relative" }}>
-                          {card.image ? (
-                            <img
-                              src={URL.createObjectURL(card.image)}
-                              alt={card.name}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                opacity: isSelected ? 0.7 : 1
-                              }}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
                             />
                           ) : (
                             <div style={{
@@ -2314,44 +2440,376 @@ export default function App() {
                               flexDirection: "column",
                               color: "white",
                               padding: "0.25rem",
-                              opacity: isSelected ? 0.7 : 1
+                              fontSize: "0.6rem"
                             }}>
-                              <div style={{ fontSize: "0.6rem", marginBottom: "0.1rem" }}>
-                                Lv.{card.level}
-                              </div>
-                              <div style={{ fontSize: "0.7rem", fontWeight: "bold", textAlign: "center", lineHeight: "1.1" }}>
-                                {card.name}
-                              </div>
+                              <div>Lv.{card.level}</div>
+                              <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.65rem" }}>{card.name}</div>
                             </div>
                           )}
-                          {isSelected && (
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* パートナーと手札エリア */}
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 180px",
+                    gap: "0.5rem"
+                  }}>
+                    {/* 手札エリア（左側・広い） */}
+                    <div style={{
+                      background: "linear-gradient(to top, #34495e 0%, #2c3e50 100%)",
+                      borderRadius: "8px",
+                      padding: "0.5rem",
+                      border: "2px solid #1a252f",
+                      display: "flex",
+                      flexDirection: "column"
+                    }}>
+                      <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginBottom: "0.5rem"
+                      }}>
+                        <div style={{ fontSize: "0.8rem", fontWeight: "bold", color: "white" }}>
+                          🃏 手札 ({playHand.length}枚)
+                        </div>
+                        {!mulliganDone && (
+                          <button
+                            className="btn-secondary"
+                            onClick={startMulligan}
+                            style={{ padding: "0.25rem 0.75rem", fontSize: "0.75rem" }}
+                          >
+                            🔄 マリガン
+                          </button>
+                        )}
+                      </div>
+                      <div style={{
+                        flex: 1,
+                        display: "flex",
+                        gap: "0.3rem",
+                        overflowX: "auto",
+                        overflowY: "hidden",
+                        alignItems: "flex-start"
+                      }}>
+                        {playHand.map((card, idx) => (
+                          <div
+                            key={`hand-${card.id}-${idx}`}
+                            onClick={() => openCardMenu(card, idx, "hand")}
+                            style={{
+                              minWidth: "70px",
+                              width: "70px",
+                              aspectRatio: "0.7",
+                              borderRadius: "6px",
+                              overflow: "hidden",
+                              boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                              cursor: "pointer",
+                              transition: "transform 0.2s"
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.transform = "translateY(-10px)";
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.transform = "translateY(0)";
+                            }}
+                          >
+                            {card.image ? (
+                              <img
+                                src={URL.createObjectURL(card.image)}
+                                alt={card.name}
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            ) : (
+                              <div style={{
+                                width: "100%",
+                                height: "100%",
+                                background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexDirection: "column",
+                                color: "white",
+                                padding: "0.25rem",
+                                fontSize: "0.6rem"
+                              }}>
+                                <div>Lv.{card.level}</div>
+                                <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.65rem" }}>{card.name}</div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* パートナーエリア（右側・カード2枚分） */}
+                    <div style={{
+                      background: "linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)",
+                      borderRadius: "8px",
+                      padding: "0.5rem",
+                      border: "2px solid #7d3c98",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.5rem"
+                    }}>
+                      <div 
+                        style={{
+                          width: "70px",
+                          aspectRatio: "0.7",
+                          borderRadius: "6px",
+                          overflow: "hidden",
+                          background: "rgba(255,255,255,0.2)",
+                          flexShrink: 0,
+                          cursor: partnerCard ? "pointer" : "default"
+                        }}
+                        onClick={() => {
+                          if (partnerCard) {
+                            openCardDetail(partnerCard);
+                          }
+                        }}
+                      >
+                        {partnerCard?.image ? (
+                          <img
+                            src={URL.createObjectURL(partnerCard.image)}
+                            alt={partnerCard.name}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: "100%",
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontSize: "1.5rem"
+                          }}>
+                            👤
+                          </div>
+                        )}
+                      </div>
+                      <div style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        color: "white"
+                      }}>
+                        <div style={{ fontSize: "0.7rem", fontWeight: "bold", whiteSpace: "nowrap" }}>
+                          パートナー
+                        </div>
+                        {partnerCard && (
+                          <div style={{ fontSize: "0.6rem", textAlign: "center", marginTop: "0.25rem" }}>
+                            {partnerCard.name}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 右列（山札・リムーブエリア） */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {/* 山札 */}
+                  <div
+                    onClick={drawCard}
+                    style={{
+                      flex: 1,
+                      background: "#607d8b",
+                      borderRadius: "8px",
+                      padding: "0.5rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: playDeck.length > 0 ? "pointer" : "default",
+                      opacity: playDeck.length === 0 ? 0.5 : 1,
+                      border: "2px solid #455a64",
+                      color: "white"
+                    }}
+                  >
+                    <div style={{ fontSize: "2rem", marginBottom: "0.25rem" }}>🎴</div>
+                    <div style={{ fontSize: "0.7rem", fontWeight: "bold" }}>山札</div>
+                    <div style={{ fontSize: "1.2rem", fontWeight: "bold" }}>{playDeck.length}</div>
+                  </div>
+
+                  {/* リムーブエリア */}
+                  <div style={{
+                    flex: 1,
+                    background: "#78909c",
+                    borderRadius: "8px",
+                    padding: "0.5rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    border: "2px solid #546e7a",
+                    overflow: "hidden"
+                  }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white", marginBottom: "0.25rem", textAlign: "center" }}>
+                      リムーブ
+                    </div>
+                    <div style={{ fontSize: "1rem", fontWeight: "bold", color: "white", textAlign: "center", marginBottom: "0.25rem" }}>
+                      {playRemove.length}枚
+                    </div>
+                    <div style={{
+                      flex: 1,
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "2px",
+                      overflow: "auto"
+                    }}>
+                      {playRemove.slice(0, 6).map((card, idx) => (
+                        <div
+                          key={`remove-${card.id}-${idx}`}
+                          onClick={() => openCardMenu(card, idx, "remove")}
+                          style={{
+                            aspectRatio: "0.7",
+                            borderRadius: "4px",
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            opacity: 0.8
+                          }}
+                        >
+                          {card.image ? (
+                            <img
+                              src={URL.createObjectURL(card.image)}
+                              alt={card.name}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "100%",
+                              height: "100%",
+                              background: colorMap[card.color ?? "黄"],
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontSize: "0.5rem",
+                              color: "white"
+                            }}>
+                              Lv.{card.level}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* FILEエリア（最下部・全幅） */}
+                <div style={{
+                  gridColumn: "1 / -1",
+                  background: "linear-gradient(135deg, #546e7a 0%, #37474f 100%)",
+                  borderRadius: "8px",
+                  padding: "0.5rem",
+                  border: "2px solid #263238",
+                  minHeight: "60px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem"
+                }}>
+                  {/* ヘッダー */}
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    color: "white"
+                  }}>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem"
+                    }}>
+                      <div style={{ fontSize: "1.2rem" }}>📁</div>
+                      <div style={{ fontSize: "0.8rem", fontWeight: "bold" }}>FILE</div>
+                      <div style={{ fontSize: "0.9rem", fontWeight: "bold" }}>{playFile.length}枚</div>
+                    </div>
+                    <button
+                      onClick={moveDeckToFile}
+                      disabled={playDeck.length === 0}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        background: playDeck.length === 0 ? "#666" : "linear-gradient(135deg, #42a5f5 0%, #1976d2 100%)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.9rem",
+                        fontWeight: "bold",
+                        cursor: playDeck.length === 0 ? "not-allowed" : "pointer",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+                      }}
+                    >
+                      ➕ 山札から1枚
+                    </button>
+                  </div>
+                  
+                  {/* カード表示エリア */}
+                  {playFile.length > 0 && (
+                    <div style={{
+                      display: "flex",
+                      gap: "4px",
+                      overflowX: "auto",
+                      paddingBottom: "4px"
+                    }}>
+                      {playFile.map((card, idx) => (
+                        <div
+                          key={`file-${card.id}-${idx}`}
+                          style={{
+                            width: "100px",
+                            height: "70px",
+                            flexShrink: 0,
+                            position: "relative"
+                          }}
+                        >
+                          <div style={{
+                            width: "70px",
+                            height: "100px",
+                            background: "linear-gradient(135deg, #8b6914 0%, #6b5010 100%)",
+                            border: "2px solid #4a3508",
+                            borderRadius: "4px",
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%) rotate(90deg)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden"
+                          }}>
+                            {/* 裏面画像 */}
+                            <img
+                              src={cardBackImage}
+                              alt="カード裏面"
+                              style={{ 
+                                width: "100%", 
+                                height: "100%", 
+                                objectFit: "cover",
+                                position: "absolute",
+                                top: 0,
+                                left: 0
+                              }}
+                            />
                             <div style={{
                               position: "absolute",
                               top: "50%",
                               left: "50%",
                               transform: "translate(-50%, -50%)",
-                              background: "rgba(251, 192, 45, 0.95)",
-                              color: "white",
-                              borderRadius: "50%",
-                              width: "50px",
-                              height: "50px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              fontSize: "1.5rem",
+                              fontSize: "0.5rem",
+                              color: "#d4a574",
                               fontWeight: "bold",
-                              border: "3px solid white",
-                              boxShadow: "0 2px 8px rgba(0,0,0,0.3)"
+                              textAlign: "center",
+                              textShadow: "0 1px 2px rgba(0,0,0,0.5)",
+                              opacity: 0.3,
+                              whiteSpace: "nowrap"
                             }}>
-                              ✓
+                              DETECTIVE<br/>CONAN
                             </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -2432,17 +2890,57 @@ export default function App() {
               )}
               
               {selectedCard.location === "field" && (
-                <button
-                  className="btn-primary"
-                  onClick={() => handleMenuAction("remove")}
-                  style={{
-                    width: "100%",
-                    padding: "1rem",
-                    fontSize: "1.1rem"
-                  }}
-                >
-                  🗑️ リムーブエリアへ
-                </button>
+                <>
+                  <button
+                    className="btn-primary"
+                    onClick={() => handleMenuAction("evidence")}
+                    style={{
+                      width: "100%",
+                      padding: "1rem",
+                      fontSize: "1.1rem"
+                    }}
+                  >
+                    📋 証拠エリアへ
+                  </button>
+                  <button
+                    className="btn-primary"
+                    onClick={() => handleMenuAction("remove")}
+                    style={{
+                      width: "100%",
+                      padding: "1rem",
+                      fontSize: "1.1rem"
+                    }}
+                  >
+                    🗑️ リムーブエリアへ
+                  </button>
+                </>
+              )}
+              
+              {selectedCard.location === "evidence" && (
+                <>
+                  <button
+                    className="btn-primary"
+                    onClick={() => handleMenuAction("toggleFace")}
+                    style={{
+                      width: "100%",
+                      padding: "1rem",
+                      fontSize: "1.1rem"
+                    }}
+                  >
+                    🔄 {evidenceFaceUp.has(selectedCard.card.id) ? "裏にする" : "表にする"}
+                  </button>
+                  <button
+                    className="btn-primary"
+                    onClick={() => handleMenuAction("move")}
+                    style={{
+                      width: "100%",
+                      padding: "1rem",
+                      fontSize: "1.1rem"
+                    }}
+                  >
+                    ➡️ 移動する
+                  </button>
+                </>
               )}
               
               <button
@@ -2697,6 +3195,98 @@ export default function App() {
                   {detailCard.memo}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 移動先選択モーダル */}
+      {showMoveDestination && selectedCard && selectedCard.location === "evidence" && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => setShowMoveDestination(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1001
+          }}
+        >
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "1.5rem",
+              maxWidth: "90%",
+              width: "400px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
+            }}
+          >
+            <h3 style={{ marginBottom: "1rem", fontSize: "1.2rem", fontWeight: "bold" }}>移動先を選択</h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <button
+                className="btn-primary"
+                onClick={() => moveEvidenceCard(selectedCard.index, "field")}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1.1rem"
+                }}
+              >
+                🎴 現場
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => moveEvidenceCard(selectedCard.index, "hand")}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1.1rem"
+                }}
+              >
+                🃏 手札
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => moveEvidenceCard(selectedCard.index, "remove")}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1.1rem"
+                }}
+              >
+                🗑️ リムーブ
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => moveEvidenceCard(selectedCard.index, "deck")}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1.1rem"
+                }}
+              >
+                🎴 山札（一番下）
+              </button>
+              <button
+                className="btn-secondary"
+                onClick={() => setShowMoveDestination(false)}
+                style={{
+                  width: "100%",
+                  padding: "1rem",
+                  fontSize: "1.1rem"
+                }}
+              >
+                ◀️ 戻る
+              </button>
             </div>
           </div>
         </div>
