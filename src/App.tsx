@@ -1492,7 +1492,7 @@ export default function App() {
               <h2 className="section-title">デッキ管理</h2>
               <button className="btn-primary" onClick={createDeck}>➕</button>
             </div>
-            <div className="deck-list" style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <div className="deck-list">
               {decks.map((d) => {
                 // 選択中のデッキの色分布を計算
                 let colorDistribution: Record<string, number> = {};
@@ -1514,38 +1514,27 @@ export default function App() {
                     title="クリックで選択・ダブルクリックでリネーム"
                     style={{
                       display: "flex",
-                      flexDirection: "column",
-                      alignItems: "stretch",
-                      gap: "0.5rem",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.75rem",
                       padding: "0.75rem",
                       cursor: "pointer"
                     }}
                   >
-                    {/* 1行目: デッキ名と削除ボタン */}
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between"
-                    }}>
-                      <span style={{ flex: 1, fontWeight: "bold", fontSize: "1rem" }}>{d.name}</span>
-                      <button 
-                        className="deck-delete-btn" 
-                        onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} 
-                        title="削除"
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    {/* デッキ名 */}
+                    <span style={{ fontWeight: "bold", fontSize: "1rem" }}>{d.name}</span>
                     
-                    {/* 2行目: 色分布（選択中のデッキのみ） */}
+                    {/* 色分布（選択中のデッキのみ） */}
                     {d.id === activeDeckId && (
                       <div style={{
                         display: "flex",
-                        gap: "2px",
-                        height: "20px",
-                        padding: "0.25rem",
-                        background: "#f5f5f5",
-                        borderRadius: "6px",
+                        gap: "1px",
+                        height: "12px",
+                        minWidth: "60px",
+                        maxWidth: "100px",
+                        flex: 1,
+                        borderRadius: "3px",
+                        overflow: "hidden",
                         border: "1px solid #e0e0e0"
                       }}>
                         {COLOR_OPTIONS.map((color) => {
@@ -1562,9 +1551,7 @@ export default function App() {
                                 height: "100%",
                                 width: `${widthPercent}%`,
                                 background: colorMap[color],
-                                borderRadius: "3px",
-                                transition: "all 0.3s ease",
-                                minWidth: "8px"
+                                minWidth: "3px"
                               }}
                               title={`${color}: ${count}枚`}
                             />
@@ -1572,12 +1559,19 @@ export default function App() {
                         })}
                       </div>
                     )}
+                    
+                    {/* 削除ボタン */}
+                    <button 
+                      className="deck-delete-btn" 
+                      onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} 
+                      title="削除"
+                    >
+                      ✕
+                    </button>
                   </div>
                 );
               })}
             </div>
-          </div>
-        </div>
 
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
