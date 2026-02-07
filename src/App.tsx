@@ -1503,7 +1503,7 @@ export default function App() {
                   color: "#1b5e20",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
                 }}>
-                  ✅ デッキ完成！40枚のデッキが完成しました。
+                  ✅ 40枚のデッキが完成しました！
                 </div>
               )}
 
