@@ -1465,25 +1465,6 @@ export default function App() {
                     })}
                   </div>
                 </div>
-
-                {/* 統計情報 */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.4rem", minWidth: "140px" }}>
-                  <div style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#d4716b" }}>
-                    {activeDeck.name}
-                  </div>
-                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-                    <div style={{ fontSize: "0.8rem" }}>
-                      <span style={{ color: "#666" }}>キャラ:</span> <strong style={{ fontSize: "0.9rem", color: "#667eea" }}>{characterCount}</strong>
-                    </div>
-                    <div style={{ fontSize: "0.8rem" }}>
-                      <span style={{ color: "#666" }}>イベント:</span> <strong style={{ fontSize: "0.9rem", color: "#ff9a9e" }}>{eventCount}</strong>
-                    </div>
-                    <div style={{ fontSize: "0.8rem" }} key={`deck-count-${totalInDeck}`}>
-                      <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "0.9rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
-                    </div>
-                  </div>
-                  <button className="btn-secondary" style={{ padding: "0.4rem 0.75rem", fontSize: "1rem", alignSelf: "flex-start" }} onClick={renameActiveDeck}>✏️</button>
-                </div>
               </div>
 
               {totalInDeck === TARGET_DECK_SIZE && (
