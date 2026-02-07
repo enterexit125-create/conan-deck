@@ -1511,59 +1511,52 @@ export default function App() {
                   >
                     <span style={{ flex: 1 }}>{d.name}</span>
                     
-                    {/* デッキプレビュー（選択中のデッキのみ） */}
+                    {/* レベル分布ミニグラフ（選択中のデッキのみ） */}
                     {d.id === activeDeckId && (
                       <div style={{
                         display: "flex",
-                        alignItems: "center",
-                        gap: "0.5rem",
-                        fontSize: "0.75rem"
+                        alignItems: "flex-end",
+                        gap: "2px",
+                        height: "30px",
+                        padding: "0.25rem",
+                        background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
+                        borderRadius: "4px",
+                        border: "1px solid #ffd4dc"
                       }}>
-                        {/* パートナー */}
-                        {partnerCard?.image && (
-                          <div style={{
-                            width: "30px",
-                            height: "42px",
-                            borderRadius: "3px",
-                            overflow: "hidden",
-                            border: "1px solid #e0e0e0",
-                            background: "#f5f5f5"
-                          }}>
-                            <img 
-                              src={URL.createObjectURL(partnerCard.image)} 
-                              alt={partnerCard.name} 
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                            />
-                          </div>
-                        )}
+                        {LEVEL_OPTIONS.map((level) => {
+                          const count = levelDistribution[level] || 0;
+                          const height = maxLevelCount > 0 ? (count / maxLevelCount) * 20 : 0;
+                          
+                          return (
+                            <div key={level} style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: "1px",
+                              width: "12px"
+                            }}>
+                              <div style={{
+                                width: "100%",
+                                height: `${Math.max(height, 2)}px`,
+                                background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
+                                borderRadius: "2px 2px 0 0",
+                                transition: "all 0.3s ease"
+                              }} />
+                            </div>
+                          );
+                        })}
                         
-                        {/* 事件 */}
-                        {incidentCard?.image && (
-                          <div style={{
-                            width: "42px",
-                            height: "30px",
-                            borderRadius: "3px",
-                            overflow: "hidden",
-                            border: "1px solid #e0e0e0",
-                            background: "#f5f5f5"
-                          }}>
-                            <img 
-                              src={URL.createObjectURL(incidentCard.image)} 
-                              alt={incidentCard.name} 
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }} 
-                            />
-                          </div>
-                        )}
-                        
-                        {/* 枚数 */}
+                        {/* 枚数表示 */}
                         <div style={{
+                          marginLeft: "0.5rem",
                           padding: "0.25rem 0.5rem",
-                          background: totalInDeck === TARGET_DECK_SIZE ? "#c8e6c9" : "#e0e0e0",
-                          borderRadius: "8px",
+                          background: totalInDeck === TARGET_DECK_SIZE ? "#c8e6c9" : "white",
+                          borderRadius: "6px",
                           fontWeight: "bold",
                           color: totalInDeck === TARGET_DECK_SIZE ? "#1b5e20" : "#666",
                           fontSize: "0.7rem",
-                          whiteSpace: "nowrap"
+                          whiteSpace: "nowrap",
+                          border: totalInDeck === TARGET_DECK_SIZE ? "1px solid #43a047" : "1px solid #e0e0e0"
                         }}>
                           {totalInDeck}/40
                         </div>
