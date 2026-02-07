@@ -1259,7 +1259,11 @@ export default function App() {
                 <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>検索条件を変更してください</div>
               </div>
             ) : (
-              <div className="cards-grid">
+              <div className="cards-grid" style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                gap: "0.5rem"
+              }}>
                 {filteredCards.map((c) => (
                   <div key={c.id} className="card-item">
                     {c.color && <div className="card-color-badge" style={{ background: colorMap[c.color] || "#9e9e9e" }} />}
