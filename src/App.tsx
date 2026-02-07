@@ -2441,6 +2441,46 @@ export default function App() {
               ✕
             </button>
 
+            {/* デッキから外すボタン（左上・パートナー/事件のみ） */}
+            {(detailCard.type === "パートナー" || detailCard.type === "事件") && detailCard.id && (
+              <button
+                onClick={() => {
+                  if (confirm(`${detailCard.name}をデッキから外しますか？`)) {
+                    removeCardFromDeck(detailCard.id!);
+                  }
+                }}
+                style={{
+                  position: "absolute",
+                  top: "1rem",
+                  left: "1rem",
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  border: "2px solid #d32f2f",
+                  background: "white",
+                  fontSize: "1.2rem",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.2s",
+                  zIndex: 10,
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#d32f2f";
+                  e.currentTarget.style.borderColor = "#d32f2f";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "white";
+                  e.currentTarget.style.borderColor = "#d32f2f";
+                }}
+                title="デッキから外す"
+              >
+                🗑️
+              </button>
+            )}
+
             {/* カード画像 */}
             <div style={{
               marginBottom: "1rem",
@@ -2544,39 +2584,6 @@ export default function App() {
                 </div>
               )}
             </div>
-
-            {/* パートナーまたは事件カードの場合、デッキから外すボタンを表示 */}
-            {(detailCard.type === "パートナー" || detailCard.type === "事件") && detailCard.id && (
-              <button
-                onClick={() => {
-                  if (confirm(`${detailCard.name}をデッキから外しますか？`)) {
-                    removeCardFromDeck(detailCard.id!);
-                  }
-                }}
-                style={{
-                  width: "100%",
-                  padding: "0.75rem",
-                  background: "#ffebee",
-                  color: "#d32f2f",
-                  border: "2px solid #d32f2f",
-                  borderRadius: "12px",
-                  fontSize: "1rem",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.background = "#d32f2f";
-                  e.currentTarget.style.color = "white";
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.background = "#ffebee";
-                  e.currentTarget.style.color = "#d32f2f";
-                }}
-              >
-                🗑️ デッキから外す
-              </button>
-            )}
           </div>
         </div>
       )}
