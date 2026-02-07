@@ -1496,7 +1496,25 @@ export default function App() {
                 }}>
                   {/* パートナー */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
-                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                      パートナー
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCardSelectModal("partner");
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "0.9rem",
+                          padding: "0.1rem"
+                        }}
+                        title="パートナーを変更"
+                      >
+                        ✏️
+                      </button>
+                    </div>
                     <div style={{
                       width: "70px",
                       height: "98px",
@@ -1509,7 +1527,11 @@ export default function App() {
                       justifyContent: "center",
                       cursor: "pointer"
                     }} onClick={() => {
-                      openCardSelectModal("partner");
+                      if (partnerCard) {
+                        openCardDetail(partnerCard);
+                      } else {
+                        openCardSelectModal("partner");
+                      }
                     }}>
                       {partnerCard?.image ? (
                         <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -1522,7 +1544,25 @@ export default function App() {
 
                   {/* 事件 */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
-                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>事件</div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                      事件
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openCardSelectModal("incident");
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontSize: "0.9rem",
+                          padding: "0.1rem"
+                        }}
+                        title="事件を変更"
+                      >
+                        ✏️
+                      </button>
+                    </div>
                     <div style={{
                       width: "98px",
                       height: "70px",
@@ -1535,7 +1575,11 @@ export default function App() {
                       justifyContent: "center",
                       cursor: "pointer"
                     }} onClick={() => {
-                      openCardSelectModal("incident");
+                      if (incidentCard) {
+                        openCardDetail(incidentCard);
+                      } else {
+                        openCardSelectModal("incident");
+                      }
                     }}>
                     {incidentCard?.image ? (
                       <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
