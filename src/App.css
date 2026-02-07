@@ -574,8 +574,7 @@ button {
 }
 
 /* ==================== レスポンシブ ==================== */
-@media (width: 100%;
-  max-width: none;) {
+@media (max-width: 768px) {
   .menu-toggle {
     display: block;
   }
@@ -585,7 +584,19 @@ button {
   }
 
   .nav-tabs {
-    display: none;
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .nav-tabs li {
+    flex: 1;
+    min-width: auto;
+  }
+
+  .nav-tab-button {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.85rem;
   }
 
   .app-content {
@@ -624,8 +635,7 @@ button {
   }
 }
 
-@media ( width: 100%;
-  max-width: none;) {
+@media (max-width: 480px) {
   .app-header {
     padding: 0.75rem 1rem;
   }
