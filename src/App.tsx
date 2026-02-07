@@ -136,6 +136,10 @@ export default function App() {
   // カードメニュー用
   const [showCardMenu, setShowCardMenu] = useState(false);
   const [selectedCard, setSelectedCard] = useState<{ card: Card; index: number; location: "hand" | "field" | "remove" } | null>(null);
+  
+  // カード拡大表示用
+  const [showCardDetail, setShowCardDetail] = useState(false);
+  const [detailCard, setDetailCard] = useState<Card | null>(null);
 
   // 初回：デッキが無ければ作る
   useEffect(() => {
@@ -810,11 +814,22 @@ export default function App() {
         }
         break;
       case "view":
-        // 拡大表示（後で実装）
-        alert(`${selectedCard.card.name}の詳細表示（未実装）`);
+        // 拡大表示
+        setDetailCard(selectedCard.card);
+        setShowCardDetail(true);
         closeCardMenu();
         break;
     }
+  }
+
+  function openCardDetail(card: Card) {
+    setDetailCard(card);
+    setShowCardDetail(true);
+  }
+
+  function closeCardDetail() {
+    setShowCardDetail(false);
+    setDetailCard(null);
   }
 
   function startMulligan() {
@@ -1267,7 +1282,9 @@ export default function App() {
                 {filteredCards.map((c) => (
                   <div key={c.id} className="card-item">
                     {c.color && <div className="card-color-badge" style={{ background: colorMap[c.color] || "#9e9e9e" }} />}
-                    <Thumb blob={c.image} alt={c.name ?? "card"} size="large" />
+                    <div onClick={() => openCardDetail(c)} style={{ cursor: "pointer" }}>
+                      <Thumb blob={c.image} alt={c.name ?? "card"} size="large" />
+                    </div>
                     <div className="card-name">{c.name}</div>
                     <div className="card-number" style={{ fontSize: "0.8rem" }}>
                       {c.number || "---"}
@@ -2175,6 +2192,156 @@ export default function App() {
                 ❌ キャンセル
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* カード拡大表示モーダル */}
+      {showCardDetail && detailCard && (
+        <div 
+          className="modal-overlay" 
+          onClick={closeCardDetail}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem"
+          }}
+        >
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "1.5rem",
+              maxWidth: "500px",
+              width: "100%",
+              maxHeight: "90vh",
+              overflowY: "auto"
+            }}
+          >
+            {/* カード画像 */}
+            <div style={{
+              marginBottom: "1rem",
+              borderRadius: "12px",
+              overflow: "hidden",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
+            }}>
+              {detailCard.image ? (
+                <img
+                  src={URL.createObjectURL(detailCard.image)}
+                  alt={detailCard.name}
+                  style={{
+                    width: "100%",
+                    height: "auto",
+                    display: "block"
+                  }}
+                />
+              ) : (
+                <div style={{
+                  aspectRatio: "0.7",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontSize: "3rem"
+                }}>
+                  🃏
+                </div>
+              )}
+            </div>
+
+            {/* カード情報 */}
+            <div style={{ marginBottom: "1rem" }}>
+              <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "0.75rem", color: "#333" }}>
+                {detailCard.name}
+              </h2>
+              
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+                {detailCard.number && (
+                  <span style={{
+                    padding: "0.25rem 0.75rem",
+                    background: "#e0e0e0",
+                    borderRadius: "12px",
+                    fontSize: "0.9rem",
+                    fontWeight: "bold"
+                  }}>
+                    No.{detailCard.number}
+                  </span>
+                )}
+                {detailCard.color && (
+                  <span style={{
+                    padding: "0.25rem 0.75rem",
+                    background: colorMap[detailCard.color],
+                    color: "white",
+                    borderRadius: "12px",
+                    fontSize: "0.9rem",
+                    fontWeight: "bold"
+                  }}>
+                    {detailCard.color}
+                  </span>
+                )}
+                {detailCard.type && (
+                  <span style={{
+                    padding: "0.25rem 0.75rem",
+                    background: "#667eea",
+                    color: "white",
+                    borderRadius: "12px",
+                    fontSize: "0.9rem",
+                    fontWeight: "bold"
+                  }}>
+                    {detailCard.type}
+                  </span>
+                )}
+                {detailCard.level && (
+                  <span style={{
+                    padding: "0.25rem 0.75rem",
+                    background: "#f093fb",
+                    color: "white",
+                    borderRadius: "12px",
+                    fontSize: "0.9rem",
+                    fontWeight: "bold"
+                  }}>
+                    Lv.{detailCard.level}
+                  </span>
+                )}
+              </div>
+
+              {detailCard.memo && (
+                <div style={{
+                  padding: "0.75rem",
+                  background: "#f5f7fa",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  color: "#666",
+                  whiteSpace: "pre-wrap"
+                }}>
+                  {detailCard.memo}
+                </div>
+              )}
+            </div>
+
+            {/* 閉じるボタン */}
+            <button
+              className="btn-secondary"
+              onClick={closeCardDetail}
+              style={{
+                width: "100%",
+                padding: "1rem",
+                fontSize: "1.1rem"
+              }}
+            >
+              ✕ 閉じる
+            </button>
           </div>
         </div>
       )}
