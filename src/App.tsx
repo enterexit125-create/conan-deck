@@ -2343,9 +2343,43 @@ export default function App() {
               maxWidth: "350px",
               width: "100%",
               maxHeight: "90vh",
-              overflowY: "auto"
+              overflowY: "auto",
+              position: "relative"
             }}
           >
+            {/* 閉じるボタン（右上） */}
+            <button
+              onClick={closeCardDetail}
+              style={{
+                position: "absolute",
+                top: "1rem",
+                right: "1rem",
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                border: "2px solid #e0e0e0",
+                background: "white",
+                fontSize: "1.2rem",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "all 0.2s",
+                zIndex: 10,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = "#f5f5f5";
+                e.currentTarget.style.borderColor = "#999";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = "white";
+                e.currentTarget.style.borderColor = "#e0e0e0";
+              }}
+            >
+              ✕
+            </button>
+
             {/* カード画像 */}
             <div style={{
               marginBottom: "1rem",
@@ -2447,19 +2481,6 @@ export default function App() {
                 </div>
               )}
             </div>
-
-            {/* 閉じるボタン */}
-            <button
-              className="btn-secondary"
-              onClick={closeCardDetail}
-              style={{
-                width: "100%",
-                padding: "1rem",
-                fontSize: "1.1rem"
-              }}
-            >
-              ✕ 閉じる
-            </button>
           </div>
         </div>
       )}
