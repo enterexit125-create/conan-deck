@@ -1572,6 +1572,8 @@ export default function App() {
                 );
               })}
             </div>
+          </div>
+        </div>
 
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
