@@ -1033,18 +1033,23 @@ export default function App() {
               
               return (
                 <div>
-                  {/* 枚数調整（上部） */}
+                  {/* 枚数調整と完了ボタン（上部・一行） */}
                   <div style={{
                     padding: "0.75rem",
                     background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                     borderRadius: "12px",
-                    marginBottom: "1rem"
+                    marginBottom: "1rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "0.75rem"
                   }}>
+                    {/* 枚数調整 */}
                     <div style={{
                       display: "flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      gap: "1rem"
+                      gap: "0.75rem",
+                      flex: 1
                     }}>
                       <button
                         onClick={decrementDeckCard}
@@ -1094,6 +1099,31 @@ export default function App() {
                         +
                       </button>
                     </div>
+
+                    {/* 完了ボタン */}
+                    <button
+                      onClick={closeEditDeckCard}
+                      style={{
+                        padding: "0.5rem 1.25rem",
+                        background: "white",
+                        color: "#667eea",
+                        border: "none",
+                        borderRadius: "20px",
+                        fontSize: "1rem",
+                        fontWeight: "bold",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap"
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = "#f0f0f0";
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = "white";
+                      }}
+                    >
+                      完了
+                    </button>
                   </div>
 
                   {/* カード画像 */}
@@ -1202,11 +1232,6 @@ export default function App() {
                 </div>
               );
             })()}
-            <div className="modal-actions">
-              <button className="btn-primary" onClick={closeEditDeckCard} style={{ width: "100%" }}>
-                完了
-              </button>
-            </div>
           </div>
         </div>
       )}
