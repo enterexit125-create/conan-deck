@@ -534,6 +534,19 @@ export default function App() {
     await refreshAll();
   }
 
+  // デッキからカードを外す（カード自体は削除しない）
+  async function removeCardFromDeck(cardId: number) {
+    if (activeDeckId == null) return;
+
+    await db.deckCards
+      .where("[deckId+cardId]")
+      .equals([activeDeckId, cardId])
+      .delete();
+
+    await refreshAll();
+    closeCardDetail();
+  }
+
   // カード選択モーダルを開く
   function openCardSelectModal(filter: "all" | "partner" | "incident") {
     setCardSelectFilter(filter);
@@ -1496,25 +1509,7 @@ export default function App() {
                 }}>
                   {/* パートナー */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
-                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                      パートナー
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCardSelectModal("partner");
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          fontSize: "0.9rem",
-                          padding: "0.1rem"
-                        }}
-                        title="パートナーを変更"
-                      >
-                        ✏️
-                      </button>
-                    </div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
                     <div style={{
                       width: "70px",
                       height: "98px",
@@ -1544,25 +1539,7 @@ export default function App() {
 
                   {/* 事件 */}
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
-                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                      事件
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openCardSelectModal("incident");
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          fontSize: "0.9rem",
-                          padding: "0.1rem"
-                        }}
-                        title="事件を変更"
-                      >
-                        ✏️
-                      </button>
-                    </div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>事件</div>
                     <div style={{
                       width: "98px",
                       height: "70px",
@@ -2567,6 +2544,39 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {/* パートナーまたは事件カードの場合、デッキから外すボタンを表示 */}
+            {(detailCard.type === "パートナー" || detailCard.type === "事件") && detailCard.id && (
+              <button
+                onClick={() => {
+                  if (confirm(`${detailCard.name}をデッキから外しますか？`)) {
+                    removeCardFromDeck(detailCard.id!);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: "#ffebee",
+                  color: "#d32f2f",
+                  border: "2px solid #d32f2f",
+                  borderRadius: "12px",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  transition: "all 0.2s"
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = "#d32f2f";
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = "#ffebee";
+                  e.currentTarget.style.color = "#d32f2f";
+                }}
+              >
+                🗑️ デッキから外す
+              </button>
+            )}
           </div>
         </div>
       )}
