@@ -1261,7 +1261,7 @@ export default function App() {
             ) : (
               <div className="cards-grid" style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
                 gap: "0.5rem"
               }}>
                 {filteredCards.map((c) => (
