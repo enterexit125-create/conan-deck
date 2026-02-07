@@ -1490,6 +1490,23 @@ export default function App() {
         <div className={`screen ${activeTab === "editor" ? "active" : ""}`}>
           {activeDeck ? (
             <>
+              {/* デッキ完成メッセージ（最上部） */}
+              {totalInDeck === TARGET_DECK_SIZE && (
+                <div style={{ 
+                  padding: "0.75rem", 
+                  marginBottom: "1rem", 
+                  background: "linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%)",
+                  borderRadius: "12px",
+                  textAlign: "center",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  color: "#1b5e20",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                }}>
+                  ✅ デッキ完成！40枚のデッキが完成しました。
+                </div>
+              )}
+
               {/* ヘッダー: パートナー、事件、統計情報を縦並び */}
               <div style={{
                 background: "white",
@@ -1643,13 +1660,6 @@ export default function App() {
                   </div>
                 </div>
               </div>
-
-              {totalInDeck === TARGET_DECK_SIZE && (
-                <div className="success-panel info-panel" style={{ padding: "0.75rem", marginBottom: "1rem", maxWidth: "600px", margin: "0 auto 1rem auto" }}>
-                  <div className="info-panel-title" style={{ fontSize: "0.9rem" }}>✅ デッキ完成！</div>
-                  <div className="info-panel-text" style={{ fontSize: "0.85rem" }}>40枚のデッキが完成しました。</div>
-                </div>
-              )}
 
               {/* レベル別カードグリッド */}
               <div className="section">
@@ -2456,8 +2466,8 @@ export default function App() {
                   width: "36px",
                   height: "36px",
                   borderRadius: "50%",
-                  border: "2px solid #d32f2f",
-                  background: "white",
+                  border: "2px solid #ff8ab8",
+                  background: "#ffe0f0",
                   fontSize: "1.2rem",
                   cursor: "pointer",
                   display: "flex",
@@ -2468,12 +2478,12 @@ export default function App() {
                   boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.background = "#d32f2f";
-                  e.currentTarget.style.borderColor = "#d32f2f";
+                  e.currentTarget.style.background = "#ff8ab8";
+                  e.currentTarget.style.borderColor = "#ff8ab8";
                 }}
                 onMouseOut={(e) => {
-                  e.currentTarget.style.background = "white";
-                  e.currentTarget.style.borderColor = "#d32f2f";
+                  e.currentTarget.style.background = "#ffe0f0";
+                  e.currentTarget.style.borderColor = "#ff8ab8";
                 }}
                 title="デッキから外す"
               >
