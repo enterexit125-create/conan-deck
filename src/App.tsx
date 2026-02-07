@@ -1537,84 +1537,39 @@ export default function App() {
                       </button>
                     </div>
                     
-                    {/* 2行目: 色分布とレベル分布（選択中のデッキのみ） */}
+                    {/* 2行目: 色分布（選択中のデッキのみ） */}
                     {d.id === activeDeckId && (
                       <div style={{
                         display: "flex",
-                        gap: "0.75rem",
-                        alignItems: "center"
+                        gap: "2px",
+                        height: "20px",
+                        padding: "0.25rem",
+                        background: "#f5f5f5",
+                        borderRadius: "6px",
+                        border: "1px solid #e0e0e0"
                       }}>
-                        {/* 色分布バー（左側・小さめ） */}
-                        <div style={{
-                          display: "flex",
-                          gap: "2px",
-                          height: "40px",
-                          padding: "0.25rem",
-                          background: "#f5f5f5",
-                          borderRadius: "4px",
-                          border: "1px solid #e0e0e0",
-                          minWidth: "60px",
-                          width: "60px"
-                        }}>
-                          {COLOR_OPTIONS.map((color) => {
-                            const count = colorDistribution[color] || 0;
-                            const total = Object.values(colorDistribution).reduce((sum, c) => sum + c, 0);
-                            const widthPercent = total > 0 ? (count / total) * 100 : 0;
-                            
-                            if (count === 0) return null;
-                            
-                            return (
-                              <div 
-                                key={color} 
-                                style={{
-                                  height: "100%",
-                                  width: `${widthPercent}%`,
-                                  background: colorMap[color],
-                                  borderRadius: "2px",
-                                  transition: "all 0.3s ease",
-                                  minWidth: "4px"
-                                }}
-                                title={`${color}: ${count}枚`}
-                              />
-                            );
-                          })}
-                        </div>
-                        
-                        {/* レベル分布ミニグラフ（右側・大きめ） */}
-                        <div style={{
-                          display: "flex",
-                          alignItems: "flex-end",
-                          gap: "3px",
-                          height: "40px",
-                          padding: "0.35rem",
-                          background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
-                          borderRadius: "4px",
-                          border: "1px solid #ffd4dc",
-                          flex: 1
-                        }}>
-                          {LEVEL_OPTIONS.map((level) => {
-                            const count = levelDistribution[level] || 0;
-                            const height = maxLevelCount > 0 ? (count / maxLevelCount) * 30 : 0;
-                            
-                            return (
-                              <div key={level} style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                gap: "1px",
-                                flex: 1
-                              }}>
-                                <div style={{
-                                  width: "100%",
-                                  height: `${Math.max(height, 3)}px`,
-                                  background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
-                                  borderRadius: "2px 2px 0 0",
-                                  transition: "all 0.3s ease"
-                                }} />
-                              </div>
-                            );
-                          })}
-                        </div>
+                        {COLOR_OPTIONS.map((color) => {
+                          const count = colorDistribution[color] || 0;
+                          const total = Object.values(colorDistribution).reduce((sum, c) => sum + c, 0);
+                          const widthPercent = total > 0 ? (count / total) * 100 : 0;
+                          
+                          if (count === 0) return null;
+                          
+                          return (
+                            <div 
+                              key={color} 
+                              style={{
+                                height: "100%",
+                                width: `${widthPercent}%`,
+                                background: colorMap[color],
+                                borderRadius: "3px",
+                                transition: "all 0.3s ease",
+                                minWidth: "8px"
+                              }}
+                              title={`${color}: ${count}枚`}
+                            />
+                          );
+                        })}
                       </div>
                     )}
                   </div>
