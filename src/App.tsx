@@ -1033,6 +1033,69 @@ export default function App() {
               
               return (
                 <div>
+                  {/* 枚数調整（上部） */}
+                  <div style={{
+                    padding: "0.75rem",
+                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    borderRadius: "12px",
+                    marginBottom: "1rem"
+                  }}>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "1rem"
+                    }}>
+                      <button
+                        onClick={decrementDeckCard}
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "50%",
+                          border: "2px solid white",
+                          background: "rgba(255, 255, 255, 0.2)",
+                          color: "white",
+                          fontSize: "1.2rem",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          fontWeight: "bold"
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)"}
+                      >
+                        −
+                      </button>
+                      <div style={{
+                        fontSize: "1.8rem",
+                        fontWeight: "bold",
+                        color: "white",
+                        minWidth: "50px",
+                        textAlign: "center"
+                      }}>
+                        ×{editingDeckCard.count}
+                      </div>
+                      <button
+                        onClick={incrementDeckCard}
+                        style={{
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "50%",
+                          border: "2px solid white",
+                          background: "rgba(255, 255, 255, 0.2)",
+                          color: "white",
+                          fontSize: "1.2rem",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          fontWeight: "bold"
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.3)"}
+                        onMouseOut={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)"}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
                   {/* カード画像 */}
                   <div style={{
                     marginBottom: "1rem",
@@ -1130,81 +1193,11 @@ export default function App() {
                         borderRadius: "8px",
                         fontSize: "0.95rem",
                         color: "#666",
-                        whiteSpace: "pre-wrap",
-                        marginBottom: "1rem"
+                        whiteSpace: "pre-wrap"
                       }}>
                         {card.memo}
                       </div>
                     )}
-                  </div>
-
-                  {/* 枚数調整 */}
-                  <div style={{
-                    padding: "1.5rem",
-                    background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-                    borderRadius: "12px",
-                    marginBottom: "1rem"
-                  }}>
-                    <div style={{
-                      fontSize: "1rem",
-                      fontWeight: "bold",
-                      color: "#333",
-                      marginBottom: "1rem",
-                      textAlign: "center"
-                    }}>
-                      デッキ内枚数
-                    </div>
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "1.5rem",
-                      fontSize: "1.5rem"
-                    }}>
-                      <button
-                        onClick={decrementDeckCard}
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          borderRadius: "50%",
-                          border: "2px solid #667eea",
-                          background: "white",
-                          fontSize: "1.5rem",
-                          cursor: "pointer",
-                          transition: "all 0.2s"
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
-                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
-                      >
-                        −
-                      </button>
-                      <div style={{
-                        fontSize: "2.5rem",
-                        fontWeight: "bold",
-                        color: "#667eea",
-                        minWidth: "60px",
-                        textAlign: "center"
-                      }}>
-                        {editingDeckCard.count}
-                      </div>
-                      <button
-                        onClick={incrementDeckCard}
-                        style={{
-                          width: "50px",
-                          height: "50px",
-                          borderRadius: "50%",
-                          border: "2px solid #667eea",
-                          background: "white",
-                          fontSize: "1.5rem",
-                          cursor: "pointer",
-                          transition: "all 0.2s"
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = "#667eea"}
-                        onMouseOut={(e) => e.currentTarget.style.background = "white"}
-                      >
-                        +
-                      </button>
-                    </div>
                   </div>
                 </div>
               );
