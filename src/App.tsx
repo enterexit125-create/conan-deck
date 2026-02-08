@@ -2175,17 +2175,380 @@ export default function App() {
                 </div>
               )}
 
-              {/* メインフィールド（Gridレイアウト） */}
+              {/* メインフィールド（スマホ対応の縦スクロールレイアウト） */}
               <div style={{
                 flex: 1,
-                display: "grid",
-                gridTemplateColumns: "140px 1fr 120px",
-                gridTemplateRows: "1fr auto auto",
-                gap: "0.5rem",
-                minHeight: 0
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+                overflowY: "auto",
+                overflowX: "hidden",
+                padding: "0.5rem",
+                WebkitOverflowScrolling: "touch"
               }}>
+                {/* 山札・ドローボタン */}
+                <div
+                  onClick={drawCard}
+                  style={{
+                    background: "#607d8b",
+                    borderRadius: "8px",
+                    padding: "1rem",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: playDeck.length > 0 ? "pointer" : "default",
+                    opacity: playDeck.length === 0 ? 0.5 : 1,
+                    border: "2px solid #455a64",
+                    color: "white"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                    <div style={{ fontSize: "2.5rem" }}>🎴</div>
+                    <div>
+                      <div style={{ fontSize: "0.9rem", fontWeight: "bold" }}>山札</div>
+                      <div style={{ fontSize: "1.5rem", fontWeight: "bold" }}>{playDeck.length}枚</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: "0.85rem", opacity: 0.8 }}>タップしてドロー</div>
+                </div>
+
+                {/* 事件カード */}
+                <div style={{
+                  background: "linear-gradient(135deg, #e67e22 0%, #f39c12 100%)",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  border: "2px solid #d35400"
+                }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "white", marginBottom: "0.5rem" }}>
+                    🔍 事件
+                  </div>
+                  <div 
+                    style={{
+                      width: "120px",
+                      aspectRatio: "0.7",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      background: "rgba(255,255,255,0.2)",
+                      cursor: incidentCard ? "pointer" : "default",
+                      margin: "0 auto"
+                    }}
+                    onClick={() => {
+                      if (incidentCard) {
+                        openCardDetail(incidentCard);
+                      }
+                    }}
+                  >
+                    {incidentCard?.image ? (
+                      <img
+                        src={URL.createObjectURL(incidentCard.image)}
+                        alt={incidentCard.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "2rem"
+                      }}>
+                        📋
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* パートナーカード */}
+                <div style={{
+                  background: "linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  border: "2px solid #7d3c98"
+                }}>
+                  <div style={{ fontSize: "0.9rem", fontWeight: "bold", color: "white", marginBottom: "0.5rem" }}>
+                    🤝 パートナー
+                  </div>
+                  <div 
+                    style={{
+                      width: "120px",
+                      aspectRatio: "0.7",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      background: "rgba(255,255,255,0.2)",
+                      cursor: partnerCard ? "pointer" : "default",
+                      margin: "0 auto"
+                    }}
+                    onClick={() => {
+                      if (partnerCard) {
+                        openCardDetail(partnerCard);
+                      }
+                    }}
+                  >
+                    {partnerCard?.image ? (
+                      <img
+                        src={URL.createObjectURL(partnerCard.image)}
+                        alt={partnerCard.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "2rem"
+                      }}>
+                        👤
+                      </div>
+                    )}
+                  </div>
+                  {partnerCard && (
+                    <div style={{ fontSize: "0.8rem", color: "white", textAlign: "center", marginTop: "0.5rem" }}>
+                      {partnerCard.name}
+                    </div>
+                  )}
+                </div>
+
+                {/* 手札エリア */}
+                <div className="play-zone" style={{
+                  background: "linear-gradient(to top, #34495e 0%, #2c3e50 100%)",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  border: "2px solid #1a252f"
+                }}>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "0.75rem"
+                  }}>
+                    <div className="zone-title" style={{ marginBottom: 0 }}>
+                      🃏 手札 ({playHand.length}枚)
+                    </div>
+                    {!mulliganDone && (
+                      <button
+                        className="btn-secondary"
+                        onClick={startMulligan}
+                        style={{ padding: "0.4rem 0.75rem", fontSize: "0.8rem" }}
+                      >
+                        🔄 マリガン
+                      </button>
+                    )}
+                  </div>
+                  <div className="horizontal-scroll">
+                    {playHand.map((card, idx) => (
+                      <div
+                        key={`hand-${card.id}-${idx}`}
+                        onClick={() => openCardMenu(card, idx, "hand")}
+                        className="play-card"
+                      >
+                        {card.image ? (
+                          <img
+                            src={URL.createObjectURL(card.image)}
+                            alt={card.name}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: "100%",
+                            height: "100%",
+                            background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexDirection: "column",
+                            color: "white",
+                            padding: "0.25rem",
+                            fontSize: "0.6rem"
+                          }}>
+                            <div>Lv.{card.level}</div>
+                            <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.65rem" }}>{card.name}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 現場エリア */}
+                <div className="play-zone" style={{
+                  background: "linear-gradient(135deg, #b0bec5 0%, #90a4ae 100%)",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  border: "2px solid #78909c"
+                }}>
+                  <div className="zone-title">
+                    🎴 現場 ({playField.length}枚)
+                  </div>
+                  <div className="horizontal-scroll">
+                    {playField.map((card, idx) => (
+                      <div
+                        key={`field-${card.id}-${idx}`}
+                        onClick={() => openCardMenu(card, idx, "field")}
+                        className="play-card"
+                      >
+                        {card.image ? (
+                          <img
+                            src={URL.createObjectURL(card.image)}
+                            alt={card.name}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: "100%",
+                            height: "100%",
+                            background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexDirection: "column",
+                            color: "white",
+                            padding: "0.25rem",
+                            fontSize: "0.6rem"
+                          }}>
+                            <div>Lv.{card.level}</div>
+                            <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.65rem" }}>{card.name}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {playField.length === 0 && (
+                      <div className="empty-zone">
+                        手札からカードを選択してプレイ
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 証拠エリア */}
+                <div className="play-zone" style={{
+                  background: "#78909c",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  border: "2px solid #546e7a"
+                }}>
+                  <div 
+                    onClick={() => setIsEvidenceCollapsed(!isEvidenceCollapsed)}
+                    style={{ 
+                      display: "flex", 
+                      justifyContent: "space-between", 
+                      alignItems: "center",
+                      marginBottom: isEvidenceCollapsed ? "0" : "0.75rem",
+                      cursor: "pointer",
+                      userSelect: "none"
+                    }}
+                  >
+                    <div className="zone-title" style={{ marginBottom: 0 }}>
+                      <span>{isEvidenceCollapsed ? "▶" : "▼"}</span>
+                      🔍 証拠エリア
+                    </div>
+                    <div style={{ fontSize: "1rem", fontWeight: "bold", color: "white" }}>
+                      {playEvidence.length}枚
+                    </div>
+                  </div>
+                  
+                  {!isEvidenceCollapsed && (
+                    <div className="horizontal-scroll">
+                      {playEvidence.map((card, idx) => {
+                        const isFaceUp = evidenceFaceUp.has(card.id);
+                        return (
+                          <div
+                            key={`evidence-${card.id}-${idx}`}
+                            onClick={() => openCardMenu(card, idx, "evidence")}
+                            className="play-card"
+                          >
+                            {isFaceUp ? (
+                              card.image ? (
+                                <img
+                                  src={URL.createObjectURL(card.image)}
+                                  alt={card.name}
+                                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                              ) : (
+                                <div style={{
+                                  width: "100%",
+                                  height: "100%",
+                                  background: `linear-gradient(135deg, ${colorMap[card.color ?? "黄"]} 0%, ${colorMap[card.color ?? "黄"]}dd 100%)`,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexDirection: "column",
+                                  color: "white",
+                                  padding: "0.25rem",
+                                  fontSize: "0.6rem"
+                                }}>
+                                  <div>Lv.{card.level}</div>
+                                  <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.65rem" }}>{card.name}</div>
+                                </div>
+                              )
+                            ) : (
+                              <img
+                                src={cardBackImage}
+                                alt="Card back"
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                      {playEvidence.length === 0 && (
+                        <div className="empty-zone">
+                          現場からカードを移動
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* リムーブエリア */}
+                <div className="play-zone" style={{
+                  background: "#78909c",
+                  borderRadius: "8px",
+                  padding: "0.75rem",
+                  border: "2px solid #546e7a"
+                }}>
+                  <div className="zone-title">
+                    🗑️ リムーブ ({playRemove.length}枚)
+                  </div>
+                  <div className="horizontal-scroll">
+                    {playRemove.map((card, idx) => (
+                      <div
+                        key={`remove-${card.id}-${idx}`}
+                        onClick={() => openCardMenu(card, idx, "remove")}
+                        className="play-card"
+                        style={{ opacity: 0.7 }}
+                      >
+                        {card.image ? (
+                          <img
+                            src={URL.createObjectURL(card.image)}
+                            alt={card.name}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: "100%",
+                            height: "100%",
+                            background: colorMap[card.color ?? "黄"],
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "0.8rem",
+                            color: "white"
+                          }}>
+                            Lv.{card.level}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* 左列（事件・証拠エリア） */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div style={{ display: "none" }}>
                   {/* 事件 */}
                   <div style={{
                     background: "linear-gradient(135deg, #e67e22 0%, #f39c12 100%)",
@@ -2387,6 +2750,8 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* 旧レイアウト（非表示） */}
+                <div style={{ display: "none" }}>
                 {/* 中央エリア */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {/* 現場エリア */}
@@ -2810,6 +3175,7 @@ export default function App() {
                   )}
                 </div>
               </div>
+              </div> {/* 旧レイアウト終了 */}
             </div>
           )}
         </div>
