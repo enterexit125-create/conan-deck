@@ -3629,8 +3629,8 @@ export default function App() {
 002,灰原哀,4,紫,キャラクター,科学+1,https://...`}
                     </pre>
                     <p style={{ marginTop: "0.5rem", fontSize: "0.9rem", color: "#666" }}>
-                      ※ 1行目はヘッダー行です<br/>
-                      ※ image_urlは任意（空欄可）<br/>
+                      ※ 1行目はヘッダー行です<br />
+                      ※ image_urlは任意（空欄可）<br />
                       ※ 重複するカード番号は上書きされます
                     </p>
                   </div>
