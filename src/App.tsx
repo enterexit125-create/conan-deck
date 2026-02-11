@@ -3624,7 +3624,7 @@ export default function App() {
                       fontSize: "0.85rem",
                       overflow: "auto"
                     }}>
-{`number,name,level,color,type,effect,image_url
+                      {`number,name,level,color,type,effect,image_url
 001,江戸川コナン,5,青,キャラクター,推理+2,https://...
 002,灰原哀,4,紫,キャラクター,科学+1,https://...`}
                     </pre>
@@ -3677,7 +3677,7 @@ export default function App() {
                     ✅ ファイル読み込み完了
                   </div>
                   <div style={{ color: "#1b5e20" }}>
-                    {csvFile.name} ({importTotal}件のカードを取り込みます)
+                    {csvFile?.name} ({importTotal}件のカードを取り込みます)
                   </div>
                 </div>
 
