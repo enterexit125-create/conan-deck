@@ -1018,6 +1018,11 @@ export default function App() {
     setSelectedForMulligan([]);
   }
 
+  function shuffleDeck() {
+    const shuffled = [...playDeck].sort(() => Math.random() - 0.5);
+    setPlayDeck(shuffled);
+  }
+
   const activeDeck = decks.find((d) => d.id === activeDeckId);
 
   return (
