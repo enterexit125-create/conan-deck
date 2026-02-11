@@ -2944,6 +2944,11 @@ export default function App() {
                 </div>
               )}
             </div>
+          )}
+        </div>
+
+        {/* 同期タブ */}
+        <div className={`screen ${activeTab === "sync" ? "active" : ""}`}>
           <div className="info-panel">
             <div className="info-panel-title">☁️ クラウド同期</div>
             <div className="info-panel-text">Supabaseを使って、PC・スマホ間でデータを同期できます。</div>
