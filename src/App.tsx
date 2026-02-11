@@ -139,13 +139,13 @@ export default function App() {
   const [selectedForMulligan, setSelectedForMulligan] = useState<number[]>([]); // マリガン選択中のカードindex
   
   // モーダル用
-  const [showOtherModal, setShowOtherModal] = useState(false); // その他モーダル
-  const [showSettingsModal, setShowSettingsModal] = useState(false); // 設定モーダル
-  const [isFileCollapsed, setIsFileCollapsed] = useState(true); // FILEエリアの折りたたみ
-  const [isPartnerCollapsed, setIsPartnerCollapsed] = useState(true); // パートナーの折りたたみ
-  const [isDeckCollapsed, setIsDeckCollapsed] = useState(false); // 山札の折りたたみ
-  const [isRemoveCollapsed, setIsRemoveCollapsed] = useState(true); // リムーブの折りたたみ
-  const [isIncidentCollapsed, setIsIncidentCollapsed] = useState(true); // 事件の折りたたみ
+  const [showOtherModal, setShowOtherModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [isFileCollapsed, setIsFileCollapsed] = useState(true);
+  const [isPartnerCollapsed, setIsPartnerCollapsed] = useState(true);
+  const [isDeckCollapsed, setIsDeckCollapsed] = useState(false);
+  const [isRemoveCollapsed, setIsRemoveCollapsed] = useState(true);
+  const [isIncidentCollapsed, setIsIncidentCollapsed] = useState(true);
   
   // カードメニュー用
   const [showCardMenu, setShowCardMenu] = useState(false);
@@ -2944,7 +2944,6 @@ export default function App() {
                 </div>
               )}
             </div>
-        <div className={`screen ${activeTab === "sync" ? "active" : ""}`}>
           <div className="info-panel">
             <div className="info-panel-title">☁️ クラウド同期</div>
             <div className="info-panel-text">Supabaseを使って、PC・スマホ間でデータを同期できます。</div>
