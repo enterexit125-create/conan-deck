@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { db } from "../db";
-import type { Card } from "../db";
 
 interface CsvImportModalProps {
   show: boolean;
@@ -120,7 +119,6 @@ export default function CsvImportModal({ show, onClose, onComplete }: CsvImportM
                 type: type || undefined,
                 memo: effect || undefined,
                 image: imageBlob,
-                createdAt: Date.now(),
                 updatedAt: Date.now(),
                 synced: false
               });
