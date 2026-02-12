@@ -134,7 +134,9 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
             }
           }
 
-          // colorとtypeを空文字列に変換（undefinedを避ける）
+          // 全てのフィールドを明示的にstring型に変換（undefinedを避ける）
+          const nameValue = name.trim();
+          const numberValue = number.trim();
           const colorValue = (color && color.trim() !== '') ? color.trim() : '';
           const typeValue = (type && type.trim() !== '') ? type.trim() : '';
           const memoValue = (effect && effect.trim() !== '') ? effect.trim() : '';
@@ -143,8 +145,8 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
             // 既存カードを更新（putを使う）
             await db.cards.put({
               id: existingCard.id,
-              name: name.trim(),
-              number: number.trim(),
+              name: nameValue,
+              number: numberValue,
               color: colorValue,
               type: typeValue,
               level: levelValue,
@@ -156,8 +158,8 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
           } else {
             // 新規カード登録
             await db.cards.add({
-              name: name.trim(),
-              number: number.trim(),
+              name: nameValue,
+              number: numberValue,
               color: colorValue,
               type: typeValue,
               level: levelValue,
