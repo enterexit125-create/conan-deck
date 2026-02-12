@@ -110,12 +110,13 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
 
         try {
           // 画像ダウンロード（URLがある場合）
-          let imageBlob: Blob | null = null;
+          let imageBlob: Blob | undefined = undefined;
           if (imageUrl && imageUrl.trim() !== '') {
-            imageBlob = await downloadImage(imageUrl);
-            if (!imageBlob) {
+            const downloadedBlob = await downloadImage(imageUrl);
+            if (downloadedBlob) {
+              imageBlob = downloadedBlob;
+            } else {
               errors.push(`行${i + 2}: 画像取得失敗 (${name})`);
-              // 画像なしでも登録を続行
             }
           }
 
@@ -125,17 +126,44 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
             .equals(number)
             .first();
 
-          const cardData = {
+          // levelの型変換
+          let levelValue: number | undefined = undefined;
+          if (level && level.trim() !== '') {
+            const parsed = parseInt(level, 10);
+            if (!isNaN(parsed)) {
+              levelValue = parsed;
+            }
+          }
+
+          const cardData: {
+            name: string;
+            number: string;
+            color: string;
+            type: string;
+            level?: number;
+            memo: string;
+            image?: Blob;
+            updatedAt: number;
+            synced: boolean;
+          } = {
             name,
             number,
             color: color || '',
             type: type || '',
-            level: level ? parseInt(level) : undefined,
             memo: effect || '',
-            image: imageBlob || undefined,
             updatedAt: Date.now(),
             synced: false,
           };
+
+          // levelが存在する場合のみ追加
+          if (levelValue !== undefined) {
+            cardData.level = levelValue;
+          }
+
+          // imageが存在する場合のみ追加
+          if (imageBlob !== undefined) {
+            cardData.image = imageBlob;
+          }
 
           if (existingCard) {
             // 既存カードを更新
