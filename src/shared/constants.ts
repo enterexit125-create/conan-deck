@@ -11,7 +11,7 @@ export const colorMap: Record<string, string> = {
 // 選択肢
 export const COLOR_OPTIONS = ["黄", "赤", "青", "緑", "白", "黒"];
 export const TYPE_OPTIONS = ["キャラ", "事件", "イベント", "パートナー"];
-export const LEVEL_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+export const LEVEL_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 // デッキサイズ
 export const TARGET_DECK_SIZE = 40;

@@ -3,7 +3,7 @@ import { db, fullSync, syncFromSupabase, syncToSupabase } from "./db";
 import type { Card, Deck, DeckCard } from "./db";
 import "./App.css";
 import cardBackImage from "/card-back.png";
-import CsvImportModal from "./components/CsvImportModal";
+import { CsvImportModal } from "./components/CsvImportModal";
 
 // デバッグツール（スマホ用）- 開発時のみ
 if (window.location.hostname !== 'localhost') {
@@ -66,7 +66,7 @@ const colorMap: Record<string, string> = {
 // 選択肢
 const COLOR_OPTIONS = ["黄", "赤", "青", "緑", "白", "黒"];
 const TYPE_OPTIONS = ["キャラ", "事件", "イベント", "パートナー"];
-const LEVEL_OPTIONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
+const LEVEL_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 const TARGET_DECK_SIZE = 40;
 const SAME_NAME_LIMIT = 3;
@@ -88,7 +88,7 @@ export default function App() {
     number: "",  // 空文字列から開始（必須）
     color: "黄",
     type: "キャラ",
-    level: "1",
+    level: 1,
     memo: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -230,7 +230,7 @@ export default function App() {
       const matchText = !q || name.includes(q) || num.includes(q);
       const matchColor = !filterColor || c.color === filterColor;
       const matchType = !filterType || c.type === filterType;
-      const matchLevel = !filterLevel || c.level === filterLevel;
+      const matchLevel = !filterLevel || c.level === parseInt(filterLevel);
       
       return matchText && matchColor && matchType && matchLevel;
     });
@@ -321,7 +321,7 @@ export default function App() {
       const matchText = !q || name.includes(q) || num.includes(q);
       const matchColor = !cardSelectColor || c.color === cardSelectColor;
       const matchType = !cardSelectType || c.type === cardSelectType;
-      const matchLevel = !cardSelectLevel || c.level === cardSelectLevel;
+      const matchLevel = !cardSelectLevel || c.level === parseInt(cardSelectLevel);
       
       return matchText && matchColor && matchType && matchLevel;
     });
@@ -470,7 +470,7 @@ export default function App() {
       number,
       color: (editForm.color ?? "").trim() || undefined,
       type: (editForm.type ?? "").trim() || undefined,
-      level: (editForm.level ?? "").trim().replace(/^Lv/, "") || undefined,
+      level: editForm.level,
       memo: (editForm.memo ?? "").trim() || undefined,
       image: imageBlob,
       updatedAt: Date.now(),
@@ -603,7 +603,7 @@ export default function App() {
       number,
       color: (form.color ?? "").trim() || undefined,
       type: (form.type ?? "").trim() || undefined,
-      level: (form.level ?? "").trim().replace(/^Lv/, "") || undefined,
+      level: form.level,
       memo: (form.memo ?? "").trim() || undefined,
       image: imageBlob,
       updatedAt: Date.now(),
@@ -615,7 +615,7 @@ export default function App() {
       number: "", 
       color: "黄", 
       type: "キャラ", 
-      level: "1",
+      level: 1,
       memo: "" 
     });
     setImageFile(null);
@@ -1110,8 +1110,8 @@ export default function App() {
                 <select value={editForm.type ?? "キャラ"} onChange={(e) => setEditForm((p: any) => ({ ...p, type: e.target.value }))}>
                   {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
                 </select>
-                <select value={editForm.level ?? "1"} onChange={(e) => setEditForm((p: any) => ({ ...p, level: e.target.value }))}>
-                  {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
+                <select value={editForm.level ?? 1} onChange={(e) => setEditForm((p: any) => ({ ...p, level: parseInt(e.target.value) }))}>
+                  {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
                 </select>
               </div>
               <textarea placeholder="メモ（任意）" value={editForm.memo ?? ""} onChange={(e) => setEditForm((p: any) => ({ ...p, memo: e.target.value }))} rows={3} />
@@ -1511,8 +1511,8 @@ export default function App() {
                   <select value={form.type ?? "キャラ"} onChange={(e) => setForm((p: any) => ({ ...p, type: e.target.value }))}>
                     {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
                   </select>
-                  <select value={form.level ?? "1"} onChange={(e) => setForm((p: any) => ({ ...p, level: e.target.value }))}>
-                    {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
+                  <select value={form.level ?? 1} onChange={(e) => setForm((p: any) => ({ ...p, level: parseInt(e.target.value) }))}>
+                    {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
                   </select>
                 </div>
                 <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, memo: e.target.value }))} rows={2} />

@@ -73,8 +73,8 @@ export default function CardList({
             <select value={form.type ?? "キャラ"} onChange={(e) => setForm({ ...form, type: e.target.value })}>
               {TYPE_OPTIONS.map(t => <option key={t}>{t}</option>)}
             </select>
-            <select value={form.level ?? "1"} onChange={(e) => setForm({ ...form, level: e.target.value })}>
-              {LEVEL_OPTIONS.map(l => <option key={l}>Lv{l}</option>)}
+            <select value={form.level ?? 1} onChange={(e) => setForm({ ...form, level: parseInt(e.target.value) })}>
+              {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
             </select>
           </div>
           <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm({ ...form, memo: e.target.value })} rows={2} />

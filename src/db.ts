@@ -8,7 +8,7 @@ export type Card = {
   number?: string;
   color?: string;
   type?: string;
-  level?: string;
+  level?: number;
   memo?: string;
   image?: Blob;
   imageUrl?: string;
