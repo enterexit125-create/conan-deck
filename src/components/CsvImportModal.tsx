@@ -20,7 +20,7 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
     }
 
     try {
-      // CORSエラー対策: no-corsモードを試す
+      // CORSエラー対策
       let response = await fetch(imageUrl, {
         mode: 'cors',
         cache: 'no-cache',
@@ -52,11 +52,10 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
         return null;
       }
 
-      // Blobに画像形式を明示的に設定（no-corsで取得した場合、typeが空の可能性）
+      // Blobに画像形式を明示的に設定
       if (!blob.type) {
-        // URLから拡張子を推測
         const ext = imageUrl.split('.').pop()?.toLowerCase();
-        let mimeType = 'image/jpeg'; // デフォルト
+        let mimeType = 'image/jpeg';
         if (ext === 'png') mimeType = 'image/png';
         if (ext === 'gif') mimeType = 'image/gif';
         if (ext === 'webp') mimeType = 'image/webp';
@@ -135,42 +134,33 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
             }
           }
 
-          const cardData: {
-            name: string;
-            number: string;
-            color: string;
-            type: string;
-            level?: number;
-            memo: string;
-            image?: Blob;
-            updatedAt: number;
-            synced: boolean;
-          } = {
-            name,
-            number,
-            color: color || '',
-            type: type || '',
-            memo: effect || '',
-            updatedAt: Date.now(),
-            synced: false,
-          };
-
-          // levelが存在する場合のみ追加
-          if (levelValue !== undefined) {
-            cardData.level = levelValue;
-          }
-
-          // imageが存在する場合のみ追加
-          if (imageBlob !== undefined) {
-            cardData.image = imageBlob;
-          }
-
           if (existingCard) {
-            // 既存カードを更新
-            await db.cards.update(existingCard.id!, cardData);
+            // 既存カードを更新（putを使う）
+            await db.cards.put({
+              id: existingCard.id,
+              name,
+              number,
+              color: color || '',
+              type: type || '',
+              level: levelValue,
+              memo: effect || '',
+              image: imageBlob,
+              updatedAt: Date.now(),
+              synced: false,
+            });
           } else {
             // 新規カード登録
-            await db.cards.add(cardData);
+            await db.cards.add({
+              name,
+              number,
+              color: color || '',
+              type: type || '',
+              level: levelValue,
+              memo: effect || '',
+              image: imageBlob,
+              updatedAt: Date.now(),
+              synced: false,
+            });
           }
 
           successCount++;
