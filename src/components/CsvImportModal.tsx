@@ -103,6 +103,29 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
     }
   }
 
+  // CSV行を正しく解析（ダブルクォート対応）
+  function parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current.trim());
+    return result;
+  }
+
   // CSVファイル処理
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -125,7 +148,7 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
 
       for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i];
-        const columns = line.split(',').map(col => col.trim());
+        const columns = parseCSVLine(line);
 
         // 最低限の列チェック
         if (columns.length < 2) {
