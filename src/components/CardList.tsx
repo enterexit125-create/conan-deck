@@ -77,6 +77,7 @@ export default function CardList({
               {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
             </select>
           </div>
+          <input type="text" placeholder="特徴（例: 少年探偵団、FBI、黒の組織）" value={form.traits ?? ""} onChange={(e) => setForm({ ...form, traits: e.target.value })} />
           <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm({ ...form, memo: e.target.value })} rows={2} />
           <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
           <button className="btn-primary" onClick={saveCard}>✅ 保存</button>

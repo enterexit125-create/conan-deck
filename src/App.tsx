@@ -89,6 +89,7 @@ export default function App() {
     color: "黄",
     type: "キャラ",
     level: 1,
+    traits: "",
     memo: ""
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -227,7 +228,9 @@ export default function App() {
     return cards.filter((c) => {
       const name = (c.name ?? "").toLowerCase();
       const num = (c.number ?? "").toLowerCase();
-      const matchText = !q || name.includes(q) || num.includes(q);
+      const traits = (c.traits ?? "").toLowerCase();
+      const memo = (c.memo ?? "").toLowerCase();
+      const matchText = !q || name.includes(q) || num.includes(q) || traits.includes(q) || memo.includes(q);
       const matchColor = !filterColor || c.color === filterColor;
       const matchType = !filterType || c.type === filterType;
       const matchLevel = !filterLevel || c.level === parseInt(filterLevel);
@@ -471,6 +474,7 @@ export default function App() {
       color: (editForm.color ?? "").trim() || undefined,
       type: (editForm.type ?? "").trim() || undefined,
       level: editForm.level,
+      traits: (editForm.traits ?? "").trim() || undefined,
       memo: (editForm.memo ?? "").trim() || undefined,
       image: imageBlob,
       updatedAt: Date.now(),
@@ -604,6 +608,7 @@ export default function App() {
       color: (form.color ?? "").trim() || undefined,
       type: (form.type ?? "").trim() || undefined,
       level: form.level,
+      traits: (form.traits ?? "").trim() || undefined,
       memo: (form.memo ?? "").trim() || undefined,
       image: imageBlob,
       updatedAt: Date.now(),
@@ -616,6 +621,7 @@ export default function App() {
       color: "黄", 
       type: "キャラ", 
       level: 1,
+      traits: "",
       memo: "" 
     });
     setImageFile(null);
@@ -1114,6 +1120,7 @@ export default function App() {
                   {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
                 </select>
               </div>
+              <input type="text" placeholder="特徴（例: 少年探偵団、FBI、黒の組織）" value={editForm.traits ?? ""} onChange={(e) => setEditForm((p: any) => ({ ...p, traits: e.target.value }))} />
               <textarea placeholder="メモ（任意）" value={editForm.memo ?? ""} onChange={(e) => setEditForm((p: any) => ({ ...p, memo: e.target.value }))} rows={3} />
               <div>
                 <label style={{ display: "block", marginBottom: "0.5rem", fontWeight: "bold" }}>画像を変更（任意）</label>
@@ -1515,6 +1522,7 @@ export default function App() {
                     {LEVEL_OPTIONS.map(l => <option key={l} value={l}>Lv{l}</option>)}
                   </select>
                 </div>
+                <input type="text" placeholder="特徴（例: 少年探偵団、FBI、黒の組織）" value={form.traits ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, traits: e.target.value }))} />
                 <textarea placeholder="メモ（任意）" value={form.memo ?? ""} onChange={(e) => setForm((p: any) => ({ ...p, memo: e.target.value }))} rows={2} />
                 <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} />
                 <button className="btn-primary" onClick={saveCard}>✅ 保存</button>

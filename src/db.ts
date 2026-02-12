@@ -9,6 +9,7 @@ export type Card = {
   color?: string;
   type?: string;
   level?: number;
+  traits?: string;  // 特徴（フリー入力）
   memo?: string;
   image?: Blob;
   imageUrl?: string;
