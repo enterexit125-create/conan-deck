@@ -3014,9 +3014,9 @@ export default function App() {
               background: "white",
               borderRadius: "16px",
               padding: "1.5rem",
-              maxWidth: "350px",
+              maxWidth: "500px",
               width: "100%",
-              maxHeight: "90vh",
+              maxHeight: "95vh",
               overflowY: "auto",
               position: "relative"
             }}
@@ -3024,7 +3024,7 @@ export default function App() {
             <style>{`
               @media (min-width: 768px) {
                 .modal-content {
-                  max-width: 600px !important;
+                  max-width: 800px !important;
                 }
               }
             `}</style>
@@ -3109,13 +3109,13 @@ export default function App() {
                 borderRadius: "12px",
                 overflow: "hidden",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                maxWidth: "200px",
+                maxWidth: "350px",
                 margin: "0 auto 1rem auto"
               }}>
               <style>{`
                 @media (min-width: 768px) {
                   .card-detail-image {
-                    max-width: 350px !important;
+                    max-width: 600px !important;
                   }
                 }
               `}</style>
