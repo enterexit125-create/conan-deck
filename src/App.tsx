@@ -1401,13 +1401,41 @@ export default function App() {
 
             {/* 検索・フィルター */}
             <div style={{ marginBottom: "1rem" }}>
-              <div className="search-bar" style={{ marginBottom: "0.75rem" }}>
+              <div className="search-bar" style={{ marginBottom: "0.75rem", position: "relative" }}>
                 <input 
                   type="text" 
                   placeholder="🔍 カード名・番号で検索..." 
                   value={cardSelectSearch} 
                   onChange={(e) => setCardSelectSearch(e.target.value)} 
+                  style={{ paddingRight: cardSelectSearch ? "2.5rem" : "0.75rem" }}
                 />
+                {cardSelectSearch && (
+                  <button
+                    onClick={() => setCardSelectSearch("")}
+                    style={{
+                      position: "absolute",
+                      right: "0.5rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "1.5rem",
+                      height: "1.5rem",
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "#e0e0e0",
+                      color: "#666",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1rem",
+                      padding: 0,
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = "#ccc"}
+                    onMouseOut={(e) => e.currentTarget.style.background = "#e0e0e0"}
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
               {cardSelectFilter === "all" ? (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>

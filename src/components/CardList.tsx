@@ -90,12 +90,45 @@ export default function CardList({
         gap: "0.4rem",
         marginBottom: "1rem"
       }}>
-        <input 
-          type="text" 
-          placeholder="🔍 カード名・番号で検索" 
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div style={{ position: "relative" }}>
+          <input 
+            type="text" 
+            placeholder="🔍 カード名・番号で検索" 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ 
+              width: "100%", 
+              paddingRight: search ? "2.5rem" : "0.75rem" 
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              style={{
+                position: "absolute",
+                right: "0.5rem",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "1.5rem",
+                height: "1.5rem",
+                borderRadius: "50%",
+                border: "none",
+                background: "#e0e0e0",
+                color: "#666",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "1rem",
+                padding: 0,
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = "#ccc"}
+              onMouseOut={(e) => e.currentTarget.style.background = "#e0e0e0"}
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)}>
           <option value="">色: 全て</option>
           {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
