@@ -3200,18 +3200,7 @@ export default function App() {
                 )}
               </div>
 
-              {detailCard.memo && (
-                <div style={{
-                  padding: "0.75rem",
-                  background: "#f5f7fa",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  color: "#666",
-                  whiteSpace: "pre-wrap"
-                }}>
-                  {detailCard.memo}
-                </div>
-              )}
+              {/* メモは非表示 */}
             </div>
           </div>
         </div>
