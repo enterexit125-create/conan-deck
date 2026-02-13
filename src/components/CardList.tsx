@@ -98,7 +98,9 @@ export default function CardList({
             onChange={(e) => setSearch(e.target.value)}
             style={{ 
               width: "100%", 
-              paddingRight: search ? "2.5rem" : "0.75rem" 
+              boxSizing: "border-box",
+              padding: "0.5rem",
+              paddingRight: search ? "2.5rem" : "0.5rem"
             }}
           />
           {search && (
@@ -121,6 +123,7 @@ export default function CardList({
                 justifyContent: "center",
                 fontSize: "1rem",
                 padding: 0,
+                zIndex: 10
               }}
               onMouseOver={(e) => e.currentTarget.style.background = "#ccc"}
               onMouseOut={(e) => e.currentTarget.style.background = "#e0e0e0"}

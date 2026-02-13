@@ -1564,18 +1564,51 @@ export default function App() {
               gap: "0.4rem",
               marginBottom: "1rem"
             }}>
-              <input 
-                type="text" 
-                placeholder="🔍 検索..." 
-                value={search} 
-                onChange={(e) => setSearch(e.target.value)}
-                style={{
-                  padding: "0.5rem",
-                  border: "2px solid #e0e0e0",
-                  borderRadius: "8px",
-                  fontSize: "0.9rem"
-                }}
-              />
+              <div style={{ position: "relative" }}>
+                <input 
+                  type="text" 
+                  placeholder="🔍 検索..." 
+                  value={search} 
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "0.5rem",
+                    paddingRight: search ? "2.5rem" : "0.5rem",
+                    border: "2px solid #e0e0e0",
+                    borderRadius: "8px",
+                    fontSize: "0.9rem",
+                    boxSizing: "border-box"
+                  }}
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    style={{
+                      position: "absolute",
+                      right: "0.5rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "1.5rem",
+                      height: "1.5rem",
+                      borderRadius: "50%",
+                      border: "none",
+                      background: "#e0e0e0",
+                      color: "#666",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1rem",
+                      padding: 0,
+                      zIndex: 10
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = "#ccc"}
+                    onMouseOut={(e) => e.currentTarget.style.background = "#e0e0e0"}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
               <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} style={{ fontSize: "0.85rem", padding: "0.5rem" }}>
                 <option value="">色</option>
                 {COLOR_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
