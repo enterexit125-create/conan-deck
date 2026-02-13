@@ -3024,7 +3024,7 @@ export default function App() {
             <style>{`
               @media (min-width: 768px) {
                 .modal-content {
-                  max-width: 800px !important;
+                  max-width: 550px !important;
                 }
               }
             `}</style>
@@ -3115,7 +3115,7 @@ export default function App() {
               <style>{`
                 @media (min-width: 768px) {
                   .card-detail-image {
-                    max-width: 600px !important;
+                    max-width: 450px !important;
                   }
                 }
               `}</style>
