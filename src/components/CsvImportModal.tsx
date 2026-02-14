@@ -103,29 +103,6 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
     }
   }
 
-  // CSV行を正しく解析（ダブルクォート対応）
-  function parseCSVLine(line: string): string[] {
-    const result: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    
-    result.push(current.trim());
-    return result;
-  }
-
   // CSVファイル処理
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -148,7 +125,7 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
 
       for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i];
-        const columns = parseCSVLine(line);
+        const columns = line.split(',').map(col => col.trim());
 
         // 最低限の列チェック
         if (columns.length < 2) {
@@ -183,21 +160,29 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
           const nameValue = name.trim();
           const numberValue = number.trim();
           const colorValue = (color && color.trim() !== '') ? color.trim() : '';
-          const typeValue = (type && type.trim() !== '') ? type.trim() : '';
+          
+          // typeの値を正規化（キャラクター → キャラ など）
+          let typeValue = (type && type.trim() !== '') ? type.trim() : '';
+          if (typeValue === 'キャラクター') typeValue = 'キャラ';
+          if (typeValue === 'イベントカード') typeValue = 'イベント';
+          if (typeValue === 'パートナーカード') typeValue = 'パートナー';
+          if (typeValue === '事件カード') typeValue = '事件';
+          
           const traitsValue = (traits && traits.trim() !== '') ? traits.trim() : '';
           const memoValue = (memo && memo.trim() !== '') ? memo.trim() : '';
 
           if (existingCard) {
             // 既存カードを更新（putを使う）
+            // CSVに値がある項目のみ上書き、ない項目は既存の値を保持
             await db.cards.put({
               id: existingCard.id,
               name: nameValue,
               number: numberValue,
-              color: colorValue,
-              type: typeValue,
-              level: levelValue,
-              traits: traitsValue,
-              memo: memoValue,
+              color: colorValue || existingCard.color,
+              type: typeValue || existingCard.type,
+              level: levelValue !== undefined ? levelValue : existingCard.level,
+              traits: traitsValue || existingCard.traits,  // CSVに値がなければ既存を保持
+              memo: memoValue || existingCard.memo,        // CSVに値がなければ既存を保持
               image: existingCard.image,  // 既存の画像を保持
               updatedAt: Date.now(),
               synced: false,
