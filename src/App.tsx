@@ -1730,7 +1730,15 @@ export default function App() {
                 gap: "0.5rem"
               }}>
                 {filteredCards.map((c) => (
-                  <div key={c.id} className="card-item" style={{ position: "relative" }}>
+                  <div 
+                    key={c.id} 
+                    className="card-item" 
+                    style={{ 
+                      position: "relative",
+                      backgroundColor: c.id !== undefined && selectedCardIds.has(c.id) ? "#ffe0f0" : "white",
+                      transition: "background-color 0.2s"
+                    }}
+                  >
                     {c.color && <div className="card-color-badge" style={{ background: colorMap[c.color] || "#9e9e9e" }} />}
                     
                     {/* 選択モード時のチェックボックス */}
@@ -1750,7 +1758,7 @@ export default function App() {
                             width: "1.5rem",
                             height: "1.5rem",
                             cursor: "pointer",
-                            accentColor: "#4CAF50"
+                            accentColor: "#ff69b4"
                           }}
                         />
                       </div>
