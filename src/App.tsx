@@ -2973,42 +2973,23 @@ export default function App() {
                       <div style={{ fontSize: "0.8rem", fontWeight: "bold" }}>FILE</div>
                       <div style={{ fontSize: "0.9rem", fontWeight: "bold" }}>{playFile.length}枚</div>
                     </div>
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      <button
-                        onClick={startTurn}
-                        disabled={playDeck.length < 2}
-                        style={{
-                          padding: "0.5rem 1rem",
-                          background: playDeck.length < 2 ? "#666" : "linear-gradient(135deg, #66bb6a 0%, #43a047 100%)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          fontSize: "0.9rem",
-                          fontWeight: "bold",
-                          cursor: playDeck.length < 2 ? "not-allowed" : "pointer",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-                        }}
-                      >
-                        🎯 手番開始（2枚）
-                      </button>
-                      <button
-                        onClick={moveDeckToFile}
-                        disabled={playDeck.length === 0}
-                        style={{
-                          padding: "0.5rem 1rem",
-                          background: playDeck.length === 0 ? "#666" : "linear-gradient(135deg, #42a5f5 0%, #1976d2 100%)",
-                          color: "white",
-                          border: "none",
-                          borderRadius: "8px",
-                          fontSize: "0.9rem",
-                          fontWeight: "bold",
-                          cursor: playDeck.length === 0 ? "not-allowed" : "pointer",
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-                        }}
-                      >
-                        ➕ 1枚追加
-                      </button>
-                    </div>
+                    <button
+                      onClick={startTurn}
+                      disabled={playDeck.length < 2}
+                      style={{
+                        padding: "0.5rem 1rem",
+                        background: playDeck.length < 2 ? "#666" : "linear-gradient(135deg, #66bb6a 0%, #43a047 100%)",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.9rem",
+                        fontWeight: "bold",
+                        cursor: playDeck.length < 2 ? "not-allowed" : "pointer",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+                      }}
+                    >
+                      🎯 手番開始（2枚）
+                    </button>
                   </div>
                   
                   {/* カード表示エリア */}
