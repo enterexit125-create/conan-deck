@@ -1735,7 +1735,7 @@ export default function App() {
                     className="card-item" 
                     style={{ 
                       position: "relative",
-                      backgroundColor: c.id !== undefined && selectedCardIds.has(c.id) ? "#ffe0f0" : "white",
+                      backgroundColor: c.id !== undefined && selectedCardIds.has(c.id) ? "#f5deb3" : "white",
                       transition: "background-color 0.2s"
                     }}
                   >
@@ -1758,7 +1758,7 @@ export default function App() {
                             width: "1.5rem",
                             height: "1.5rem",
                             cursor: "pointer",
-                            accentColor: "#ff69b4"
+                            accentColor: "#d4a574"
                           }}
                         />
                       </div>
