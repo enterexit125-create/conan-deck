@@ -83,6 +83,10 @@ export default function App() {
   const [filterType, setFilterType] = useState<string>("");
   const [filterLevel, setFilterLevel] = useState<string>("");
   
+  // カード選択（一括削除用）
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<number>>(new Set());
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  
   const [form, setForm] = useState<Partial<Card>>({ 
     name: "", 
     number: "",  // 空文字列から開始（必須）
@@ -546,6 +550,48 @@ export default function App() {
 
     await db.deckCards.where("cardId").equals(cardId).delete();
     await db.cards.delete(cardId);
+    await refreshAll();
+  }
+
+  // 選択カードの切り替え
+  function toggleCardSelection(cardId: number) {
+    setSelectedCardIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(cardId)) {
+        newSet.delete(cardId);
+      } else {
+        newSet.add(cardId);
+      }
+      return newSet;
+    });
+  }
+
+  // 全選択・全解除
+  function toggleSelectAll() {
+    if (selectedCardIds.size === filteredCards.length) {
+      setSelectedCardIds(new Set());
+    } else {
+      setSelectedCardIds(new Set(filteredCards.map(c => c.id!).filter(id => id !== undefined)));
+    }
+  }
+
+  // 選択カードを一括削除
+  async function deleteSelectedCards() {
+    if (selectedCardIds.size === 0) {
+      alert("削除するカードを選択してください");
+      return;
+    }
+
+    const ok = confirm(`選択した${selectedCardIds.size}枚のカードを削除しますか？（デッキからも消えます）`);
+    if (!ok) return;
+
+    for (const cardId of selectedCardIds) {
+      await db.deckCards.where("cardId").equals(cardId).delete();
+      await db.cards.delete(cardId);
+    }
+
+    setSelectedCardIds(new Set());
+    setIsSelectionMode(false);
     await refreshAll();
   }
 
@@ -1623,6 +1669,54 @@ export default function App() {
                 {LEVEL_OPTIONS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
+
+            {/* 選択モード切り替えと一括削除 */}
+            <div style={{ 
+              display: "flex", 
+              gap: "0.5rem", 
+              marginBottom: "1rem",
+              alignItems: "center"
+            }}>
+              <button 
+                className={isSelectionMode ? "btn-primary" : "btn-secondary"}
+                onClick={() => {
+                  setIsSelectionMode(!isSelectionMode);
+                  if (isSelectionMode) {
+                    setSelectedCardIds(new Set());
+                  }
+                }}
+                style={{ padding: "0.5rem 1rem" }}
+              >
+                {isSelectionMode ? "✓ 選択モード" : "☐ 選択モード"}
+              </button>
+              
+              {isSelectionMode && (
+                <>
+                  <button 
+                    className="btn-secondary"
+                    onClick={toggleSelectAll}
+                    style={{ padding: "0.5rem 1rem" }}
+                  >
+                    {selectedCardIds.size === filteredCards.length && filteredCards.length > 0 ? "全解除" : "全選択"}
+                  </button>
+                  
+                  {selectedCardIds.size > 0 && (
+                    <>
+                      <span style={{ color: "#666", fontSize: "0.9rem" }}>
+                        {selectedCardIds.size}枚選択中
+                      </span>
+                      <button 
+                        className="btn-danger"
+                        onClick={deleteSelectedCards}
+                        style={{ padding: "0.5rem 1rem", marginLeft: "auto" }}
+                      >
+                        🗑 選択したカードを削除
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
             {filteredCards.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🃏</div>
@@ -1636,8 +1730,32 @@ export default function App() {
                 gap: "0.5rem"
               }}>
                 {filteredCards.map((c) => (
-                  <div key={c.id} className="card-item">
+                  <div key={c.id} className="card-item" style={{ position: "relative" }}>
                     {c.color && <div className="card-color-badge" style={{ background: colorMap[c.color] || "#9e9e9e" }} />}
+                    
+                    {/* 選択モード時のチェックボックス */}
+                    {isSelectionMode && c.id !== undefined && (
+                      <div style={{
+                        position: "absolute",
+                        top: "0.25rem",
+                        right: "0.25rem",
+                        zIndex: 10
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCardIds.has(c.id)}
+                          onChange={() => toggleCardSelection(c.id!)}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            width: "1.5rem",
+                            height: "1.5rem",
+                            cursor: "pointer",
+                            accentColor: "#4CAF50"
+                          }}
+                        />
+                      </div>
+                    )}
+                    
                     <div onClick={() => openCardDetail(c)} style={{ cursor: "pointer" }}>
                       <Thumb blob={c.image} alt={c.name ?? "card"} size="large" />
                     </div>
