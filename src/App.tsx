@@ -1743,24 +1743,36 @@ export default function App() {
                     
                     {/* 選択モード時のチェックボックス */}
                     {isSelectionMode && c.id !== undefined && (
-                      <div style={{
-                        position: "absolute",
-                        top: "0.25rem",
-                        right: "0.25rem",
-                        zIndex: 10
-                      }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedCardIds.has(c.id)}
-                          onChange={() => toggleCardSelection(c.id!)}
-                          onClick={(e) => e.stopPropagation()}
+                      <div 
+                        style={{
+                          position: "absolute",
+                          top: "0.25rem",
+                          right: "0.25rem",
+                          zIndex: 10
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCardSelection(c.id!);
+                        }}
+                      >
+                        <div
                           style={{
                             width: "1.5rem",
                             height: "1.5rem",
+                            borderRadius: "4px",
+                            border: "2px solid #d4a574",
+                            backgroundColor: selectedCardIds.has(c.id) ? "#d4a574" : "white",
                             cursor: "pointer",
-                            accentColor: "#d4a574"
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            transition: "all 0.2s"
                           }}
-                        />
+                        >
+                          {selectedCardIds.has(c.id) && (
+                            <span style={{ color: "white", fontSize: "1rem", fontWeight: "bold" }}>✓</span>
+                          )}
+                        </div>
                       </div>
                     )}
                     
