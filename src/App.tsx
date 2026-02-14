@@ -353,6 +353,7 @@ export default function App() {
       color: card.color,
       type: card.type,
       level: card.level,
+      traits: card.traits,
       memo: card.memo,
     });
     setEditImageFile(null);
