@@ -149,7 +149,7 @@ export default function App() {
   
   // カードメニュー用
   const [showCardMenu, setShowCardMenu] = useState(false);
-  const [selectedCard, setSelectedCard] = useState<{ card: Card; index: number; location: "hand" | "field" | "remove" | "evidence" } | null>(null);
+  const [selectedCard, setSelectedCard] = useState<{ card: Card; index: number; location: "hand" | "field" | "remove" | "evidence" | "file" } | null>(null);
   const [showMoveDestination, setShowMoveDestination] = useState(false); // 移動先選択モーダル
   
   // カード拡大表示用
@@ -816,15 +816,17 @@ export default function App() {
     }
     console.log("シャッフル完了");
 
-    // 最初の5枚を手札に
+    // 最初の5枚を手札に、1枚をFILEに
     const hand = shuffled.slice(0, 5);
-    const deck = shuffled.slice(5);
-    console.log("手札:", hand.length, "山札:", deck.length);
+    const fileCard = shuffled.slice(5, 6);
+    const deck = shuffled.slice(6);
+    console.log("手札:", hand.length, "FILE:", fileCard.length, "山札:", deck.length);
 
     setPlayDeckId(deckId);
     setPlayDeck(deck);
     setPlayHand(hand);
-    setPlayDrawn(5);
+    setPlayFile(fileCard);
+    setPlayDrawn(6); // 手札5枚 + FILE1枚
     console.log("状態更新完了");
   }
 
@@ -887,6 +889,20 @@ export default function App() {
     setPlayFile([...playFile, topCard]);
   }
 
+  function startTurn() {
+    // 手番開始：山札から2枚FILEに配布
+    if (playDeck.length < 2) {
+      alert("山札のカードが足りません（2枚必要）");
+      return;
+    }
+    
+    const newFileCards = playDeck.slice(0, 2);
+    const remainingDeck = playDeck.slice(2);
+    
+    setPlayDeck(remainingDeck);
+    setPlayFile([...playFile, ...newFileCards]);
+  }
+
   function toggleEvidenceFaceUp(cardId: number | undefined) {
     // 証拠エリアのカードの表裏を切り替え
     setEvidenceFaceUp(prev => {
@@ -933,7 +949,33 @@ export default function App() {
     setShowMoveDestination(false);
   }
 
-  function openCardMenu(card: Card, index: number, location: "hand" | "field" | "remove" | "evidence") {
+  function moveFileCard(fromIndex: number, destination: "hand" | "field" | "remove" | "deck") {
+    // FILEエリアから他のエリアへ移動
+    const card = playFile[fromIndex];
+    const newFile = playFile.filter((_, i) => i !== fromIndex);
+    
+    setPlayFile(newFile);
+    
+    switch (destination) {
+      case "hand":
+        setPlayHand([...playHand, card]);
+        break;
+      case "field":
+        setPlayField([...playField, card]);
+        break;
+      case "remove":
+        setPlayRemove([...playRemove, card]);
+        break;
+      case "deck":
+        setPlayDeck([...playDeck, card]); // 一番下に追加
+        break;
+    }
+    
+    setShowCardMenu(false);
+    setShowMoveDestination(false);
+  }
+
+  function openCardMenu(card: Card, index: number, location: "hand" | "field" | "remove" | "evidence" | "file") {
     setSelectedCard({ card, index, location });
     setShowCardMenu(true);
   }
@@ -2918,7 +2960,9 @@ export default function App() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    color: "white"
+                    color: "white",
+                    flexWrap: "wrap",
+                    gap: "0.5rem"
                   }}>
                     <div style={{
                       display: "flex",
@@ -2929,23 +2973,42 @@ export default function App() {
                       <div style={{ fontSize: "0.8rem", fontWeight: "bold" }}>FILE</div>
                       <div style={{ fontSize: "0.9rem", fontWeight: "bold" }}>{playFile.length}枚</div>
                     </div>
-                    <button
-                      onClick={moveDeckToFile}
-                      disabled={playDeck.length === 0}
-                      style={{
-                        padding: "0.5rem 1rem",
-                        background: playDeck.length === 0 ? "#666" : "linear-gradient(135deg, #42a5f5 0%, #1976d2 100%)",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "8px",
-                        fontSize: "0.9rem",
-                        fontWeight: "bold",
-                        cursor: playDeck.length === 0 ? "not-allowed" : "pointer",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-                      }}
-                    >
-                      ➕ 山札から1枚
-                    </button>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button
+                        onClick={startTurn}
+                        disabled={playDeck.length < 2}
+                        style={{
+                          padding: "0.5rem 1rem",
+                          background: playDeck.length < 2 ? "#666" : "linear-gradient(135deg, #66bb6a 0%, #43a047 100%)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "0.9rem",
+                          fontWeight: "bold",
+                          cursor: playDeck.length < 2 ? "not-allowed" : "pointer",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+                        }}
+                      >
+                        🎯 手番開始（2枚）
+                      </button>
+                      <button
+                        onClick={moveDeckToFile}
+                        disabled={playDeck.length === 0}
+                        style={{
+                          padding: "0.5rem 1rem",
+                          background: playDeck.length === 0 ? "#666" : "linear-gradient(135deg, #42a5f5 0%, #1976d2 100%)",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "8px",
+                          fontSize: "0.9rem",
+                          fontWeight: "bold",
+                          cursor: playDeck.length === 0 ? "not-allowed" : "pointer",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
+                        }}
+                      >
+                        ➕ 1枚追加
+                      </button>
+                    </div>
                   </div>
                   
                   {/* カード表示エリア */}
@@ -2959,11 +3022,13 @@ export default function App() {
                       {playFile.map((card, idx) => (
                         <div
                           key={`file-${card.id}-${idx}`}
+                          onClick={() => openCardMenu(card, idx, "file")}
                           style={{
                             width: "100px",
                             height: "70px",
                             flexShrink: 0,
-                            position: "relative"
+                            position: "relative",
+                            cursor: "pointer"
                           }}
                         >
                           <div style={{
@@ -3147,6 +3212,20 @@ export default function App() {
                     ➡️ 移動する
                   </button>
                 </>
+              )}
+              
+              {selectedCard.location === "file" && (
+                <button
+                  className="btn-primary"
+                  onClick={() => handleMenuAction("move")}
+                  style={{
+                    width: "100%",
+                    padding: "1rem",
+                    fontSize: "1.1rem"
+                  }}
+                >
+                  ➡️ 移動する
+                </button>
               )}
               
               <button
@@ -3396,7 +3475,7 @@ export default function App() {
       )}
 
       {/* 移動先選択モーダル */}
-      {showMoveDestination && selectedCard && selectedCard.location === "evidence" && (
+      {showMoveDestination && selectedCard && (selectedCard.location === "evidence" || selectedCard.location === "file") && (
         <div 
           className="modal-overlay" 
           onClick={() => setShowMoveDestination(false)}
@@ -3429,7 +3508,13 @@ export default function App() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <button
                 className="btn-primary"
-                onClick={() => moveEvidenceCard(selectedCard.index, "field")}
+                onClick={() => {
+                  if (selectedCard.location === "evidence") {
+                    moveEvidenceCard(selectedCard.index, "field");
+                  } else if (selectedCard.location === "file") {
+                    moveFileCard(selectedCard.index, "field");
+                  }
+                }}
                 style={{
                   width: "100%",
                   padding: "1rem",
@@ -3440,7 +3525,13 @@ export default function App() {
               </button>
               <button
                 className="btn-primary"
-                onClick={() => moveEvidenceCard(selectedCard.index, "hand")}
+                onClick={() => {
+                  if (selectedCard.location === "evidence") {
+                    moveEvidenceCard(selectedCard.index, "hand");
+                  } else if (selectedCard.location === "file") {
+                    moveFileCard(selectedCard.index, "hand");
+                  }
+                }}
                 style={{
                   width: "100%",
                   padding: "1rem",
@@ -3451,7 +3542,13 @@ export default function App() {
               </button>
               <button
                 className="btn-primary"
-                onClick={() => moveEvidenceCard(selectedCard.index, "remove")}
+                onClick={() => {
+                  if (selectedCard.location === "evidence") {
+                    moveEvidenceCard(selectedCard.index, "remove");
+                  } else if (selectedCard.location === "file") {
+                    moveFileCard(selectedCard.index, "remove");
+                  }
+                }}
                 style={{
                   width: "100%",
                   padding: "1rem",
@@ -3462,7 +3559,13 @@ export default function App() {
               </button>
               <button
                 className="btn-primary"
-                onClick={() => moveEvidenceCard(selectedCard.index, "deck")}
+                onClick={() => {
+                  if (selectedCard.location === "evidence") {
+                    moveEvidenceCard(selectedCard.index, "deck");
+                  } else if (selectedCard.location === "file") {
+                    moveFileCard(selectedCard.index, "deck");
+                  }
+                }}
                 style={{
                   width: "100%",
                   padding: "1rem",
