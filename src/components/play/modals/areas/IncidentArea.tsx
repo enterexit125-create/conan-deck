@@ -5,18 +5,21 @@ interface IncidentAreaProps {
   onCardClick: (card: Card) => void;
 }
 
+// 統一カードサイズ
+const CARD_WIDTH = 48;
+
 export function IncidentArea({ incidentCard, onCardClick }: IncidentAreaProps) {
   return (
     <div style={{
       background: "linear-gradient(135deg, #e67e22 0%, #f39c12 100%)",
-      borderRadius: "8px",
-      padding: "0.5rem",
-      border: "2px solid #d35400",
+      borderRadius: "6px",
+      padding: "0.4rem",
+      border: "1px solid #d35400",
       display: "flex",
       flexDirection: "column",
       alignItems: "center"
     }}>
-      <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white", marginBottom: "0.25rem" }}>
+      <div style={{ fontSize: "0.65rem", fontWeight: "bold", color: "white", marginBottom: "0.2rem" }}>
         事件
       </div>
       <div 
@@ -26,9 +29,9 @@ export function IncidentArea({ incidentCard, onCardClick }: IncidentAreaProps) {
           }
         }}
         style={{
-          width: "100%",
+          width: `${CARD_WIDTH}px`,
           aspectRatio: "0.7",
-          borderRadius: "6px",
+          borderRadius: "4px",
           overflow: "hidden",
           background: "rgba(255,255,255,0.2)",
           display: "flex",
@@ -44,7 +47,7 @@ export function IncidentArea({ incidentCard, onCardClick }: IncidentAreaProps) {
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <div style={{ color: "white", fontSize: "0.7rem", textAlign: "center" }}>
+          <div style={{ color: "white", fontSize: "0.55rem", textAlign: "center" }}>
             {incidentCard?.name || "なし"}
           </div>
         )}

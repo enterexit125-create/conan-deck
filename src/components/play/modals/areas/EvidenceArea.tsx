@@ -10,6 +10,9 @@ interface EvidenceAreaProps {
   onCardClick: (card: Card, index: number) => void;
 }
 
+// 統一カードサイズ
+const CARD_WIDTH = 48;
+
 export function EvidenceArea({ 
   playEvidence, 
   evidenceFaceUp, 
@@ -21,9 +24,9 @@ export function EvidenceArea({
     <div style={{
       flex: 1,
       background: "linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)",
-      borderRadius: "8px",
-      padding: "0.5rem",
-      border: "2px solid #6c3483",
+      borderRadius: "6px",
+      padding: "0.4rem",
+      border: "1px solid #6c3483",
       overflow: "hidden",
       display: "flex",
       flexDirection: "column"
@@ -32,9 +35,9 @@ export function EvidenceArea({
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: "0.25rem"
+        marginBottom: "0.2rem"
       }}>
-        <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white" }}>
+        <div style={{ fontSize: "0.65rem", fontWeight: "bold", color: "white" }}>
           証拠 ({playEvidence.length})
         </div>
         <button
@@ -43,9 +46,9 @@ export function EvidenceArea({
             background: "rgba(255,255,255,0.2)",
             border: "none",
             color: "white",
-            borderRadius: "4px",
-            padding: "0.1rem 0.3rem",
-            fontSize: "0.7rem",
+            borderRadius: "3px",
+            padding: "0.1rem 0.25rem",
+            fontSize: "0.6rem",
             cursor: "pointer"
           }}
         >
@@ -55,9 +58,9 @@ export function EvidenceArea({
       {!isEvidenceCollapsed && (
         <div style={{
           flex: 1,
-          display: "grid",
-          gridTemplateColumns: "1fr",
-          gap: "0.25rem",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0.2rem",
           overflow: "auto",
           alignContent: "start"
         }}>
@@ -68,12 +71,14 @@ export function EvidenceArea({
                 key={`evidence-${card.id}-${idx}`}
                 onClick={() => onCardClick(card, idx)}
                 style={{
+                  width: `${CARD_WIDTH}px`,
                   aspectRatio: "0.7",
-                  borderRadius: "6px",
+                  borderRadius: "4px",
                   overflow: "hidden",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                   cursor: "pointer",
-                  position: "relative"
+                  position: "relative",
+                  flexShrink: 0
                 }}
               >
                 {isFaceUp ? (
@@ -92,8 +97,8 @@ export function EvidenceArea({
                       alignItems: "center",
                       justifyContent: "center",
                       color: "white",
-                      fontSize: "0.5rem",
-                      padding: "0.25rem",
+                      fontSize: "0.45rem",
+                      padding: "0.15rem",
                       textAlign: "center"
                     }}>
                       {card.name}

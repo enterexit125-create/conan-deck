@@ -6,19 +6,22 @@ interface RemoveAreaProps {
   onCardClick: (card: Card, index: number) => void;
 }
 
+// 統一カードサイズ
+const CARD_WIDTH = 48;
+
 export function RemoveArea({ playRemove, onCardClick }: RemoveAreaProps) {
   return (
     <div style={{
       background: "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
-      borderRadius: "8px",
-      padding: "0.5rem",
-      border: "2px solid #a93226",
+      borderRadius: "6px",
+      padding: "0.4rem",
+      border: "1px solid #a93226",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       flex: 1
     }}>
-      <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white", marginBottom: "0.25rem" }}>
+      <div style={{ fontSize: "0.65rem", fontWeight: "bold", color: "white", marginBottom: "0.2rem" }}>
         リムーブ ({playRemove.length})
       </div>
       <div style={{
@@ -26,19 +29,22 @@ export function RemoveArea({ playRemove, onCardClick }: RemoveAreaProps) {
         width: "100%",
         overflow: "auto",
         display: "flex",
-        flexDirection: "column",
-        gap: "0.25rem"
+        flexWrap: "wrap",
+        gap: "0.2rem",
+        alignContent: "start"
       }}>
         {playRemove.map((card, idx) => (
           <div
             key={`remove-${card.id}-${idx}`}
             onClick={() => onCardClick(card, idx)}
             style={{
+              width: `${CARD_WIDTH}px`,
               aspectRatio: "0.7",
-              borderRadius: "6px",
+              borderRadius: "4px",
               overflow: "hidden",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-              cursor: "pointer"
+              boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+              cursor: "pointer",
+              flexShrink: 0
             }}
           >
             {card.image ? (
@@ -56,8 +62,8 @@ export function RemoveArea({ playRemove, onCardClick }: RemoveAreaProps) {
                 alignItems: "center",
                 justifyContent: "center",
                 color: "white",
-                fontSize: "0.5rem",
-                padding: "0.2rem",
+                fontSize: "0.45rem",
+                padding: "0.15rem",
                 textAlign: "center"
               }}>
                 {card.name}

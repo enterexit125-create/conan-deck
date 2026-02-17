@@ -5,18 +5,21 @@ interface PartnerAreaProps {
   onCardClick: (card: Card) => void;
 }
 
+// 統一カードサイズ
+const CARD_WIDTH = 48;
+
 export function PartnerArea({ partnerCard, onCardClick }: PartnerAreaProps) {
   return (
     <div style={{
       background: "linear-gradient(135deg, #16a085 0%, #1abc9c 100%)",
-      borderRadius: "8px",
-      padding: "0.5rem",
-      border: "2px solid #138d75",
+      borderRadius: "6px",
+      padding: "0.4rem",
+      border: "1px solid #138d75",
       display: "flex",
       flexDirection: "column",
       alignItems: "center"
     }}>
-      <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white", marginBottom: "0.25rem" }}>
+      <div style={{ fontSize: "0.65rem", fontWeight: "bold", color: "white", marginBottom: "0.2rem" }}>
         パートナー
       </div>
       <div 
@@ -26,9 +29,9 @@ export function PartnerArea({ partnerCard, onCardClick }: PartnerAreaProps) {
           }
         }}
         style={{
-          width: "100%",
+          width: `${CARD_WIDTH}px`,
           aspectRatio: "0.7",
-          borderRadius: "6px",
+          borderRadius: "4px",
           overflow: "hidden",
           background: "rgba(255,255,255,0.2)",
           cursor: partnerCard ? "pointer" : "default"
@@ -48,7 +51,7 @@ export function PartnerArea({ partnerCard, onCardClick }: PartnerAreaProps) {
             alignItems: "center",
             justifyContent: "center",
             color: "white",
-            fontSize: "0.7rem",
+            fontSize: "0.55rem",
             textAlign: "center"
           }}>
             {partnerCard?.name || "なし"}

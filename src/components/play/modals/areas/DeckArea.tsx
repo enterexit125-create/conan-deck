@@ -6,26 +6,29 @@ interface DeckAreaProps {
   onStartTurn: () => void;
 }
 
+// 統一カードサイズ
+const CARD_WIDTH = 48;
+
 export function DeckArea({ deckCount, onDrawCard, onStartTurn }: DeckAreaProps) {
   return (
     <div style={{
       background: "linear-gradient(135deg, #3498db 0%, #2980b9 100%)",
-      borderRadius: "8px",
-      padding: "0.5rem",
-      border: "2px solid #2471a3",
+      borderRadius: "6px",
+      padding: "0.4rem",
+      border: "1px solid #2471a3",
       display: "flex",
       flexDirection: "column",
       alignItems: "center"
     }}>
-      <div style={{ fontSize: "0.7rem", fontWeight: "bold", color: "white", marginBottom: "0.25rem" }}>
+      <div style={{ fontSize: "0.65rem", fontWeight: "bold", color: "white", marginBottom: "0.2rem" }}>
         山札
       </div>
       <div 
         onClick={onDrawCard}
         style={{
-          width: "100%",
+          width: `${CARD_WIDTH}px`,
           aspectRatio: "0.7",
-          borderRadius: "6px",
+          borderRadius: "4px",
           overflow: "hidden",
           background: "rgba(255,255,255,0.2)",
           cursor: "pointer",
@@ -39,14 +42,14 @@ export function DeckArea({ deckCount, onDrawCard, onStartTurn }: DeckAreaProps) 
         />
         <div style={{
           position: "absolute",
-          bottom: "0.25rem",
+          bottom: "0.15rem",
           left: "50%",
           transform: "translateX(-50%)",
           background: "rgba(0,0,0,0.7)",
           color: "white",
-          padding: "0.2rem 0.4rem",
-          borderRadius: "4px",
-          fontSize: "0.7rem",
+          padding: "0.1rem 0.3rem",
+          borderRadius: "3px",
+          fontSize: "0.6rem",
           fontWeight: "bold"
         }}>
           {deckCount}枚
@@ -57,9 +60,9 @@ export function DeckArea({ deckCount, onDrawCard, onStartTurn }: DeckAreaProps) 
         onClick={onStartTurn}
         style={{
           width: "100%",
-          marginTop: "0.25rem",
-          padding: "0.3rem",
-          fontSize: "0.65rem"
+          marginTop: "0.2rem",
+          padding: "0.25rem",
+          fontSize: "0.6rem"
         }}
       >
         手番開始
