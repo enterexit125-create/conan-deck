@@ -8,13 +8,17 @@ interface HandAreaProps {
   onStartMulligan: () => void;
 }
 
+// 手札カードサイズ（スマホ向けに縮小）
+const HAND_CARD_WIDTH = 58;  // 70px → 58px
+
 export function HandArea({ playHand, mulliganDone, onCardClick, onStartMulligan }: HandAreaProps) {
   return (
     <div style={{
+      height: "100%",
       background: "linear-gradient(to top, #34495e 0%, #2c3e50 100%)",
-      borderRadius: "8px",
-      padding: "0.5rem",
-      border: "2px solid #1a252f",
+      borderRadius: "6px",
+      padding: "0.3rem",  // 0.5rem → 0.3rem
+      border: "1px solid #1a252f",  // 2px → 1px
       display: "flex",
       flexDirection: "column"
     }}>
@@ -22,16 +26,16 @@ export function HandArea({ playHand, mulliganDone, onCardClick, onStartMulligan 
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: "0.5rem"
+        marginBottom: "0.3rem"  // 0.5rem → 0.3rem
       }}>
-        <div style={{ fontSize: "0.8rem", fontWeight: "bold", color: "white" }}>
+        <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "white" }}>
           🃏 手札 ({playHand.length}枚)
         </div>
         {!mulliganDone && (
           <button
             className="btn-secondary"
             onClick={onStartMulligan}
-            style={{ padding: "0.25rem 0.75rem", fontSize: "0.75rem" }}
+            style={{ padding: "0.2rem 0.5rem", fontSize: "0.7rem" }}
           >
             🔄 マリガン
           </button>
@@ -40,7 +44,7 @@ export function HandArea({ playHand, mulliganDone, onCardClick, onStartMulligan 
       <div style={{
         flex: 1,
         display: "flex",
-        gap: "0.3rem",
+        gap: "0.25rem",  // 0.3rem → 0.25rem
         overflowX: "auto",
         overflowY: "hidden",
         alignItems: "flex-start"
@@ -50,17 +54,17 @@ export function HandArea({ playHand, mulliganDone, onCardClick, onStartMulligan 
             key={`hand-${card.id}-${idx}`}
             onClick={() => onCardClick(card, idx)}
             style={{
-              minWidth: "70px",
-              width: "70px",
+              minWidth: `${HAND_CARD_WIDTH}px`,
+              width: `${HAND_CARD_WIDTH}px`,
               aspectRatio: "0.7",
-              borderRadius: "6px",
+              borderRadius: "4px",
               overflow: "hidden",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
               cursor: "pointer",
               transition: "transform 0.2s"
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.transform = "translateY(-10px)";
+              e.currentTarget.style.transform = "translateY(-8px)";
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = "translateY(0)";
@@ -82,11 +86,11 @@ export function HandArea({ playHand, mulliganDone, onCardClick, onStartMulligan 
                 justifyContent: "center",
                 flexDirection: "column",
                 color: "white",
-                padding: "0.25rem",
-                fontSize: "0.6rem"
+                padding: "0.2rem",
+                fontSize: "0.55rem"
               }}>
                 <div>Lv.{card.level}</div>
-                <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.65rem" }}>{card.name}</div>
+                <div style={{ fontWeight: "bold", textAlign: "center", fontSize: "0.6rem" }}>{card.name}</div>
               </div>
             )}
           </div>

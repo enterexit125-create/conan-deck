@@ -33,6 +33,10 @@ interface VersusPlayFieldProps {
   isEvidenceCollapsed: boolean;
 }
 
+// カードサイズの定数（スマホ向けに小さく）
+const CARD_WIDTH = 48;  // 60px → 48px
+const CARD_GAP = "0.2rem";  // 0.3rem → 0.2rem
+
 export function VersusPlayField({
   currentPlayer,
   currentPlayerState,
@@ -60,21 +64,21 @@ export function VersusPlayField({
       overflow: "hidden",
       background: "#f5f5f5"
     }}>
-      {/* ヘッダー */}
+      {/* ヘッダー - 高さを縮小 */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        padding: "0.4rem 0.75rem",
+        padding: "0.25rem 0.5rem",  // 縮小
         background: "white",
-        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
         zIndex: 10,
         flexShrink: 0
       }}>
-        <h2 style={{ margin: 0, fontSize: "0.95rem", fontWeight: "bold" }}>
+        <h2 style={{ margin: 0, fontSize: "0.85rem", fontWeight: "bold" }}>
           🎮 P{currentPlayer}のターン
         </h2>
-        <button className="btn-secondary" onClick={onReset} style={{ padding: "0.3rem 0.75rem", fontSize: "0.85rem" }}>
+        <button className="btn-secondary" onClick={onReset} style={{ padding: "0.2rem 0.5rem", fontSize: "0.8rem" }}>
           🔙
         </button>
       </div>
@@ -82,26 +86,26 @@ export function VersusPlayField({
       {/* 相手の現場 */}
       <div style={{ 
         flex: 1,
-        padding: "0.3rem",
+        padding: "0.2rem",  // 縮小
         background: "linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%)",
-        borderBottom: "2px solid #e57373",
+        borderBottom: "1px solid #e57373",  // 細く
         minHeight: 0
       }}>
         <div style={{ 
           height: "100%",
           background: "white",
-          borderRadius: "8px",
-          padding: "0.3rem",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          borderRadius: "6px",  // 縮小
+          padding: "0.2rem",  // 縮小
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           display: "flex",
           flexDirection: "column"
         }}>
           <div style={{ 
-            fontSize: "0.75rem", 
+            fontSize: "0.7rem",  // 縮小
             fontWeight: "bold", 
             color: "#e74c3c",
             textAlign: "center",
-            marginBottom: "0.25rem",
+            marginBottom: "0.15rem",
             flexShrink: 0
           }}>
             相手の現場
@@ -110,7 +114,7 @@ export function VersusPlayField({
             flex: 1,
             display: "flex",
             flexWrap: "wrap",
-            gap: "0.3rem",
+            gap: CARD_GAP,
             overflow: "auto",
             alignContent: "flex-start"
           }}>
@@ -118,11 +122,11 @@ export function VersusPlayField({
               <div
                 key={`opponent-field-${card.id}-${idx}`}
                 style={{
-                  width: "60px",
+                  width: `${CARD_WIDTH}px`,
                   aspectRatio: "0.7",
-                  borderRadius: "4px",
+                  borderRadius: "3px",
                   overflow: "hidden",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                   flexShrink: 0
                 }}
               >
@@ -141,8 +145,8 @@ export function VersusPlayField({
                     alignItems: "center",
                     justifyContent: "center",
                     color: "white",
-                    fontSize: "0.6rem",
-                    padding: "0.2rem",
+                    fontSize: "0.5rem",
+                    padding: "0.15rem",
                     textAlign: "center"
                   }}>
                     {card.name}
@@ -154,13 +158,13 @@ export function VersusPlayField({
         </div>
       </div>
 
-      {/* 中央コントロール */}
+      {/* 中央コントロール - コンパクトに */}
       <div style={{
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        gap: "0.75rem",
-        padding: "0.4rem",
+        gap: "0.5rem",  // 縮小
+        padding: "0.25rem",  // 縮小
         background: "white",
         borderTop: "1px solid #ddd",
         borderBottom: "1px solid #ddd",
@@ -170,7 +174,7 @@ export function VersusPlayField({
         <button
           className="btn-primary"
           onClick={() => setLeftPanelOpen(true)}
-          style={{ padding: "0.5rem 0.9rem", fontSize: "1.3rem", lineHeight: 1 }}
+          style={{ padding: "0.4rem 0.7rem", fontSize: "1.1rem", lineHeight: 1 }}
         >
           ◀
         </button>
@@ -178,8 +182,8 @@ export function VersusPlayField({
           className="btn-secondary"
           onClick={onSwitchPlayer}
           style={{ 
-            padding: "0.5rem 0.9rem", 
-            fontSize: "1.3rem",
+            padding: "0.4rem 0.7rem", 
+            fontSize: "1.1rem",
             lineHeight: 1,
             background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
             color: "white",
@@ -191,7 +195,7 @@ export function VersusPlayField({
         <button
           className="btn-primary"
           onClick={() => setRightPanelOpen(true)}
-          style={{ padding: "0.5rem 0.9rem", fontSize: "1.3rem", lineHeight: 1 }}
+          style={{ padding: "0.4rem 0.7rem", fontSize: "1.1rem", lineHeight: 1 }}
         >
           ▶
         </button>
@@ -200,26 +204,26 @@ export function VersusPlayField({
       {/* 自分の現場 */}
       <div style={{ 
         flex: 1,
-        padding: "0.3rem",
+        padding: "0.2rem",  // 縮小
         background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
-        borderBottom: "2px solid #64b5f6",
+        borderBottom: "1px solid #64b5f6",  // 細く
         minHeight: 0
       }}>
         <div style={{ 
           height: "100%",
           background: "white",
-          borderRadius: "8px",
-          padding: "0.3rem",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+          borderRadius: "6px",
+          padding: "0.2rem",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           display: "flex",
           flexDirection: "column"
         }}>
           <div style={{ 
-            fontSize: "0.75rem", 
+            fontSize: "0.7rem",
             fontWeight: "bold", 
             color: "#667eea",
             textAlign: "center",
-            marginBottom: "0.25rem",
+            marginBottom: "0.15rem",
             flexShrink: 0
           }}>
             自分の現場
@@ -228,7 +232,7 @@ export function VersusPlayField({
             flex: 1,
             display: "flex",
             flexWrap: "wrap",
-            gap: "0.3rem",
+            gap: CARD_GAP,
             overflow: "auto",
             alignContent: "flex-start"
           }}>
@@ -237,11 +241,11 @@ export function VersusPlayField({
                 key={`current-field-${card.id}-${idx}`}
                 onClick={() => onCardClick(card, idx, "field")}
                 style={{
-                  width: "60px",
+                  width: `${CARD_WIDTH}px`,
                   aspectRatio: "0.7",
-                  borderRadius: "4px",
+                  borderRadius: "3px",
                   overflow: "hidden",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                   cursor: "pointer",
                   flexShrink: 0
                 }}
@@ -261,8 +265,8 @@ export function VersusPlayField({
                     alignItems: "center",
                     justifyContent: "center",
                     color: "white",
-                    fontSize: "0.6rem",
-                    padding: "0.2rem",
+                    fontSize: "0.5rem",
+                    padding: "0.15rem",
                     textAlign: "center"
                   }}>
                     {card.name}
@@ -274,12 +278,12 @@ export function VersusPlayField({
         </div>
       </div>
 
-      {/* 自分の手札 */}
+      {/* 自分の手札 - 高さを縮小 */}
       <div style={{
-        padding: "0.3rem",
+        padding: "0.2rem",
         background: "linear-gradient(to top, #34495e 0%, #2c3e50 100%)",
         flexShrink: 0,
-        height: "160px"
+        height: "130px"  // 160px → 130px
       }}>
         <HandArea
           playHand={currentPlayerState.hand}
