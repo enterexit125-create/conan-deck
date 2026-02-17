@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { Card } from "../../db";
-import { FieldArea } from "./areas/FieldArea";
 import { HandArea } from "./areas/HandArea";
 import { LeftSidePanel } from "./panels/LeftSidePanel";
 import { RightSidePanel } from "./panels/RightSidePanel";

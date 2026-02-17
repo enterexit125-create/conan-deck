@@ -1,8 +1,8 @@
 import type { Card } from "../../../db";
-import { DeckArea } from "../areas/DeckArea";
-import { FileArea } from "../areas/FileArea";
-import { PartnerArea } from "../areas/PartnerArea";
-import { IncidentArea } from "../areas/IncidentArea";
+import { DeckArea } from "../modals/areas/DeckArea";
+import { FileArea } from "../modals/areas/FileArea";
+import { PartnerArea } from "../modals/areas/PartnerArea";
+import { IncidentArea } from "../modals/areas/IncidentArea";
 
 interface RightSidePanelProps {
   isOpen: boolean;
@@ -56,7 +56,7 @@ export function RightSidePanel({
           top: 0,
           right: 0,
           bottom: 0,
-          width: "300px",
+          width: "260px",  // 300px → 260px
           background: "white",
           boxShadow: "-2px 0 8px rgba(0,0,0,0.2)",
           transform: isOpen ? "translateX(0)" : "translateX(100%)",
@@ -64,8 +64,8 @@ export function RightSidePanel({
           zIndex: 101,
           display: "flex",
           flexDirection: "column",
-          padding: "1rem",
-          gap: "1rem",
+          padding: "0.75rem",  // 1rem → 0.75rem
+          gap: "0.75rem",  // 1rem → 0.75rem
           overflowY: "auto"
         }}
       >
@@ -74,15 +74,15 @@ export function RightSidePanel({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "0.5rem"
+          marginBottom: "0.25rem"
         }}>
-          <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "bold" }}>エリア</h3>
+          <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: "bold" }}>エリア</h3>
           <button
             onClick={onClose}
             style={{
               background: "none",
               border: "none",
-              fontSize: "1.5rem",
+              fontSize: "1.3rem",
               cursor: "pointer",
               color: "#666"
             }}

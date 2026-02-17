@@ -1,6 +1,6 @@
 import type { Card } from "../../../db";
-import { EvidenceArea } from "../areas/EvidenceArea";
-import { RemoveArea } from "../areas/RemoveArea";
+import { EvidenceArea } from "../modals/areas/EvidenceArea";
+import { RemoveArea } from "../modals/areas/RemoveArea";
 
 interface LeftSidePanelProps {
   isOpen: boolean;
@@ -50,7 +50,7 @@ export function LeftSidePanel({
           top: 0,
           left: 0,
           bottom: 0,
-          width: "300px",
+          width: "260px",  // 300px → 260px
           background: "white",
           boxShadow: "2px 0 8px rgba(0,0,0,0.2)",
           transform: isOpen ? "translateX(0)" : "translateX(-100%)",
@@ -58,8 +58,8 @@ export function LeftSidePanel({
           zIndex: 101,
           display: "flex",
           flexDirection: "column",
-          padding: "1rem",
-          gap: "1rem",
+          padding: "0.75rem",  // 1rem → 0.75rem
+          gap: "0.75rem",  // 1rem → 0.75rem
           overflowY: "auto"
         }}
       >
@@ -68,15 +68,15 @@ export function LeftSidePanel({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "0.5rem"
+          marginBottom: "0.25rem"
         }}>
-          <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: "bold" }}>エリア</h3>
+          <h3 style={{ margin: 0, fontSize: "1rem", fontWeight: "bold" }}>エリア</h3>
           <button
             onClick={onClose}
             style={{
               background: "none",
               border: "none",
-              fontSize: "1.5rem",
+              fontSize: "1.3rem",
               cursor: "pointer",
               color: "#666"
             }}
