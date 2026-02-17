@@ -1,28 +1,28 @@
-import type { Deck, Card, DeckCard } from "../db";
-import { COLOR_OPTIONS, colorMap } from "../shared/constants";
+import type { Card, Deck, DeckCard } from "../db";
+import { colorMap, COLOR_OPTIONS } from "../shared/constants";
 
 interface DeckManagerProps {
   decks: Deck[];
   activeDeckId: number | null;
-  setActiveDeckId: (id: number | null) => void;
-  switchTab: (tab: string) => void;
+  cards: Card[];
+  deckCards: DeckCard[];
   createDeck: () => Promise<void>;
   renameDeck: (deckId: number) => Promise<void>;
   deleteDeck: (deckId: number) => Promise<void>;
-  cards: Card[];
-  deckCards: DeckCard[];
+  setActiveDeckId: (id: number) => void;
+  switchTab: (tab: "cards" | "decks" | "editor" | "play" | "sync") => void;
 }
 
-export default function DeckManager({
+export function DeckManager({
   decks,
   activeDeckId,
-  setActiveDeckId,
-  switchTab,
+  cards,
+  deckCards,
   createDeck,
   renameDeck,
   deleteDeck,
-  cards,
-  deckCards
+  setActiveDeckId,
+  switchTab,
 }: DeckManagerProps) {
   return (
     <div className="section">
@@ -59,8 +59,10 @@ export default function DeckManager({
                 cursor: "pointer"
               }}
             >
+              {/* デッキ名 */}
               <span style={{ fontWeight: "bold", fontSize: "1rem" }}>{d.name}</span>
               
+              {/* 色分布（選択中のデッキのみ） */}
               {d.id === activeDeckId && (
                 <div style={{
                   display: "flex",
@@ -96,6 +98,7 @@ export default function DeckManager({
                 </div>
               )}
               
+              {/* 削除ボタン */}
               <button 
                 className="deck-delete-btn" 
                 onClick={(e) => { e.stopPropagation(); deleteDeck(d.id!); }} 

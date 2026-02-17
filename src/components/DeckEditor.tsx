@@ -1,29 +1,29 @@
-import { useMemo } from "react";
-import type { Deck, Card, DeckCard } from "../db";
-import Thumb from "../shared/Thumb";
-import { COLOR_OPTIONS, LEVEL_OPTIONS, TARGET_DECK_SIZE, colorMap } from "../shared/constants";
+import type { Card, Deck, DeckCard } from "../db";
+import { colorMap, TARGET_DECK_SIZE } from "../shared/constants";
 
 interface DeckEditorProps {
-  activeDeck: Deck;
-  cards: Card[];
-  deckCards: DeckCard[];
+  activeDeck: Deck | undefined;
   totalInDeck: number;
-  partnerCard: Card | null;
-  incidentCard: Card | null;
+  partnerCard: Card | null | undefined;
+  incidentCard: Card | null | undefined;
   characterCount: number;
   eventCount: number;
   levelDistribution: Record<string, number>;
   maxLevelCount: number;
+  cardsByLevel: Record<string, Array<{ card: Card; count: number }>>;
+  deckCards: DeckCard[];
+  cards: Card[];
+  deckCardMap: Map<number, DeckCard>;
+  
   openCardDetail: (card: Card) => void;
   openCardSelectModal: (filter: "all" | "partner" | "incident") => void;
   openEditDeckCard: (cardId: number) => void;
-  renameActiveDeck: () => Promise<void>;
+  removeCardFromDeck: (cardId: number) => Promise<void>;
+  createDeck: () => Promise<void>;
 }
 
-export default function DeckEditor({
+export function DeckEditor({
   activeDeck,
-  cards,
-  deckCards,
   totalInDeck,
   partnerCard,
   incidentCard,
@@ -31,29 +31,35 @@ export default function DeckEditor({
   eventCount,
   levelDistribution,
   maxLevelCount,
+  deckCards,
+  cards,
   openCardDetail,
   openCardSelectModal,
   openEditDeckCard,
-  renameActiveDeck
+  removeCardFromDeck,
+  createDeck,
 }: DeckEditorProps) {
-  const cardsByLevel = useMemo(() => {
-    const grouped: Record<string, Array<{ card: Card; count: number }>> = {};
-    LEVEL_OPTIONS.forEach(level => {
-      grouped[level] = [];
-    });
+  if (!activeDeck) {
+    return (
+      <div className="empty-state">
+        <div className="empty-state-icon">🎴</div>
+        <div>デッキを選択してください</div>
+        <div style={{ marginTop: "1rem" }}>
+          <button className="btn-primary" onClick={createDeck}>➕ 新しいデッキを作成</button>
+        </div>
+      </div>
+    );
+  }
 
-    deckCards.forEach(dc => {
-      const card = cards.find(c => c.id === dc.cardId);
-      if (card && card.type !== "パートナー" && card.type !== "事件" && card.level) {
-        grouped[card.level].push({ card, count: dc.count });
-      }
-    });
-
-    return grouped;
-  }, [deckCards, cards]);
+  // パートナーと事件を除いたデッキカード
+  const mainDeckCards = deckCards.filter(dc => {
+    const card = cards.find(c => c.id === dc.cardId);
+    return card && card.type !== "パートナー" && card.type !== "事件";
+  });
 
   return (
-    <>
+    <div style={{ marginTop: "-1.5rem" }}>
+      {/* デッキ完成メッセージ */}
       {totalInDeck === TARGET_DECK_SIZE && (
         <div style={{ 
           padding: "0.75rem", 
@@ -70,6 +76,7 @@ export default function DeckEditor({
         </div>
       )}
 
+      {/* ヘッダー: パートナー、事件、統計情報 */}
       <div style={{
         background: "white",
         border: "2px solid #e0e0e0",
@@ -85,6 +92,7 @@ export default function DeckEditor({
           marginBottom: "0.75rem",
           alignItems: "flex-start"
         }}>
+          {/* パートナー */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
             <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>パートナー</div>
             <div style={{
@@ -114,6 +122,7 @@ export default function DeckEditor({
             {partnerCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "70px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{partnerCard.name}</div>}
           </div>
 
+          {/* 事件 */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem" }}>
             <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>事件</div>
             <div style={{
@@ -134,83 +143,95 @@ export default function DeckEditor({
                 openCardSelectModal("incident");
               }
             }}>
-            {incidentCard?.image ? (
-              <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-            ) : (
-              <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>🃏</div>
-            )}
-          </div>
-          {incidentCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "98px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{incidentCard.name}</div>}
+              {incidentCard?.image ? (
+                <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>📋</div>
+              )}
+            </div>
+            {incidentCard && <div style={{ fontSize: "0.65rem", color: "#999", textAlign: "center", maxWidth: "98px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{incidentCard.name}</div>}
           </div>
 
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.5rem", justifyContent: "center" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <div style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#d4716b", flex: 1 }}>
-                {activeDeck.name}
-              </div>
-              <button className="btn-secondary" style={{ padding: "0.3rem 0.5rem", fontSize: "0.9rem" }} onClick={renameActiveDeck}>✏️</button>
+          {/* 統計情報 */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "0.25rem", minWidth: 0 }}>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0.25rem 0.5rem",
+              background: "#f5f7fa",
+              borderRadius: "6px"
+            }}>
+              <span style={{ fontSize: "0.75rem", color: "#666" }}>デッキ枚数</span>
+              <span style={{ 
+                fontSize: "0.9rem", 
+                fontWeight: "bold",
+                color: totalInDeck === TARGET_DECK_SIZE ? "#4caf50" : totalInDeck > TARGET_DECK_SIZE ? "#f44336" : "#666"
+              }}>
+                {totalInDeck}/{TARGET_DECK_SIZE}
+              </span>
             </div>
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <div style={{ fontSize: "0.8rem" }}>
-                <span style={{ color: "#666" }}>キャラ:</span> <strong style={{ fontSize: "0.9rem", color: "#667eea" }}>{characterCount}</strong>
-              </div>
-              <div style={{ fontSize: "0.8rem" }}>
-                <span style={{ color: "#666" }}>イベント:</span> <strong style={{ fontSize: "0.9rem", color: "#ff9a9e" }}>{eventCount}</strong>
-              </div>
-              <div style={{ fontSize: "0.8rem" }}>
-                <span style={{ color: "#666" }}>デッキ:</span> <strong style={{ fontSize: "0.9rem", color: totalInDeck === TARGET_DECK_SIZE ? "#43a047" : "#333" }}>{totalInDeck}/{TARGET_DECK_SIZE}</strong>
-              </div>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0.25rem 0.5rem",
+              background: "#fff3e0",
+              borderRadius: "6px"
+            }}>
+              <span style={{ fontSize: "0.75rem", color: "#666" }}>キャラ</span>
+              <span style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666" }}>{characterCount}</span>
+            </div>
+            <div style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0.25rem 0.5rem",
+              background: "#e3f2fd",
+              borderRadius: "6px"
+            }}>
+              <span style={{ fontSize: "0.75rem", color: "#666" }}>イベント</span>
+              <span style={{ fontSize: "0.9rem", fontWeight: "bold", color: "#666" }}>{eventCount}</span>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666" }}>レベル分布</div>
-          <div style={{
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "0.2rem",
-            height: "60px",
-            padding: "0.4rem",
-            background: "linear-gradient(135deg, #fff0f3 0%, #ffe4e8 100%)",
-            borderRadius: "6px",
-            border: "2px solid #ffd4dc"
+        {/* レベル分布グラフ */}
+        <div style={{ marginTop: "0.75rem" }}>
+          <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", marginBottom: "0.25rem" }}>レベル分布</div>
+          <div style={{ 
+            display: "flex", 
+            gap: "2px", 
+            alignItems: "flex-end", 
+            height: "40px",
+            background: "#f5f7fa",
+            padding: "0.25rem",
+            borderRadius: "6px"
           }}>
-            {LEVEL_OPTIONS.map((level) => {
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((level) => {
               const count = levelDistribution[level] || 0;
-              const height = maxLevelCount > 0 ? (count / maxLevelCount) * 40 : 0;
+              const heightPercent = maxLevelCount > 0 ? (count / maxLevelCount) * 100 : 0;
               
               return (
-                <div key={level} style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "0.15rem",
-                  flex: 1
-                }}>
-                  <div style={{
-                    fontSize: "0.6rem",
-                    fontWeight: "bold",
-                    color: count > 0 ? "#ff9a9e" : "#ccc",
-                    minHeight: "0.8rem"
-                  }}>
-                    {count > 0 ? count : ""}
-                  </div>
+                <div 
+                  key={level} 
+                  style={{ 
+                    flex: 1, 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    alignItems: "center",
+                    gap: "2px"
+                  }}
+                >
                   <div style={{
                     width: "100%",
-                    height: `${height}px`,
-                    background: count > 0 ? "linear-gradient(180deg, #ff9a9e 0%, #fad0c4 100%)" : "#e0e0e0",
-                    borderRadius: "3px 3px 0 0",
-                    transition: "all 0.3s ease",
-                    minHeight: "3px"
+                    height: `${heightPercent}%`,
+                    background: count > 0 ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "#e0e0e0",
+                    borderRadius: "2px",
+                    minHeight: count > 0 ? "4px" : "2px",
+                    transition: "all 0.3s"
                   }} />
-                  <div style={{
-                    fontSize: "0.65rem",
-                    fontWeight: "bold",
-                    color: "#666"
-                  }}>
-                    {level}
-                  </div>
+                  <span style={{ fontSize: "0.6rem", color: "#999" }}>{level}</span>
                 </div>
               );
             })}
@@ -218,59 +239,114 @@ export default function DeckEditor({
         </div>
       </div>
 
+      {/* デッキ内カード（横並び） */}
       <div className="section">
         <div className="section-header">
           <h2 className="section-title">デッキ内カード</h2>
-          <button className="btn-primary" onClick={() => openCardSelectModal("all")}>➕</button>
+          <button className="btn-secondary" onClick={() => openCardSelectModal("all")}>➕</button>
         </div>
-        {deckCards.filter(dc => {
-          const card = cards.find(c => c.id === dc.cardId);
-          return card?.type !== "パートナー" && card?.type !== "事件";
-        }).length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">📦</div>
-            <div>デッキにカードがありません</div>
-          </div>
-        ) : (
+
+        {mainDeckCards.length > 0 ? (
           <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))",
-            gap: "0.5rem",
-            padding: "0.5rem 0"
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.5rem"
           }}>
-            {LEVEL_OPTIONS.flatMap((level) => 
-              cardsByLevel[level].map(({ card, count }) => (
-                <div
-                  key={card.id}
-                  className="card-item"
-                  onClick={() => openEditDeckCard(card.id!)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {card.color && <div className="card-color-badge" style={{ background: colorMap[card.color] || "#9e9e9e" }} />}
-                  <Thumb blob={card.image} alt={card.name ?? "card"} size="small" />
-                  <div className="card-name" style={{ fontSize: "0.75rem" }}>{card.name}</div>
-                  <div className="card-number" style={{ fontSize: "0.7rem" }}>
-                    {card.number || "---"}/{card.level}
+            {mainDeckCards.map((dc) => {
+              const card = cards.find(c => c.id === dc.cardId);
+              if (!card) return null;
+
+              return (
+                <div key={dc.id} style={{
+                  position: "relative",
+                  width: "80px",
+                  flexShrink: 0
+                }}>
+                  {/* カード画像 */}
+                  <div 
+                    onClick={() => openCardDetail(card)}
+                    style={{
+                      width: "80px",
+                      height: "112px",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      position: "relative",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+                    }}
+                  >
+                    {card.image ? (
+                      <img src={URL.createObjectURL(card.image)} alt={card.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>🎴</div>
+                    )}
+                    {/* 枚数バッジ */}
+                    <div style={{
+                      position: "absolute",
+                      bottom: "4px",
+                      right: "4px",
+                      background: "rgba(0,0,0,0.8)",
+                      color: "white",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.75rem",
+                      fontWeight: "bold"
+                    }}>
+                      ×{dc.count}
+                    </div>
                   </div>
+                  {/* カード名 */}
                   <div style={{
-                    position: "absolute",
-                    top: "8px",
-                    left: "8px",
-                    background: "rgba(102, 126, 234, 0.9)",
-                    color: "white",
-                    padding: "0.25rem 0.5rem",
-                    borderRadius: "12px",
-                    fontSize: "0.8rem",
-                    fontWeight: "bold"
+                    fontSize: "0.7rem",
+                    marginTop: "0.25rem",
+                    textAlign: "center",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
                   }}>
-                    ×{count}
+                    {card.name}
+                  </div>
+                  {/* カード番号 */}
+                  <div style={{
+                    fontSize: "0.65rem",
+                    textAlign: "center",
+                    color: "#999"
+                  }}>
+                    {card.number || "---"}/{card.type === "キャラ" ? "キ" : "イ"}
+                  </div>
+                  {/* 操作ボタン */}
+                  <div style={{ display: "flex", gap: "2px", marginTop: "0.25rem" }}>
+                    <button 
+                      className="btn-secondary" 
+                      style={{ flex: 1, padding: "0.25rem", fontSize: "0.7rem" }}
+                      onClick={() => openEditDeckCard(card.id!)}
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      className="btn-danger" 
+                      style={{ flex: 1, padding: "0.25rem", fontSize: "0.7rem" }}
+                      onClick={() => removeCardFromDeck(card.id!)}
+                    >
+                      ➖
+                    </button>
                   </div>
                 </div>
-              ))
-            )}
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <div className="empty-state-icon">🎴</div>
+            <div>デッキにカードがありません</div>
+            <div style={{ marginTop: "0.5rem", fontSize: "0.9rem" }}>「カード追加」ボタンからカードを追加してください</div>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

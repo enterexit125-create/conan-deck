@@ -30,10 +30,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: sticky;
-  top: 0;
   z-index: 100;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
 }
 
 .app-logo {
@@ -59,9 +58,8 @@ body {
 .app-nav {
   background: white;
   border-bottom: 2px solid #e0e0e0;
-  position: sticky;
-  top: 68px;
   z-index: 90;
+  flex-shrink: 0;
 }
 
 .nav-tabs {
@@ -108,6 +106,16 @@ body {
   min-height: calc(100vh - 120px);
 }
 
+.screen {
+  display: none;
+  width: 100%;
+}
+
+.screen.active {
+  display: block !important;
+  width: 100%;
+}
+
 @media (min-width: 1200px) {
   .app-content {
     padding: 2rem 4rem;
@@ -118,16 +126,6 @@ body {
   .app-content {
     padding: 2rem 8rem;
   }
-}
-
-.screen {
-  display: none;
-  width: 100%;
-}
-
-.screen.active {
-  display: block;
-  width: 100%;
 }
 
 /* ==================== セクション ==================== */
@@ -482,55 +480,21 @@ button {
 
 .deck-card-controls {
   display: flex;
+  gap: 0.5rem;
   align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 0;
 }
 
-.count-btn {
-  width: 36px;
-  height: 36px;
-  border: 2px solid #667eea;
-  background: white;
-  color: #667eea;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1.3rem;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  transition: all 0.2s;
-}
-
-.count-btn:hover {
-  background: #667eea;
-  color: white;
-  transform: scale(1.1);
-}
-
-.card-count {
+.deck-card-count {
   font-weight: bold;
   font-size: 1.1rem;
-  min-width: 24px;
+  color: #667eea;
+  min-width: 30px;
   text-align: center;
 }
 
-/* ==================== 検索バー ==================== */
-.search-bar {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.search-bar input {
-  flex: 1;
-}
-
-/* ==================== 空状態 ==================== */
+/* ==================== Empty State ==================== */
 .empty-state {
-  padding: 3rem 1rem;
+  padding: 3rem 2rem;
   text-align: center;
   color: #999;
   font-size: 1rem;
@@ -599,7 +563,7 @@ button {
     font-size: 0.85rem;
   }
 
-  .app-content {
+  .screen {
     padding: 1rem;
   }
 
@@ -644,7 +608,7 @@ button {
     font-size: 1.2rem;
   }
 
-  .app-content {
+  .screen {
     padding: 0.75rem;
   }
 
@@ -1007,4 +971,10 @@ button {
     font-size: 0.8rem;
     padding: 0.4rem 0.6rem;
   }
+}
+
+/* デッキ編集画面と同期画面の上部余白を削除 */
+.screen[class*="editor"] > div:first-child,
+.screen[class*="sync"] > div:first-child {
+  margin-top: -1.5rem;
 }
