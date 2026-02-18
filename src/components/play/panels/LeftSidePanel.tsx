@@ -1,6 +1,6 @@
 import type { Card } from "../../../db";
-import { EvidenceArea } from "../modals/areas/EvidenceArea";
-import { RemoveArea } from "../modals/areas/RemoveArea";
+import { EvidenceArea } from "../areas/EvidenceArea";
+import { RemoveArea } from "../areas/RemoveArea";
 
 interface LeftSidePanelProps {
   isOpen: boolean;

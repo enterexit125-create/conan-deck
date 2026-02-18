@@ -1,8 +1,8 @@
 import type { Card } from "../../../db";
-import { DeckArea } from "../modals/areas/DeckArea";
-import { FileArea } from "../modals/areas/FileArea";
-import { PartnerArea } from "../modals/areas/PartnerArea";
-import { IncidentArea } from "../modals/areas/IncidentArea";
+import { DeckArea } from "../areas/DeckArea";
+import { FileArea } from "../areas/FileArea";
+import { PartnerArea } from "../areas/PartnerArea";
+import { IncidentArea } from "../areas/IncidentArea";
 
 interface RightSidePanelProps {
   isOpen: boolean;
