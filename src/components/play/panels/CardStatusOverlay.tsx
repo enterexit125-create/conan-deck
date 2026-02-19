@@ -45,14 +45,14 @@ export function CardStatusOverlay({ status, onStatusChange }: CardStatusOverlayP
         right: 0,
         bottom: 0,
         background: "rgba(0, 0, 0, 0.75)",
-        borderRadius: "3px",
+        borderRadius: "4px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        gap: "4px",
+        gap: "6px",
         zIndex: 10,
-        padding: "4px"
+        padding: "6px"
       }}
     >
       {/* 上げるボタン行 */}
@@ -104,13 +104,13 @@ export function CardStatusOverlay({ status, onStatusChange }: CardStatusOverlayP
       <button
         onClick={() => onStatusChange({ lv: 0, ap: 0, lp: 0 })}
         style={{
-          marginTop: "4px",
-          padding: "4px 12px",
-          fontSize: "0.7rem",
+          marginTop: "6px",
+          padding: "6px 16px",
+          fontSize: "0.85rem",
           background: "#666",
           color: "white",
           border: "none",
-          borderRadius: "4px",
+          borderRadius: "6px",
           cursor: "pointer"
         }}
       >
@@ -134,14 +134,14 @@ function StatusButton({
     <button
       onClick={onClick}
       style={{
-        width: "28px",
-        height: "24px",
-        fontSize: "0.9rem",
+        width: "36px",
+        height: "32px",
+        fontSize: "1.1rem",
         fontWeight: "bold",
         background: color,
         color: "white",
         border: "none",
-        borderRadius: "4px",
+        borderRadius: "6px",
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
@@ -175,17 +175,17 @@ function StatusDisplay({
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      minWidth: "28px"
+      minWidth: "36px"
     }}>
       <span style={{
-        fontSize: "0.65rem",
+        fontSize: "0.85rem",
         color: color,
         fontWeight: "bold"
       }}>
         {label}
       </span>
       <span style={{
-        fontSize: "0.8rem",
+        fontSize: "1rem",
         color: "white",
         fontWeight: "bold"
       }}>

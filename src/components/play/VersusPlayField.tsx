@@ -34,8 +34,8 @@ interface VersusPlayFieldProps {
 }
 
 // カードサイズの定数（スマホ向け）
-const CARD_WIDTH = 72;
-const CARD_GAP = "0.3rem";
+const CARD_WIDTH = 120;
+const CARD_GAP = "0.4rem";
 
 // ステータスのキーを生成（カードID + インデックス + プレイヤー）
 function getStatusKey(cardId: number | undefined, index: number, player: 1 | 2): string {
