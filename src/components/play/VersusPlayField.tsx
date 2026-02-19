@@ -241,13 +241,13 @@ export function VersusPlayField({
           transition: "max-height 0.3s ease"
         }}>
           <div style={{ 
-            padding: "0.3rem",
+            padding: "0.2rem 0",
             minHeight: 0
           }}>
             <div style={{ 
               background: "white",
-              borderRadius: "6px",
-              padding: "0.3rem",
+              borderRadius: "0",
+              padding: "0.2rem",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
               maxHeight: "220px",
               overflowY: "auto"
@@ -384,7 +384,7 @@ export function VersusPlayField({
       {/* 自分の現場 */}
       <div style={{ 
         flex: 1,
-        padding: "0.2rem",
+        padding: "0.2rem 0",
         background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
         borderBottom: "1px solid #64b5f6",
         minHeight: 0,
@@ -393,8 +393,8 @@ export function VersusPlayField({
         <div style={{ 
           height: "100%",
           background: "white",
-          borderRadius: "6px",
-          padding: "0.3rem",
+          borderRadius: "0",
+          padding: "0.2rem",
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           display: "flex",
           flexDirection: "column"
