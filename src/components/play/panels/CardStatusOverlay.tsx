@@ -44,15 +44,15 @@ export function CardStatusOverlay({ status, onStatusChange }: CardStatusOverlayP
         left: 0,
         right: 0,
         bottom: 0,
-        background: "rgba(0, 0, 0, 0.7)",
+        background: "rgba(0, 0, 0, 0.75)",
         borderRadius: "3px",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
-        gap: "2px",
+        gap: "4px",
         zIndex: 10,
-        padding: "2px"
+        padding: "4px"
       }}
     >
       {/* 上げるボタン行 */}
@@ -104,13 +104,13 @@ export function CardStatusOverlay({ status, onStatusChange }: CardStatusOverlayP
       <button
         onClick={() => onStatusChange({ lv: 0, ap: 0, lp: 0 })}
         style={{
-          marginTop: "2px",
-          padding: "2px 8px",
-          fontSize: "0.6rem",
+          marginTop: "4px",
+          padding: "4px 12px",
+          fontSize: "0.7rem",
           background: "#666",
           color: "white",
           border: "none",
-          borderRadius: "3px",
+          borderRadius: "4px",
           cursor: "pointer"
         }}
       >
@@ -134,14 +134,14 @@ function StatusButton({
     <button
       onClick={onClick}
       style={{
-        width: "22px",
-        height: "18px",
-        fontSize: "0.7rem",
+        width: "28px",
+        height: "24px",
+        fontSize: "0.9rem",
         fontWeight: "bold",
         background: color,
         color: "white",
         border: "none",
-        borderRadius: "3px",
+        borderRadius: "4px",
         cursor: "pointer",
         display: "flex",
         alignItems: "center",
@@ -175,17 +175,17 @@ function StatusDisplay({
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      minWidth: "22px"
+      minWidth: "28px"
     }}>
       <span style={{
-        fontSize: "0.5rem",
+        fontSize: "0.65rem",
         color: color,
         fontWeight: "bold"
       }}>
         {label}
       </span>
       <span style={{
-        fontSize: "0.65rem",
+        fontSize: "0.8rem",
         color: "white",
         fontWeight: "bold"
       }}>
