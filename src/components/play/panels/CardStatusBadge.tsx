@@ -4,6 +4,9 @@ interface CardStatus {
   lp: number;
 }
 
+// カードの状態（アクティブ/スリープ/スタン）
+type CardState = "active" | "sleep" | "stun";
+
 interface CardStatusBadgeProps {
   status: CardStatus;
   onTap: () => void;
@@ -58,8 +61,9 @@ interface CardStatusModalProps {
   show: boolean;
   cardName: string;
   status: CardStatus;
+  cardState: CardState;
   onStatusChange: (newStatus: CardStatus) => void;
-  onMoveToRemove: () => void;
+  onCardStateChange: (newState: CardState) => void;
   onMoveToEvidence: () => void;
   onViewDetail: () => void;
   onClose: () => void;
@@ -70,8 +74,9 @@ export function CardStatusModal({
   show,
   cardName,
   status,
+  cardState,
   onStatusChange,
-  onMoveToRemove,
+  onCardStateChange,
   onMoveToEvidence,
   onViewDetail,
   onClose
@@ -198,6 +203,69 @@ export function CardStatusModal({
           </button>
         </div>
 
+        {/* カード状態切り替え */}
+        <div style={{ marginBottom: "16px" }}>
+          <div style={{ 
+            fontSize: "0.85rem", 
+            fontWeight: "bold", 
+            marginBottom: "12px",
+            color: "#666"
+          }}>
+            カード状態
+          </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: "8px"
+          }}>
+            <button
+              onClick={() => onCardStateChange("active")}
+              style={{
+                padding: "12px 8px",
+                fontSize: "0.8rem",
+                fontWeight: "bold",
+                background: cardState === "active" ? "#4caf50" : "#e0e0e0",
+                color: cardState === "active" ? "white" : "#666",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer"
+              }}
+            >
+              ↑<br/>アクティブ
+            </button>
+            <button
+              onClick={() => onCardStateChange("sleep")}
+              style={{
+                padding: "12px 8px",
+                fontSize: "0.8rem",
+                fontWeight: "bold",
+                background: cardState === "sleep" ? "#2196f3" : "#e0e0e0",
+                color: cardState === "sleep" ? "white" : "#666",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer"
+              }}
+            >
+              ←<br/>スリープ
+            </button>
+            <button
+              onClick={() => onCardStateChange("stun")}
+              style={{
+                padding: "12px 8px",
+                fontSize: "0.8rem",
+                fontWeight: "bold",
+                background: cardState === "stun" ? "#f44336" : "#e0e0e0",
+                color: cardState === "stun" ? "white" : "#666",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer"
+              }}
+            >
+              ↓<br/>スタン
+            </button>
+          </div>
+        </div>
+
         {/* カード操作ボタン */}
         <div style={{
           display: "grid",
@@ -237,24 +305,6 @@ export function CardStatusModal({
             }}
           >
             🔒 証拠へ
-          </button>
-          <button
-            onClick={() => {
-              onMoveToRemove();
-              onClose();
-            }}
-            style={{
-              padding: "12px",
-              fontSize: "0.9rem",
-              background: "#607d8b",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-              gridColumn: "1 / -1"
-            }}
-          >
-            🗑️ リムーブへ
           </button>
         </div>
       </div>
@@ -346,4 +396,4 @@ function StatusRow({
 }
 
 // エクスポートする型
-export type { CardStatus };
+export type { CardStatus, CardState };

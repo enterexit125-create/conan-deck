@@ -3,7 +3,7 @@ import type { Card } from "../../db";
 import { HandArea } from "./areas/HandArea";
 import { LeftSidePanel } from "./panels/LeftSidePanel";
 import { RightSidePanel } from "./panels/RightSidePanel";
-import { CardStatusBadge, CardStatusModal, type CardStatus } from "./panels/CardStatusBadge";
+import { CardStatusBadge, CardStatusModal, type CardStatus, type CardState } from "./panels/CardStatusBadge";
 
 interface PlayerState {
   deck: Card[];
@@ -67,6 +67,9 @@ export function VersusPlayField({
   // カードステータスの管理（キー: "プレイヤー-カードID-インデックス"）
   const [cardStatuses, setCardStatuses] = useState<Map<string, CardStatus>>(new Map());
 
+  // カード状態の管理（アクティブ/スリープ/スタン）
+  const [cardStates, setCardStates] = useState<Map<string, CardState>>(new Map());
+
   // ステータスモーダルの状態
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedCardForStatus, setSelectedCardForStatus] = useState<{
@@ -95,6 +98,35 @@ export function VersusPlayField({
     });
   }
 
+  // カード状態を取得（なければアクティブ）
+  function getCardState(cardId: number | undefined, index: number, player: 1 | 2): CardState {
+    const key = getStatusKey(cardId, index, player);
+    return cardStates.get(key) ?? "active";
+  }
+
+  // カード状態を更新
+  function updateCardState(cardId: number | undefined, index: number, player: 1 | 2, newState: CardState) {
+    const key = getStatusKey(cardId, index, player);
+    setCardStates(prev => {
+      const newMap = new Map(prev);
+      if (newState === "active") {
+        newMap.delete(key);
+      } else {
+        newMap.set(key, newState);
+      }
+      return newMap;
+    });
+  }
+
+  // カード状態に応じた回転角度を取得
+  function getCardRotation(state: CardState): string {
+    switch (state) {
+      case "sleep": return "rotate(-90deg)";
+      case "stun": return "rotate(180deg)";
+      default: return "rotate(0deg)";
+    }
+  }
+
   // カードタップ時の処理
   function handleCardTap(card: Card, index: number, player: 1 | 2) {
     setSelectedCardForStatus({ card, index, player });
@@ -107,13 +139,16 @@ export function VersusPlayField({
     setStatusModalOpen(true);
   }
 
-  // リムーブへ移動
-  function handleMoveToRemove() {
-    if (selectedCardForStatus && selectedCardForStatus.player === currentPlayer) {
-      onCardClick(selectedCardForStatus.card, selectedCardForStatus.index, "field");
-      // 既存のカードメニューを使うため、一旦モーダルを閉じる
+  // カード状態を変更
+  function handleCardStateChange(newState: CardState) {
+    if (selectedCardForStatus) {
+      updateCardState(
+        selectedCardForStatus.card.id,
+        selectedCardForStatus.index,
+        selectedCardForStatus.player,
+        newState
+      );
     }
-    setStatusModalOpen(false);
   }
 
   // 証拠へ移動
@@ -236,6 +271,8 @@ export function VersusPlayField({
                   {opponentPlayerState.field.map((card, idx) => {
                     const opponentPlayer = currentPlayer === 1 ? 2 : 1;
                     const status = getCardStatus(card.id, idx, opponentPlayer as 1 | 2);
+                    const cardState = getCardState(card.id, idx, opponentPlayer as 1 | 2);
+                    const rotation = getCardRotation(cardState);
                     
                     return (
                       <div
@@ -245,35 +282,47 @@ export function VersusPlayField({
                           width: `${CARD_WIDTH}px`,
                           aspectRatio: "0.7",
                           borderRadius: "4px",
-                          overflow: "hidden",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                          overflow: "visible",
                           flexShrink: 0,
                           position: "relative",
-                          cursor: "pointer"
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center"
                         }}
                       >
-                        {card.image ? (
-                          <img
-                            src={URL.createObjectURL(card.image)}
-                            alt={card.name}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: "100%",
-                            height: "100%",
-                            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "white",
-                            fontSize: "0.6rem",
-                            padding: "0.2rem",
-                            textAlign: "center"
-                          }}>
-                            {card.name}
-                          </div>
-                        )}
+                        <div style={{
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                          transform: rotation,
+                          transition: "transform 0.3s ease"
+                        }}>
+                          {card.image ? (
+                            <img
+                              src={URL.createObjectURL(card.image)}
+                              alt={card.name}
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div style={{
+                              width: "100%",
+                              height: "100%",
+                              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "white",
+                              fontSize: "0.6rem",
+                              padding: "0.2rem",
+                              textAlign: "center"
+                            }}>
+                              {card.name}
+                            </div>
+                          )}
+                        </div>
                         {/* ステータスバッジ */}
                         <CardStatusBadge
                           status={status}
@@ -370,6 +419,8 @@ export function VersusPlayField({
           }}>
             {currentPlayerState.field.map((card, idx) => {
               const status = getCardStatus(card.id, idx, currentPlayer);
+              const cardState = getCardState(card.id, idx, currentPlayer);
+              const rotation = getCardRotation(cardState);
               
               return (
                 <div
@@ -379,35 +430,47 @@ export function VersusPlayField({
                     width: `${CARD_WIDTH}px`,
                     aspectRatio: "0.7",
                     borderRadius: "4px",
-                    overflow: "hidden",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    overflow: "visible",
                     cursor: "pointer",
                     flexShrink: 0,
-                    position: "relative"
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
                   }}
                 >
-                  {card.image ? (
-                    <img
-                      src={URL.createObjectURL(card.image)}
-                      alt={card.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    <div style={{
-                      width: "100%",
-                      height: "100%",
-                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "white",
-                      fontSize: "0.6rem",
-                      padding: "0.2rem",
-                      textAlign: "center"
-                    }}>
-                      {card.name}
-                    </div>
-                  )}
+                  <div style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    transform: rotation,
+                    transition: "transform 0.3s ease"
+                  }}>
+                    {card.image ? (
+                      <img
+                        src={URL.createObjectURL(card.image)}
+                        alt={card.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.6rem",
+                        padding: "0.2rem",
+                        textAlign: "center"
+                      }}>
+                        {card.name}
+                      </div>
+                    )}
+                  </div>
                   {/* ステータスバッジ */}
                   <CardStatusBadge
                     status={status}
@@ -473,13 +536,18 @@ export function VersusPlayField({
             selectedCardForStatus.index,
             selectedCardForStatus.player
           )}
+          cardState={getCardState(
+            selectedCardForStatus.card.id,
+            selectedCardForStatus.index,
+            selectedCardForStatus.player
+          )}
           onStatusChange={(newStatus) => updateCardStatus(
             selectedCardForStatus.card.id,
             selectedCardForStatus.index,
             selectedCardForStatus.player,
             newStatus
           )}
-          onMoveToRemove={handleMoveToRemove}
+          onCardStateChange={handleCardStateChange}
           onMoveToEvidence={handleMoveToEvidence}
           onViewDetail={handleViewDetail}
           onClose={() => setStatusModalOpen(false)}
