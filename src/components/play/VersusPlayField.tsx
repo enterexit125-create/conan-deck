@@ -3,7 +3,7 @@ import type { Card } from "../../db";
 import { HandArea } from "./areas/HandArea";
 import { LeftSidePanel } from "./panels/LeftSidePanel";
 import { RightSidePanel } from "./panels/RightSidePanel";
-import { CardStatusOverlay, type CardStatus } from "./panels/CardStatusOverlay";
+import { CardStatusBadge, CardStatusModal, type CardStatus } from "./panels/CardStatusBadge";
 
 interface PlayerState {
   deck: Card[];
@@ -67,6 +67,14 @@ export function VersusPlayField({
   // カードステータスの管理（キー: "プレイヤー-カードID-インデックス"）
   const [cardStatuses, setCardStatuses] = useState<Map<string, CardStatus>>(new Map());
 
+  // ステータスモーダルの状態
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedCardForStatus, setSelectedCardForStatus] = useState<{
+    card: Card;
+    index: number;
+    player: 1 | 2;
+  } | null>(null);
+
   // ステータスを取得（なければ初期値を返す）
   function getCardStatus(cardId: number | undefined, index: number, player: 1 | 2): CardStatus {
     const key = getStatusKey(cardId, index, player);
@@ -79,12 +87,49 @@ export function VersusPlayField({
     setCardStatuses(prev => {
       const newMap = new Map(prev);
       if (newStatus.lv === 0 && newStatus.ap === 0 && newStatus.lp === 0) {
-        newMap.delete(key); // 初期値に戻ったら削除
+        newMap.delete(key);
       } else {
         newMap.set(key, newStatus);
       }
       return newMap;
     });
+  }
+
+  // カードタップ時の処理
+  function handleCardTap(card: Card, index: number, player: 1 | 2) {
+    setSelectedCardForStatus({ card, index, player });
+    setStatusModalOpen(true);
+  }
+
+  // ステータスバッジタップ時の処理（同じくモーダルを開く）
+  function handleBadgeTap(card: Card, index: number, player: 1 | 2) {
+    setSelectedCardForStatus({ card, index, player });
+    setStatusModalOpen(true);
+  }
+
+  // リムーブへ移動
+  function handleMoveToRemove() {
+    if (selectedCardForStatus && selectedCardForStatus.player === currentPlayer) {
+      onCardClick(selectedCardForStatus.card, selectedCardForStatus.index, "field");
+      // 既存のカードメニューを使うため、一旦モーダルを閉じる
+    }
+    setStatusModalOpen(false);
+  }
+
+  // 証拠へ移動
+  function handleMoveToEvidence() {
+    if (selectedCardForStatus && selectedCardForStatus.player === currentPlayer) {
+      onCardClick(selectedCardForStatus.card, selectedCardForStatus.index, "field");
+    }
+    setStatusModalOpen(false);
+  }
+
+  // 詳細を見る
+  function handleViewDetail() {
+    if (selectedCardForStatus) {
+      onCardDetailClick(selectedCardForStatus.card);
+    }
+    setStatusModalOpen(false);
   }
 
   return (
@@ -95,7 +140,7 @@ export function VersusPlayField({
       overflow: "hidden",
       background: "#f5f5f5"
     }}>
-      {/* ヘッダー - 高さを縮小 */}
+      {/* ヘッダー */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
@@ -156,7 +201,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? "200px" : "0",
+          maxHeight: isOpponentFieldOpen ? "250px" : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -168,7 +213,9 @@ export function VersusPlayField({
               background: "white",
               borderRadius: "6px",
               padding: "0.3rem",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              maxHeight: "220px",
+              overflowY: "auto"
             }}>
               {opponentPlayerState.field.length === 0 ? (
                 <div style={{
@@ -193,14 +240,16 @@ export function VersusPlayField({
                     return (
                       <div
                         key={`opponent-field-${card.id}-${idx}`}
+                        onClick={() => handleCardTap(card, idx, opponentPlayer as 1 | 2)}
                         style={{
                           width: `${CARD_WIDTH}px`,
                           aspectRatio: "0.7",
-                          borderRadius: "3px",
+                          borderRadius: "4px",
                           overflow: "hidden",
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
                           flexShrink: 0,
-                          position: "relative"
+                          position: "relative",
+                          cursor: "pointer"
                         }}
                       >
                         {card.image ? (
@@ -218,19 +267,17 @@ export function VersusPlayField({
                             alignItems: "center",
                             justifyContent: "center",
                             color: "white",
-                            fontSize: "0.5rem",
-                            padding: "0.15rem",
+                            fontSize: "0.6rem",
+                            padding: "0.2rem",
                             textAlign: "center"
                           }}>
                             {card.name}
                           </div>
                         )}
-                        {/* ステータスオーバーレイ */}
-                        <CardStatusOverlay
+                        {/* ステータスバッジ */}
+                        <CardStatusBadge
                           status={status}
-                          onStatusChange={(newStatus) => 
-                            updateCardStatus(card.id, idx, opponentPlayer as 1 | 2, newStatus)
-                          }
+                          onTap={() => handleBadgeTap(card, idx, opponentPlayer as 1 | 2)}
                         />
                       </div>
                     );
@@ -298,7 +345,7 @@ export function VersusPlayField({
           height: "100%",
           background: "white",
           borderRadius: "6px",
-          padding: "0.2rem",
+          padding: "0.3rem",
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           display: "flex",
           flexDirection: "column"
@@ -327,47 +374,44 @@ export function VersusPlayField({
               return (
                 <div
                   key={`current-field-${card.id}-${idx}`}
+                  onClick={() => handleCardTap(card, idx, currentPlayer)}
                   style={{
                     width: `${CARD_WIDTH}px`,
                     aspectRatio: "0.7",
-                    borderRadius: "3px",
+                    borderRadius: "4px",
                     overflow: "hidden",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
                     cursor: "pointer",
                     flexShrink: 0,
                     position: "relative"
                   }}
                 >
-                  <div onClick={() => onCardClick(card, idx, "field")} style={{ width: "100%", height: "100%" }}>
-                    {card.image ? (
-                      <img
-                        src={URL.createObjectURL(card.image)}
-                        alt={card.name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: "100%",
-                        height: "100%",
-                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        fontSize: "0.5rem",
-                        padding: "0.15rem",
-                        textAlign: "center"
-                      }}>
-                        {card.name}
-                      </div>
-                    )}
-                  </div>
-                  {/* ステータスオーバーレイ */}
-                  <CardStatusOverlay
+                  {card.image ? (
+                    <img
+                      src={URL.createObjectURL(card.image)}
+                      alt={card.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: "100%",
+                      height: "100%",
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      fontSize: "0.6rem",
+                      padding: "0.2rem",
+                      textAlign: "center"
+                    }}>
+                      {card.name}
+                    </div>
+                  )}
+                  {/* ステータスバッジ */}
+                  <CardStatusBadge
                     status={status}
-                    onStatusChange={(newStatus) => 
-                      updateCardStatus(card.id, idx, currentPlayer, newStatus)
-                    }
+                    onTap={() => handleBadgeTap(card, idx, currentPlayer)}
                   />
                 </div>
               );
@@ -418,6 +462,29 @@ export function VersusPlayField({
         onIncidentClick={onCardDetailClick}
         onClose={() => setRightPanelOpen(false)}
       />
+
+      {/* ステータス操作モーダル */}
+      {selectedCardForStatus && (
+        <CardStatusModal
+          show={statusModalOpen}
+          cardName={selectedCardForStatus.card.name ?? "カード"}
+          status={getCardStatus(
+            selectedCardForStatus.card.id,
+            selectedCardForStatus.index,
+            selectedCardForStatus.player
+          )}
+          onStatusChange={(newStatus) => updateCardStatus(
+            selectedCardForStatus.card.id,
+            selectedCardForStatus.index,
+            selectedCardForStatus.player,
+            newStatus
+          )}
+          onMoveToRemove={handleMoveToRemove}
+          onMoveToEvidence={handleMoveToEvidence}
+          onViewDetail={handleViewDetail}
+          onClose={() => setStatusModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
