@@ -9,12 +9,14 @@ interface CardStatusBadgeProps {
   onTap: () => void;
 }
 
-// カード上部に表示する小さなバッジ
+// カード中央に表示する半透明バッジ
 export function CardStatusBadge({ status, onTap }: CardStatusBadgeProps) {
   const hasChanges = status.lv !== 0 || status.ap !== 0 || status.lp !== 0;
 
   // 変化がなければ何も表示しない
   if (!hasChanges) return null;
+
+  const formatValue = (val: number) => val >= 0 ? `+${val}` : `${val}`;
 
   return (
     <div
@@ -24,28 +26,29 @@ export function CardStatusBadge({ status, onTap }: CardStatusBadgeProps) {
       }}
       style={{
         position: "absolute",
-        top: "4px",
-        left: "4px",
-        right: "4px",
-        background: "rgba(0, 0, 0, 0.8)",
-        borderRadius: "4px",
-        padding: "3px 4px",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        background: "rgba(0, 0, 0, 0.6)",
+        borderRadius: "8px",
+        padding: "8px 10px",
         display: "flex",
-        justifyContent: "space-around",
-        fontSize: "0.65rem",
+        flexDirection: "column",
+        gap: "4px",
+        fontSize: "0.75rem",
         fontWeight: "bold",
         cursor: "pointer",
         zIndex: 5
       }}
     >
       <span style={{ color: "#4caf50" }}>
-        {status.lv >= 0 ? `+${status.lv}` : status.lv}
+        Lv{formatValue(status.lv)}
       </span>
       <span style={{ color: "#2196f3" }}>
-        {status.ap >= 0 ? `+${status.ap}` : status.ap}
+        AP{formatValue(status.ap)}
       </span>
       <span style={{ color: "#ff9800" }}>
-        {status.lp >= 0 ? `+${status.lp}` : status.lp}
+        LP{formatValue(status.lp)}
       </span>
     </div>
   );
