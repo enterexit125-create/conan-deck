@@ -151,9 +151,11 @@ export function VersusPlayField({
     }
   }
 
-  // 証拠へ移動
-  function handleMoveToEvidence() {
+  // カードを移動
+  function handleMoveTo(destination: "evidence" | "hand" | "remove" | "deckBottom") {
     if (selectedCardForStatus && selectedCardForStatus.player === currentPlayer) {
+      // 現場から指定の場所へ移動する処理をトリガー
+      // onCardClickを使って既存のカード移動メニューを呼び出す
       onCardClick(selectedCardForStatus.card, selectedCardForStatus.index, "field");
     }
     setStatusModalOpen(false);
@@ -548,7 +550,7 @@ export function VersusPlayField({
             newStatus
           )}
           onCardStateChange={handleCardStateChange}
-          onMoveToEvidence={handleMoveToEvidence}
+          onMoveTo={handleMoveTo}
           onViewDetail={handleViewDetail}
           onClose={() => setStatusModalOpen(false)}
         />
