@@ -3,6 +3,7 @@ import type { Card } from "../../db";
 import { HandArea } from "./areas/HandArea";
 import { LeftSidePanel } from "./panels/LeftSidePanel";
 import { RightSidePanel } from "./panels/RightSidePanel";
+import { CardStatusOverlay, type CardStatus } from "./panels/CardStatusOverlay";
 
 interface PlayerState {
   deck: Card[];
@@ -36,6 +37,11 @@ interface VersusPlayFieldProps {
 const CARD_WIDTH = 48;
 const CARD_GAP = "0.2rem";
 
+// ステータスのキーを生成（カードID + インデックス + プレイヤー）
+function getStatusKey(cardId: number | undefined, index: number, player: 1 | 2): string {
+  return `${player}-${cardId ?? "unknown"}-${index}`;
+}
+
 export function VersusPlayField({
   currentPlayer,
   currentPlayerState,
@@ -57,6 +63,29 @@ export function VersusPlayField({
   
   // 相手の現場の開閉状態
   const [isOpponentFieldOpen, setIsOpponentFieldOpen] = useState(true);
+
+  // カードステータスの管理（キー: "プレイヤー-カードID-インデックス"）
+  const [cardStatuses, setCardStatuses] = useState<Map<string, CardStatus>>(new Map());
+
+  // ステータスを取得（なければ初期値を返す）
+  function getCardStatus(cardId: number | undefined, index: number, player: 1 | 2): CardStatus {
+    const key = getStatusKey(cardId, index, player);
+    return cardStatuses.get(key) ?? { lv: 0, ap: 0, lp: 0 };
+  }
+
+  // ステータスを更新
+  function updateCardStatus(cardId: number | undefined, index: number, player: 1 | 2, newStatus: CardStatus) {
+    const key = getStatusKey(cardId, index, player);
+    setCardStatuses(prev => {
+      const newMap = new Map(prev);
+      if (newStatus.lv === 0 && newStatus.ap === 0 && newStatus.lp === 0) {
+        newMap.delete(key); // 初期値に戻ったら削除
+      } else {
+        newMap.set(key, newStatus);
+      }
+      return newMap;
+    });
+  }
 
   return (
     <div style={{ 
@@ -157,42 +186,55 @@ export function VersusPlayField({
                   gap: CARD_GAP,
                   alignContent: "flex-start"
                 }}>
-                  {opponentPlayerState.field.map((card, idx) => (
-                    <div
-                      key={`opponent-field-${card.id}-${idx}`}
-                      style={{
-                        width: `${CARD_WIDTH}px`,
-                        aspectRatio: "0.7",
-                        borderRadius: "3px",
-                        overflow: "hidden",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                        flexShrink: 0
-                      }}
-                    >
-                      {card.image ? (
-                        <img
-                          src={URL.createObjectURL(card.image)}
-                          alt={card.name}
-                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  {opponentPlayerState.field.map((card, idx) => {
+                    const opponentPlayer = currentPlayer === 1 ? 2 : 1;
+                    const status = getCardStatus(card.id, idx, opponentPlayer as 1 | 2);
+                    
+                    return (
+                      <div
+                        key={`opponent-field-${card.id}-${idx}`}
+                        style={{
+                          width: `${CARD_WIDTH}px`,
+                          aspectRatio: "0.7",
+                          borderRadius: "3px",
+                          overflow: "hidden",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                          flexShrink: 0,
+                          position: "relative"
+                        }}
+                      >
+                        {card.image ? (
+                          <img
+                            src={URL.createObjectURL(card.image)}
+                            alt={card.name}
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: "100%",
+                            height: "100%",
+                            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white",
+                            fontSize: "0.5rem",
+                            padding: "0.15rem",
+                            textAlign: "center"
+                          }}>
+                            {card.name}
+                          </div>
+                        )}
+                        {/* ステータスオーバーレイ */}
+                        <CardStatusOverlay
+                          status={status}
+                          onStatusChange={(newStatus) => 
+                            updateCardStatus(card.id, idx, opponentPlayer as 1 | 2, newStatus)
+                          }
                         />
-                      ) : (
-                        <div style={{
-                          width: "100%",
-                          height: "100%",
-                          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "white",
-                          fontSize: "0.5rem",
-                          padding: "0.15rem",
-                          textAlign: "center"
-                        }}>
-                          {card.name}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -279,44 +321,57 @@ export function VersusPlayField({
             overflow: "auto",
             alignContent: "flex-start"
           }}>
-            {currentPlayerState.field.map((card, idx) => (
-              <div
-                key={`current-field-${card.id}-${idx}`}
-                onClick={() => onCardClick(card, idx, "field")}
-                style={{
-                  width: `${CARD_WIDTH}px`,
-                  aspectRatio: "0.7",
-                  borderRadius: "3px",
-                  overflow: "hidden",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                  cursor: "pointer",
-                  flexShrink: 0
-                }}
-              >
-                {card.image ? (
-                  <img
-                    src={URL.createObjectURL(card.image)}
-                    alt={card.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                ) : (
-                  <div style={{
-                    width: "100%",
-                    height: "100%",
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontSize: "0.5rem",
-                    padding: "0.15rem",
-                    textAlign: "center"
-                  }}>
-                    {card.name}
+            {currentPlayerState.field.map((card, idx) => {
+              const status = getCardStatus(card.id, idx, currentPlayer);
+              
+              return (
+                <div
+                  key={`current-field-${card.id}-${idx}`}
+                  style={{
+                    width: `${CARD_WIDTH}px`,
+                    aspectRatio: "0.7",
+                    borderRadius: "3px",
+                    overflow: "hidden",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    position: "relative"
+                  }}
+                >
+                  <div onClick={() => onCardClick(card, idx, "field")} style={{ width: "100%", height: "100%" }}>
+                    {card.image ? (
+                      <img
+                        src={URL.createObjectURL(card.image)}
+                        alt={card.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.5rem",
+                        padding: "0.15rem",
+                        textAlign: "center"
+                      }}>
+                        {card.name}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                  {/* ステータスオーバーレイ */}
+                  <CardStatusOverlay
+                    status={status}
+                    onStatusChange={(newStatus) => 
+                      updateCardStatus(card.id, idx, currentPlayer, newStatus)
+                    }
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
