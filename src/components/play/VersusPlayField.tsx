@@ -151,14 +151,11 @@ export function VersusPlayField({
     }
   }
 
-  // カードを移動
-  function handleMoveTo(destination: "evidence" | "hand" | "remove" | "deckBottom") {
+  // 移動メニューを開く（既存のCardMenuModalを使用）
+  function handleMoveMenu() {
     if (selectedCardForStatus && selectedCardForStatus.player === currentPlayer) {
-      // 現場から指定の場所へ移動する処理をトリガー
-      // onCardClickを使って既存のカード移動メニューを呼び出す
       onCardClick(selectedCardForStatus.card, selectedCardForStatus.index, "field");
     }
-    setStatusModalOpen(false);
   }
 
   // 詳細を見る
@@ -550,7 +547,7 @@ export function VersusPlayField({
             newStatus
           )}
           onCardStateChange={handleCardStateChange}
-          onMoveTo={handleMoveTo}
+          onMoveMenu={handleMoveMenu}
           onViewDetail={handleViewDetail}
           onClose={() => setStatusModalOpen(false)}
         />

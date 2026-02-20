@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 interface CardStatus {
   lv: number;
   ap: number;
@@ -66,7 +64,7 @@ interface CardStatusModalProps {
   cardState: CardState;
   onStatusChange: (newStatus: CardStatus) => void;
   onCardStateChange: (newState: CardState) => void;
-  onMoveTo: (destination: "evidence" | "hand" | "remove" | "deckBottom") => void;
+  onMoveMenu: () => void;
   onViewDetail: () => void;
   onClose: () => void;
 }
@@ -79,12 +77,10 @@ export function CardStatusModal({
   cardState,
   onStatusChange,
   onCardStateChange,
-  onMoveTo,
+  onMoveMenu,
   onViewDetail,
   onClose
 }: CardStatusModalProps) {
-  const [showMoveOptions, setShowMoveOptions] = useState(false);
-  
   if (!show) return null;
 
   return (
@@ -271,221 +267,46 @@ export function CardStatusModal({
         </div>
 
         {/* カード操作ボタン */}
-        {!showMoveOptions ? (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "8px"
-          }}>
-            <button
-              onClick={() => {
-                onViewDetail();
-                onClose();
-              }}
-              style={{
-                padding: "12px",
-                fontSize: "0.9rem",
-                background: "#667eea",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer"
-              }}
-            >
-              🔍 詳細
-            </button>
-            <button
-              onClick={() => setShowMoveOptions(true)}
-              style={{
-                padding: "12px",
-                fontSize: "0.9rem",
-                background: "#ff9800",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                cursor: "pointer"
-              }}
-            >
-              📦 移動
-            </button>
-          </div>
-        ) : (
-          /* 移動先選択画面（全画面風） */
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.9)",
-            zIndex: 300,
-            display: "flex",
-            flexDirection: "column",
-            padding: "20px"
-          }}>
-            {/* ヘッダー */}
-            <div style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "24px"
-            }}>
-              <h2 style={{ 
-                margin: 0, 
-                color: "white", 
-                fontSize: "1.2rem" 
-              }}>
-                📦 移動先を選択
-              </h2>
-              <button
-                onClick={() => setShowMoveOptions(false)}
-                style={{
-                  background: "rgba(255,255,255,0.2)",
-                  border: "none",
-                  borderRadius: "50%",
-                  width: "40px",
-                  height: "40px",
-                  fontSize: "1.2rem",
-                  color: "white",
-                  cursor: "pointer"
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* カード名表示 */}
-            <div style={{
-              background: "rgba(255,255,255,0.1)",
-              borderRadius: "12px",
-              padding: "12px 16px",
-              marginBottom: "24px",
-              textAlign: "center"
-            }}>
-              <span style={{ color: "#aaa", fontSize: "0.85rem" }}>移動するカード</span>
-              <div style={{ color: "white", fontSize: "1.1rem", fontWeight: "bold", marginTop: "4px" }}>
-                {cardName}
-              </div>
-            </div>
-
-            {/* 移動先ボタン */}
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px",
-              flex: 1
-            }}>
-              <button
-                onClick={() => {
-                  onMoveTo("evidence");
-                  onClose();
-                }}
-                style={{
-                  padding: "20px",
-                  fontSize: "1.1rem",
-                  fontWeight: "bold",
-                  background: "linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px"
-                }}
-              >
-                <span style={{ fontSize: "1.5rem" }}>🔒</span>
-                証拠へ
-              </button>
-
-              <button
-                onClick={() => {
-                  onMoveTo("hand");
-                  onClose();
-                }}
-                style={{
-                  padding: "20px",
-                  fontSize: "1.1rem",
-                  fontWeight: "bold",
-                  background: "linear-gradient(135deg, #2196f3 0%, #1976d2 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px"
-                }}
-              >
-                <span style={{ fontSize: "1.5rem" }}>✋</span>
-                手札へ
-              </button>
-
-              <button
-                onClick={() => {
-                  onMoveTo("remove");
-                  onClose();
-                }}
-                style={{
-                  padding: "20px",
-                  fontSize: "1.1rem",
-                  fontWeight: "bold",
-                  background: "linear-gradient(135deg, #607d8b 0%, #455a64 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px"
-                }}
-              >
-                <span style={{ fontSize: "1.5rem" }}>🗑️</span>
-                リムーブへ
-              </button>
-
-              <button
-                onClick={() => {
-                  onMoveTo("deckBottom");
-                  onClose();
-                }}
-                style={{
-                  padding: "20px",
-                  fontSize: "1.1rem",
-                  fontWeight: "bold",
-                  background: "linear-gradient(135deg, #795548 0%, #5d4037 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px"
-                }}
-              >
-                <span style={{ fontSize: "1.5rem" }}>📚</span>
-                山札の下へ
-              </button>
-            </div>
-
-            {/* キャンセルボタン */}
-            <button
-              onClick={() => setShowMoveOptions(false)}
-              style={{
-                marginTop: "16px",
-                padding: "16px",
-                fontSize: "1rem",
-                background: "rgba(255,255,255,0.1)",
-                color: "white",
-                border: "1px solid rgba(255,255,255,0.3)",
-                borderRadius: "12px",
-                cursor: "pointer"
-              }}
-            >
-              ← 戻る
-            </button>
-          </div>
-        )}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "8px"
+        }}>
+          <button
+            onClick={() => {
+              onViewDetail();
+              onClose();
+            }}
+            style={{
+              padding: "12px",
+              fontSize: "0.9rem",
+              background: "#667eea",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer"
+            }}
+          >
+            🔍 詳細
+          </button>
+          <button
+            onClick={() => {
+              onMoveMenu();
+              onClose();
+            }}
+            style={{
+              padding: "12px",
+              fontSize: "0.9rem",
+              background: "#ff9800",
+              color: "white",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer"
+            }}
+          >
+            📦 移動
+          </button>
+        </div>
       </div>
     </>
   );
