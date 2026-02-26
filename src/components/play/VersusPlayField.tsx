@@ -33,9 +33,9 @@ interface VersusPlayFieldProps {
   onToggleEvidenceCollapse: () => void;
   isEvidenceCollapsed: boolean;
   // セットカード用のコールバック
-  onAddSetCard?: (card: Card, fieldIndex: number, player: 1 | 2) => void;
-  onRemoveSetCard?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
-  // 外部からセットカードを追加するためのRef用
+  onFlipSetCard?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
+  onSetCardToRemove?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
+  // 外部からセットカードを追加するためのpending state
   pendingSetCard?: { card: Card; fieldIndex: number; player: 1 | 2 } | null;
   onPendingSetCardProcessed?: () => void;
 }
@@ -104,8 +104,8 @@ export function VersusPlayField({
   onCardDetailClick,
   onToggleEvidenceCollapse,
   isEvidenceCollapsed,
-  onAddSetCard,
-  onRemoveSetCard,
+  onFlipSetCard,
+  onSetCardToRemove,
   pendingSetCard,
   onPendingSetCardProcessed
 }: VersusPlayFieldProps) {
@@ -285,6 +285,30 @@ export function VersusPlayField({
     setSetCardDetailModalOpen(true);
   }
 
+  // セットカードを表に返す（その場で表向きに）
+  function handleFlipSetCard() {
+    if (!selectedSetCardInfo) return;
+    
+    const flippedCard = removeSetCard(
+      selectedSetCardInfo.fieldIndex,
+      selectedSetCardInfo.player,
+      selectedSetCardInfo.setCardIndex
+    );
+    
+    // 親コンポーネントに通知（現場に追加してもらう）
+    if (onFlipSetCard && flippedCard) {
+      onFlipSetCard(
+        flippedCard,
+        selectedSetCardInfo.fieldIndex,
+        selectedSetCardInfo.setCardIndex,
+        selectedSetCardInfo.player
+      );
+    }
+    
+    setSetCardDetailModalOpen(false);
+    setSelectedSetCardInfo(null);
+  }
+
   // セットカードをリムーブに送る
   function handleSetCardToRemove() {
     if (!selectedSetCardInfo) return;
@@ -295,7 +319,7 @@ export function VersusPlayField({
       selectedSetCardInfo.setCardIndex
     );
     
-    // 親コンポーネントにも通知
+    // 親コンポーネントに通知
     if (onSetCardToRemove && removedCard) {
       onSetCardToRemove(
         removedCard,
@@ -906,6 +930,35 @@ export function VersusPlayField({
             
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               <button
+                onClick={handleFlipSetCard}
+                style={{
+                  padding: "0.75rem",
+                  background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  cursor: "pointer",
+                  fontWeight: "bold"
+                }}
+              >
+                ↑ 表に返す
+              </button>
+              <button
+                onClick={handleSetCardToRemove}
+                style={{
+                  padding: "0.75rem",
+                  background: "linear-gradient(135deg, #ff5252 0%, #d32f2f 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                🗑️ リムーブへ送る
+              </button>
+              <button
                 onClick={() => {
                   onCardDetailClick(selectedSetCardInfo.card);
                   setSetCardDetailModalOpen(false);
@@ -921,20 +974,6 @@ export function VersusPlayField({
                 }}
               >
                 🔍 詳細を見る
-              </button>
-              <button
-                onClick={handleSetCardToRemove}
-                style={{
-                  padding: "0.75rem",
-                  background: "linear-gradient(135deg, #ff5252 0%, #d32f2f 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  cursor: "pointer"
-                }}
-              >
-                🗑️ リムーブへ送る
               </button>
               <button
                 onClick={() => setSetCardDetailModalOpen(false)}
