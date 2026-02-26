@@ -48,6 +48,7 @@ const PLAYER_THEMES = {
     opponentHeader: "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
     handBg: "linear-gradient(to top, #34495e 0%, #2c3e50 100%)",
     fieldTitle: "#667eea",
+    fieldCardBg: "white",
     label: "P1",
     emoji: "🔵"
   },
@@ -60,6 +61,7 @@ const PLAYER_THEMES = {
     opponentHeader: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     handBg: "linear-gradient(to top, #4a2c2c 0%, #3d2020 100%)",
     fieldTitle: "#e74c3c",
+    fieldCardBg: "#f0f0f0",
     label: "P2",
     emoji: "🔴"
   }
@@ -313,11 +315,12 @@ export function VersusPlayField({
             minHeight: 0
           }}>
             <div style={{ 
-              background: "white",
+              background: PLAYER_THEMES[opponentPlayer].fieldCardBg,
               borderRadius: "0",
               padding: "0.2rem",
               boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              margin: "0 0.2rem"
+              margin: "0 0.2rem",
+              transition: "background 0.4s ease"
             }}>
               {opponentPlayerState.field.length === 0 ? (
                 <div style={{ 
@@ -489,13 +492,14 @@ export function VersusPlayField({
       }}>
         <div style={{ 
           height: "100%",
-          background: "white",
+          background: theme.fieldCardBg,
           borderRadius: "0",
           padding: "0.2rem",
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           display: "flex",
           flexDirection: "column",
-          margin: "0 0.2rem"
+          margin: "0 0.2rem",
+          transition: "background 0.4s ease"
         }}>
           <div style={{ 
             fontSize: "0.75rem",
