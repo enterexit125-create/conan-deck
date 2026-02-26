@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 interface CardStatus {
   lv: number;
   ap: number;
@@ -67,6 +69,8 @@ interface CardStatusModalProps {
   onMoveMenu: () => void;
   onViewDetail: () => void;
   onClose: () => void;
+  // 追加のアクションボタン（セットカード機能など）
+  extraActions?: ReactNode;
 }
 
 // タップで開く操作パネルモーダル
@@ -79,7 +83,8 @@ export function CardStatusModal({
   onCardStateChange,
   onMoveMenu,
   onViewDetail,
-  onClose
+  onClose,
+  extraActions
 }: CardStatusModalProps) {
   if (!show) return null;
 
@@ -111,6 +116,8 @@ export function CardStatusModal({
           padding: "16px",
           minWidth: "280px",
           maxWidth: "90vw",
+          maxHeight: "90vh",
+          overflow: "auto",
           boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
           zIndex: 201
         }}
@@ -270,7 +277,8 @@ export function CardStatusModal({
         <div style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
-          gap: "8px"
+          gap: "8px",
+          marginBottom: extraActions ? "12px" : "0"
         }}>
           <button
             onClick={() => {
@@ -307,6 +315,13 @@ export function CardStatusModal({
             📦 移動
           </button>
         </div>
+
+        {/* 追加のアクション（セットカードなど） */}
+        {extraActions && (
+          <div style={{ marginTop: "8px" }}>
+            {extraActions}
+          </div>
+        )}
       </div>
     </>
   );

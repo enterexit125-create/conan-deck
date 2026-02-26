@@ -4,6 +4,7 @@ import { HandArea } from "./areas/HandArea";
 import { LeftSidePanel } from "./panels/LeftSidePanel";
 import { RightSidePanel } from "./panels/RightSidePanel";
 import { CardStatusBadge, CardStatusModal, type CardStatus, type CardState } from "./panels/CardStatusBadge";
+import cardBackImage from "/card-back.png";
 
 interface PlayerState {
   deck: Card[];
@@ -31,11 +32,19 @@ interface VersusPlayFieldProps {
   onCardDetailClick: (card: Card) => void;
   onToggleEvidenceCollapse: () => void;
   isEvidenceCollapsed: boolean;
+  // セットカード用の新しいコールバック
+  onSetCardFromHand?: (handIndex: number, fieldIndex: number, player: 1 | 2) => void;
+  onSetCardToRemove?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
 const CARD_WIDTH = 100;
 const CARD_GAP = "0.3rem";
+
+// セットカードのサイズ（横向きで下からはみ出す）
+const SET_CARD_WIDTH = 60;  // 横向きカードの幅（縦向きの高さ相当）
+const SET_CARD_VISIBLE = 20; // 下からはみ出して見える高さ
+const SET_CARD_OFFSET_X = 8; // 横にずらす量（斜めに重ねる効果）
 
 // プレイヤーカラーテーマ
 const PLAYER_THEMES = {
@@ -72,6 +81,11 @@ function getStatusKey(cardId: number | undefined, index: number, player: 1 | 2):
   return `${player}-${cardId ?? "unknown"}-${index}`;
 }
 
+// セットカードのキーを生成（現場のカードのインデックス + プレイヤー）
+function getSetCardsKey(fieldIndex: number, player: 1 | 2): string {
+  return `${player}-field-${fieldIndex}`;
+}
+
 export function VersusPlayField({
   currentPlayer,
   currentPlayerState,
@@ -86,7 +100,9 @@ export function VersusPlayField({
   onCardClick,
   onCardDetailClick,
   onToggleEvidenceCollapse,
-  isEvidenceCollapsed
+  isEvidenceCollapsed,
+  onSetCardFromHand,
+  onSetCardToRemove
 }: VersusPlayFieldProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -100,12 +116,31 @@ export function VersusPlayField({
   // カード状態の管理（アクティブ/スリープ/スタン）
   const [cardStates, setCardStates] = useState<Map<string, CardState>>(new Map());
 
+  // セットカードの管理（キー: "プレイヤー-field-インデックス" → カードの配列）
+  const [setCards, setSetCards] = useState<Map<string, Card[]>>(new Map());
+
   // ステータスモーダルの状態
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedCardForStatus, setSelectedCardForStatus] = useState<{
     card: Card;
     index: number;
     player: 1 | 2;
+  } | null>(null);
+
+  // セットカード選択モーダルの状態
+  const [setCardModalOpen, setSetCardModalOpen] = useState(false);
+  const [selectedFieldCardForSet, setSelectedFieldCardForSet] = useState<{
+    fieldIndex: number;
+    player: 1 | 2;
+  } | null>(null);
+
+  // セットカード詳細モーダルの状態
+  const [setCardDetailModalOpen, setSetCardDetailModalOpen] = useState(false);
+  const [selectedSetCardInfo, setSelectedSetCardInfo] = useState<{
+    fieldIndex: number;
+    player: 1 | 2;
+    setCardIndex: number;
+    card: Card;
   } | null>(null);
 
   // 現在のプレイヤーのテーマを取得
@@ -150,6 +185,42 @@ export function VersusPlayField({
       }
       return newMap;
     });
+  }
+
+  // セットカードを取得
+  function getSetCardsForField(fieldIndex: number, player: 1 | 2): Card[] {
+    const key = getSetCardsKey(fieldIndex, player);
+    return setCards.get(key) ?? [];
+  }
+
+  // セットカードを追加
+  function addSetCard(fieldIndex: number, player: 1 | 2, card: Card) {
+    const key = getSetCardsKey(fieldIndex, player);
+    setSetCards(prev => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(key) ?? [];
+      newMap.set(key, [...existing, card]);
+      return newMap;
+    });
+  }
+
+  // セットカードを削除
+  function removeSetCard(fieldIndex: number, player: 1 | 2, setCardIndex: number): Card | null {
+    const key = getSetCardsKey(fieldIndex, player);
+    let removedCard: Card | null = null;
+    setSetCards(prev => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(key) ?? [];
+      removedCard = existing[setCardIndex] ?? null;
+      const newCards = existing.filter((_, i) => i !== setCardIndex);
+      if (newCards.length === 0) {
+        newMap.delete(key);
+      } else {
+        newMap.set(key, newCards);
+      }
+      return newMap;
+    });
+    return removedCard;
   }
 
   // カード状態に応じた回転角度を取得
@@ -198,6 +269,213 @@ export function VersusPlayField({
       onCardDetailClick(selectedCardForStatus.card);
     }
     setStatusModalOpen(false);
+  }
+
+  // セットカード選択モーダルを開く
+  function openSetCardModal(fieldIndex: number, player: 1 | 2) {
+    setSelectedFieldCardForSet({ fieldIndex, player });
+    setSetCardModalOpen(true);
+    setStatusModalOpen(false);
+  }
+
+  // 手札からセットカードを追加
+  function handleSelectCardForSet(card: Card, handIndex: number) {
+    if (!selectedFieldCardForSet) return;
+    
+    // セットカードとして追加（ローカル状態）
+    addSetCard(selectedFieldCardForSet.fieldIndex, selectedFieldCardForSet.player, card);
+    
+    // 親コンポーネントにも通知（手札から削除してもらう）
+    if (onSetCardFromHand) {
+      onSetCardFromHand(handIndex, selectedFieldCardForSet.fieldIndex, selectedFieldCardForSet.player);
+    }
+    
+    setSetCardModalOpen(false);
+    setSelectedFieldCardForSet(null);
+  }
+
+  // セットカードをタップしたとき
+  function handleSetCardTap(fieldIndex: number, player: 1 | 2, setCardIndex: number, card: Card) {
+    setSelectedSetCardInfo({ fieldIndex, player, setCardIndex, card });
+    setSetCardDetailModalOpen(true);
+  }
+
+  // セットカードをリムーブに送る
+  function handleSetCardToRemove() {
+    if (!selectedSetCardInfo) return;
+    
+    const removedCard = removeSetCard(
+      selectedSetCardInfo.fieldIndex,
+      selectedSetCardInfo.player,
+      selectedSetCardInfo.setCardIndex
+    );
+    
+    // 親コンポーネントにも通知
+    if (onSetCardToRemove && removedCard) {
+      onSetCardToRemove(
+        removedCard,
+        selectedSetCardInfo.fieldIndex,
+        selectedSetCardInfo.setCardIndex,
+        selectedSetCardInfo.player
+      );
+    }
+    
+    setSetCardDetailModalOpen(false);
+    setSelectedSetCardInfo(null);
+  }
+
+  // フィールドカードコンポーネント（セットカード付き）
+  function FieldCardWithSet({ 
+    card, 
+    idx, 
+    player, 
+    status, 
+    cardState 
+  }: { 
+    card: Card; 
+    idx: number; 
+    player: 1 | 2; 
+    status: CardStatus;
+    cardState: CardState;
+  }) {
+    const rotation = getCardRotation(cardState);
+    const setCardsForThis = getSetCardsForField(idx, player);
+    // セットカードがある場合、下に少しスペースを確保
+    const extraBottomSpace = setCardsForThis.length > 0 ? SET_CARD_VISIBLE : 0;
+    
+    return (
+      <div
+        style={{
+          position: "relative",
+          width: `${CARD_WIDTH}px`,
+          marginBottom: `${extraBottomSpace}px`
+        }}
+      >
+        {/* セットカード（メインカードの下に横向きで配置） */}
+        {setCardsForThis.length > 0 && (
+          <div style={{
+            position: "absolute",
+            bottom: `-${SET_CARD_VISIBLE}px`,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1
+          }}>
+            {setCardsForThis.map((setCard, setIdx) => (
+              <div
+                key={`set-${idx}-${setIdx}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSetCardTap(idx, player, setIdx, setCard);
+                }}
+                style={{
+                  position: "absolute",
+                  // 複数枚の場合、少しずつ横にずらして斜めに見せる
+                  left: `${setIdx * SET_CARD_OFFSET_X}px`,
+                  bottom: `${setIdx * 3}px`, // 少し上にもずらす
+                  width: `${SET_CARD_WIDTH}px`,
+                  height: `${SET_CARD_WIDTH * 0.7}px`, // カードの縦横比
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  borderRadius: "4px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
+                  transform: "rotate(90deg)", // 横向き
+                  transformOrigin: "center center",
+                  zIndex: setCardsForThis.length - setIdx // 後ろのカードが上に
+                }}
+              >
+                <img
+                  src={cardBackImage}
+                  alt="セットカード"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover"
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* メインカード */}
+        <div
+          onClick={() => handleCardTap(card, idx, player)}
+          style={{
+            width: `${CARD_WIDTH}px`,
+            aspectRatio: "0.7",
+            borderRadius: "4px",
+            overflow: "visible",
+            cursor: "pointer",
+            position: "relative",
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+          }}
+        >
+          <div style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "4px",
+            overflow: "hidden",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+            transform: rotation,
+            transition: "transform 0.3s ease"
+          }}>
+            {card.image ? (
+              <img
+                src={URL.createObjectURL(card.image)}
+                alt={card.name}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <div style={{
+                width: "100%",
+                height: "100%",
+                background: `linear-gradient(135deg, ${PLAYER_THEMES[player].primary} 0%, ${PLAYER_THEMES[player].secondary} 100%)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "0.6rem",
+                padding: "0.2rem",
+                textAlign: "center"
+              }}>
+                {card.name}
+              </div>
+            )}
+          </div>
+          {/* ステータスバッジ */}
+          <CardStatusBadge
+            status={status}
+            onTap={() => handleBadgeTap(card, idx, player)}
+          />
+          {/* セットカード枚数バッジ */}
+          {setCardsForThis.length > 0 && (
+            <div style={{
+              position: "absolute",
+              bottom: "-8px",
+              right: "-8px",
+              background: "#ff9800",
+              color: "white",
+              borderRadius: "50%",
+              width: "24px",
+              height: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.75rem",
+              fontWeight: "bold",
+              boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+              border: "2px solid white",
+              zIndex: 15
+            }}>
+              {setCardsForThis.length}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -306,7 +584,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? "250px" : "0",
+          maxHeight: isOpponentFieldOpen ? "300px" : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -336,68 +614,22 @@ export function VersusPlayField({
                   display: "flex",
                   flexWrap: "wrap",
                   gap: CARD_GAP,
-                  padding: "0.3rem"
+                  padding: "0.3rem",
+                  alignItems: "flex-start"
                 }}>
                   {opponentPlayerState.field.map((card, idx) => {
                     const status = getCardStatus(card.id, idx, opponentPlayer);
                     const cardState = getCardState(card.id, idx, opponentPlayer);
-                    const rotation = getCardRotation(cardState);
                     
                     return (
-                      <div
+                      <FieldCardWithSet
                         key={`opponent-field-${card.id}-${idx}`}
-                        onClick={() => handleCardTap(card, idx, opponentPlayer)}
-                        style={{
-                          width: `${CARD_WIDTH}px`,
-                          aspectRatio: "0.7",
-                          borderRadius: "4px",
-                          overflow: "visible",
-                          cursor: "pointer",
-                          flexShrink: 0,
-                          position: "relative",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center"
-                        }}
-                      >
-                        <div style={{
-                          width: "100%",
-                          height: "100%",
-                          borderRadius: "4px",
-                          overflow: "hidden",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                          transform: rotation,
-                          transition: "transform 0.3s ease"
-                        }}>
-                          {card.image ? (
-                            <img
-                              src={URL.createObjectURL(card.image)}
-                              alt={card.name}
-                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          ) : (
-                            <div style={{
-                              width: "100%",
-                              height: "100%",
-                              background: `linear-gradient(135deg, ${PLAYER_THEMES[opponentPlayer].primary} 0%, ${PLAYER_THEMES[opponentPlayer].secondary} 100%)`,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              fontSize: "0.6rem",
-                              padding: "0.2rem",
-                              textAlign: "center"
-                            }}>
-                              {card.name}
-                            </div>
-                          )}
-                        </div>
-                        {/* ステータスバッジ */}
-                        <CardStatusBadge
-                          status={status}
-                          onTap={() => handleBadgeTap(card, idx, opponentPlayer)}
-                        />
-                      </div>
+                        card={card}
+                        idx={idx}
+                        player={opponentPlayer}
+                        status={status}
+                        cardState={cardState}
+                      />
                     );
                   })}
                 </div>
@@ -524,68 +756,22 @@ export function VersusPlayField({
             gap: CARD_GAP,
             overflow: "auto",
             alignContent: "flex-start",
+            alignItems: "flex-start",
             padding: "0.3rem"
           }}>
             {currentPlayerState.field.map((card, idx) => {
               const status = getCardStatus(card.id, idx, currentPlayer);
               const cardState = getCardState(card.id, idx, currentPlayer);
-              const rotation = getCardRotation(cardState);
               
               return (
-                <div
+                <FieldCardWithSet
                   key={`current-field-${card.id}-${idx}`}
-                  onClick={() => handleCardTap(card, idx, currentPlayer)}
-                  style={{
-                    width: `${CARD_WIDTH}px`,
-                    aspectRatio: "0.7",
-                    borderRadius: "4px",
-                    overflow: "visible",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center"
-                  }}
-                >
-                  <div style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                    transform: rotation,
-                    transition: "transform 0.3s ease"
-                  }}>
-                    {card.image ? (
-                      <img
-                        src={URL.createObjectURL(card.image)}
-                        alt={card.name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: "100%",
-                        height: "100%",
-                        background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.secondary} 100%)`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        fontSize: "0.6rem",
-                        padding: "0.2rem",
-                        textAlign: "center"
-                      }}>
-                        {card.name}
-                      </div>
-                    )}
-                  </div>
-                  {/* ステータスバッジ */}
-                  <CardStatusBadge
-                    status={status}
-                    onTap={() => handleBadgeTap(card, idx, currentPlayer)}
-                  />
-                </div>
+                  card={card}
+                  idx={idx}
+                  player={currentPlayer}
+                  status={status}
+                  cardState={cardState}
+                />
               );
             })}
           </div>
@@ -636,7 +822,7 @@ export function VersusPlayField({
         onClose={() => setRightPanelOpen(false)}
       />
 
-      {/* ステータス操作モーダル */}
+      {/* ステータス操作モーダル（セットカード機能追加） */}
       {selectedCardForStatus && (
         <CardStatusModal
           show={statusModalOpen}
@@ -661,7 +847,265 @@ export function VersusPlayField({
           onMoveMenu={handleMoveMenu}
           onViewDetail={handleViewDetail}
           onClose={() => setStatusModalOpen(false)}
+          // セットカード機能を追加
+          extraActions={
+            <button
+              onClick={() => openSetCardModal(selectedCardForStatus.index, selectedCardForStatus.player)}
+              style={{
+                width: "100%",
+                padding: "0.75rem",
+                background: "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "0.95rem",
+                fontWeight: "bold",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem"
+              }}
+            >
+              📥 カードをセット
+            </button>
+          }
         />
+      )}
+
+      {/* セットカード選択モーダル */}
+      {setCardModalOpen && selectedFieldCardForSet && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem"
+          }}
+          onClick={() => setSetCardModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "1rem",
+              width: "100%",
+              maxWidth: "400px",
+              maxHeight: "80vh",
+              overflow: "auto"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ 
+              margin: "0 0 1rem 0", 
+              fontSize: "1.1rem",
+              color: "#ff9800",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem"
+            }}>
+              📥 セットするカードを選択
+            </h3>
+            <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "1rem" }}>
+              手札からセットするカードを選んでください（裏向きで下に置かれます）
+            </p>
+            
+            {currentPlayerState.hand.length === 0 ? (
+              <div style={{ textAlign: "center", color: "#999", padding: "2rem" }}>
+                手札にカードがありません
+              </div>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "0.5rem"
+              }}>
+                {currentPlayerState.hand.map((card, idx) => (
+                  <div
+                    key={`select-set-${card.id}-${idx}`}
+                    onClick={() => handleSelectCardForSet(card, idx)}
+                    style={{
+                      aspectRatio: "0.7",
+                      borderRadius: "6px",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                      transition: "transform 0.2s",
+                      border: "2px solid transparent"
+                    }}
+                    onMouseOver={e => e.currentTarget.style.transform = "scale(1.05)"}
+                    onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}
+                  >
+                    {card.image ? (
+                      <img
+                        src={URL.createObjectURL(card.image)}
+                        alt={card.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.6rem",
+                        padding: "0.2rem",
+                        textAlign: "center"
+                      }}>
+                        {card.name}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <button
+              onClick={() => setSetCardModalOpen(false)}
+              style={{
+                width: "100%",
+                marginTop: "1rem",
+                padding: "0.75rem",
+                background: "#e0e0e0",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "0.95rem",
+                cursor: "pointer"
+              }}
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* セットカード詳細モーダル */}
+      {setCardDetailModalOpen && selectedSetCardInfo && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem"
+          }}
+          onClick={() => setSetCardDetailModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              width: "100%",
+              maxWidth: "300px"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ 
+              margin: "0 0 1rem 0", 
+              fontSize: "1.1rem",
+              textAlign: "center"
+            }}>
+              セットカード
+            </h3>
+            
+            {/* カード画像（表向き） */}
+            <div style={{
+              width: "120px",
+              aspectRatio: "0.7",
+              margin: "0 auto 1rem",
+              borderRadius: "8px",
+              overflow: "hidden",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+            }}>
+              {selectedSetCardInfo.card.image ? (
+                <img
+                  src={URL.createObjectURL(selectedSetCardInfo.card.image)}
+                  alt={selectedSetCardInfo.card.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <div style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "white",
+                  fontSize: "0.8rem",
+                  padding: "0.5rem",
+                  textAlign: "center"
+                }}>
+                  {selectedSetCardInfo.card.name}
+                </div>
+              )}
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button
+                onClick={() => {
+                  onCardDetailClick(selectedSetCardInfo.card);
+                  setSetCardDetailModalOpen(false);
+                }}
+                style={{
+                  padding: "0.75rem",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                🔍 詳細を見る
+              </button>
+              <button
+                onClick={handleSetCardToRemove}
+                style={{
+                  padding: "0.75rem",
+                  background: "linear-gradient(135deg, #ff5252 0%, #d32f2f 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                🗑️ リムーブへ送る
+              </button>
+              <button
+                onClick={() => setSetCardDetailModalOpen(false)}
+                style={{
+                  padding: "0.75rem",
+                  background: "#e0e0e0",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
