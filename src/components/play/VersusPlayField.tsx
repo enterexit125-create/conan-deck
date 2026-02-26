@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Card } from "../../db";
 import { HandArea } from "./areas/HandArea";
 import { LeftSidePanel } from "./panels/LeftSidePanel";
@@ -32,9 +32,12 @@ interface VersusPlayFieldProps {
   onCardDetailClick: (card: Card) => void;
   onToggleEvidenceCollapse: () => void;
   isEvidenceCollapsed: boolean;
-  // セットカード用の新しいコールバック
-  onSetCardFromHand?: (handIndex: number, fieldIndex: number, player: 1 | 2) => void;
-  onSetCardToRemove?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
+  // セットカード用のコールバック
+  onAddSetCard?: (card: Card, fieldIndex: number, player: 1 | 2) => void;
+  onRemoveSetCard?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
+  // 外部からセットカードを追加するためのRef用
+  pendingSetCard?: { card: Card; fieldIndex: number; player: 1 | 2 } | null;
+  onPendingSetCardProcessed?: () => void;
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
@@ -101,8 +104,10 @@ export function VersusPlayField({
   onCardDetailClick,
   onToggleEvidenceCollapse,
   isEvidenceCollapsed,
-  onSetCardFromHand,
-  onSetCardToRemove
+  onAddSetCard,
+  onRemoveSetCard,
+  pendingSetCard,
+  onPendingSetCardProcessed
 }: VersusPlayFieldProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -119,18 +124,21 @@ export function VersusPlayField({
   // セットカードの管理（キー: "プレイヤー-field-インデックス" → カードの配列）
   const [setCards, setSetCards] = useState<Map<string, Card[]>>(new Map());
 
+  // 外部からのセットカード追加を処理
+  useEffect(() => {
+    if (pendingSetCard) {
+      addSetCard(pendingSetCard.fieldIndex, pendingSetCard.player, pendingSetCard.card);
+      if (onPendingSetCardProcessed) {
+        onPendingSetCardProcessed();
+      }
+    }
+  }, [pendingSetCard]);
+
   // ステータスモーダルの状態
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedCardForStatus, setSelectedCardForStatus] = useState<{
     card: Card;
     index: number;
-    player: 1 | 2;
-  } | null>(null);
-
-  // セットカード選択モーダルの状態
-  const [setCardModalOpen, setSetCardModalOpen] = useState(false);
-  const [selectedFieldCardForSet, setSelectedFieldCardForSet] = useState<{
-    fieldIndex: number;
     player: 1 | 2;
   } | null>(null);
 
@@ -269,29 +277,6 @@ export function VersusPlayField({
       onCardDetailClick(selectedCardForStatus.card);
     }
     setStatusModalOpen(false);
-  }
-
-  // セットカード選択モーダルを開く
-  function openSetCardModal(fieldIndex: number, player: 1 | 2) {
-    setSelectedFieldCardForSet({ fieldIndex, player });
-    setSetCardModalOpen(true);
-    setStatusModalOpen(false);
-  }
-
-  // 手札からセットカードを追加
-  function handleSelectCardForSet(card: Card, handIndex: number) {
-    if (!selectedFieldCardForSet) return;
-    
-    // セットカードとして追加（ローカル状態）
-    addSetCard(selectedFieldCardForSet.fieldIndex, selectedFieldCardForSet.player, card);
-    
-    // 親コンポーネントにも通知（手札から削除してもらう）
-    if (onSetCardFromHand) {
-      onSetCardFromHand(handIndex, selectedFieldCardForSet.fieldIndex, selectedFieldCardForSet.player);
-    }
-    
-    setSetCardModalOpen(false);
-    setSelectedFieldCardForSet(null);
   }
 
   // セットカードをタップしたとき
@@ -822,7 +807,7 @@ export function VersusPlayField({
         onClose={() => setRightPanelOpen(false)}
       />
 
-      {/* ステータス操作モーダル（セットカード機能追加） */}
+      {/* ステータス操作モーダル */}
       {selectedCardForStatus && (
         <CardStatusModal
           show={statusModalOpen}
@@ -847,146 +832,7 @@ export function VersusPlayField({
           onMoveMenu={handleMoveMenu}
           onViewDetail={handleViewDetail}
           onClose={() => setStatusModalOpen(false)}
-          // セットカード機能を追加
-          extraActions={
-            <button
-              onClick={() => openSetCardModal(selectedCardForStatus.index, selectedCardForStatus.player)}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                background: "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "0.95rem",
-                fontWeight: "bold",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "0.5rem"
-              }}
-            >
-              📥 カードをセット
-            </button>
-          }
         />
-      )}
-
-      {/* セットカード選択モーダル */}
-      {setCardModalOpen && selectedFieldCardForSet && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "1rem"
-          }}
-          onClick={() => setSetCardModalOpen(false)}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "12px",
-              padding: "1rem",
-              width: "100%",
-              maxWidth: "400px",
-              maxHeight: "80vh",
-              overflow: "auto"
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 style={{ 
-              margin: "0 0 1rem 0", 
-              fontSize: "1.1rem",
-              color: "#ff9800",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem"
-            }}>
-              📥 セットするカードを選択
-            </h3>
-            <p style={{ fontSize: "0.85rem", color: "#666", marginBottom: "1rem" }}>
-              手札からセットするカードを選んでください（裏向きで下に置かれます）
-            </p>
-            
-            {currentPlayerState.hand.length === 0 ? (
-              <div style={{ textAlign: "center", color: "#999", padding: "2rem" }}>
-                手札にカードがありません
-              </div>
-            ) : (
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "0.5rem"
-              }}>
-                {currentPlayerState.hand.map((card, idx) => (
-                  <div
-                    key={`select-set-${card.id}-${idx}`}
-                    onClick={() => handleSelectCardForSet(card, idx)}
-                    style={{
-                      aspectRatio: "0.7",
-                      borderRadius: "6px",
-                      overflow: "hidden",
-                      cursor: "pointer",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                      transition: "transform 0.2s",
-                      border: "2px solid transparent"
-                    }}
-                    onMouseOver={e => e.currentTarget.style.transform = "scale(1.05)"}
-                    onMouseOut={e => e.currentTarget.style.transform = "scale(1)"}
-                  >
-                    {card.image ? (
-                      <img
-                        src={URL.createObjectURL(card.image)}
-                        alt={card.name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: "100%",
-                        height: "100%",
-                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        fontSize: "0.6rem",
-                        padding: "0.2rem",
-                        textAlign: "center"
-                      }}>
-                        {card.name}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <button
-              onClick={() => setSetCardModalOpen(false)}
-              style={{
-                width: "100%",
-                marginTop: "1rem",
-                padding: "0.75rem",
-                background: "#e0e0e0",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "0.95rem",
-                cursor: "pointer"
-              }}
-            >
-              キャンセル
-            </button>
-          </div>
-        </div>
       )}
 
       {/* セットカード詳細モーダル */}

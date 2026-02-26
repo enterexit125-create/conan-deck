@@ -8,6 +8,7 @@ import { MulliganModal } from "./play/modals/MulliganModal";
 import { CardMenuModal } from "./play/modals/CardMenuModal";
 import { CardDetailModal } from "./play/modals/CardDetailModal";
 import { MoveDestinationModal } from "./play/modals/MoveDestinationModal";
+import { SetTargetModal } from "./play/modals/SetTargetModal";
 
 interface PlayScreenProps {
   decks: Deck[];
@@ -54,6 +55,16 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   const [showMoveDestination, setShowMoveDestination] = useState(false);
   const [showCardDetail, setShowCardDetail] = useState(false);
   const [detailCard, setDetailCard] = useState<Card | null>(null);
+  
+  // セットカード選択モーダル
+  const [showSetTargetModal, setShowSetTargetModal] = useState(false);
+  
+  // セットカード追加用のpending state
+  const [pendingSetCard, setPendingSetCard] = useState<{
+    card: Card;
+    fieldIndex: number;
+    player: 1 | 2;
+  } | null>(null);
 
   // パートナーと事件カードを取得
   const partnerCard = cards.find(c => c.type === "パートナー") ?? null;
@@ -295,13 +306,20 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   }
 
   // カードメニューアクション
-  function handleMenuAction(action: "play" | "remove" | "evidence" | "view" | "toggleFace" | "move") {
+  function handleMenuAction(action: "play" | "remove" | "evidence" | "view" | "toggleFace" | "move" | "setToField") {
     if (!selectedCard) return;
 
     switch (action) {
       case "play":
         if (selectedCard.location === "hand") {
           playCardToField(selectedCard.index);
+        }
+        break;
+      case "setToField":
+        // セット先選択モーダルを開く
+        if (selectedCard.location === "hand") {
+          setShowCardMenu(false);
+          setShowSetTargetModal(true);
         }
         break;
       case "remove":
@@ -446,6 +464,8 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         onCardDetailClick={openCardDetail}
         onToggleEvidenceCollapse={() => setIsEvidenceCollapsed(!isEvidenceCollapsed)}
         isEvidenceCollapsed={isEvidenceCollapsed}
+        pendingSetCard={pendingSetCard}
+        onPendingSetCardProcessed={() => setPendingSetCard(null)}
       />
 
       <MulliganModal
@@ -463,6 +483,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         evidenceFaceUp={currentPlayerState.evidenceFaceUp}
         onAction={handleMenuAction}
         onClose={() => setShowCardMenu(false)}
+        fieldCards={currentPlayerState.field}
       />
 
       <CardDetailModal
@@ -502,6 +523,32 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
           }
         }}
         onClose={() => setShowMoveDestination(false)}
+      />
+
+      {/* セット先選択モーダル */}
+      <SetTargetModal
+        show={showSetTargetModal}
+        fieldCards={currentPlayerState.field}
+        onSelectTarget={(fieldIndex) => {
+          if (selectedCard && selectedCard.location === "hand") {
+            // 手札から削除
+            const cardToSet = currentPlayerState.hand[selectedCard.index];
+            const newHand = currentPlayerState.hand.filter((_, i) => i !== selectedCard.index);
+            updatePlayerState(currentPlayer, { hand: newHand });
+            
+            // VersusPlayFieldにセットカード追加を通知
+            setPendingSetCard({
+              card: cardToSet,
+              fieldIndex: fieldIndex,
+              player: currentPlayer
+            });
+          }
+          setShowSetTargetModal(false);
+          setSelectedCard(null);
+        }}
+        onClose={() => {
+          setShowSetTargetModal(false);
+        }}
       />
     </>
   );

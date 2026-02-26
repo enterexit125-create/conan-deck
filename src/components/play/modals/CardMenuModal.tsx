@@ -8,8 +8,10 @@ interface CardMenuModalProps {
     location: "hand" | "field" | "remove" | "evidence" | "file" 
   } | null;
   evidenceFaceUp: Set<number | undefined>;
-  onAction: (action: "play" | "remove" | "evidence" | "view" | "toggleFace" | "move") => void;
+  onAction: (action: "play" | "remove" | "evidence" | "view" | "toggleFace" | "move" | "setToField") => void;
   onClose: () => void;
+  // セット先のカード一覧（現場のカード）
+  fieldCards?: Card[];
 }
 
 export function CardMenuModal({ 
@@ -17,7 +19,8 @@ export function CardMenuModal({
   selectedCard, 
   evidenceFaceUp, 
   onAction, 
-  onClose 
+  onClose,
+  fieldCards = []
 }: CardMenuModalProps) {
   if (!show || !selectedCard) return null;
 
@@ -55,13 +58,34 @@ export function CardMenuModal({
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {selectedCard.location === "hand" && (
-            <button
-              className="btn-primary"
-              onClick={() => onAction("play")}
-              style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
-            >
-              🎴 現場に出す
-            </button>
+            <>
+              <button
+                className="btn-primary"
+                onClick={() => onAction("play")}
+                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
+              >
+                🎴 現場に出す
+              </button>
+              {/* セットして出すボタン（現場にカードがある場合のみ表示） */}
+              {fieldCards.length > 0 && (
+                <button
+                  onClick={() => onAction("setToField")}
+                  style={{ 
+                    width: "100%", 
+                    padding: "0.75rem", 
+                    fontSize: "1rem",
+                    background: "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    fontWeight: "bold"
+                  }}
+                >
+                  📥 セットして出す
+                </button>
+              )}
+            </>
           )}
           {selectedCard.location === "field" && (
             <>
