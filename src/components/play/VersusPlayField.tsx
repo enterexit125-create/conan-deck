@@ -1072,7 +1072,6 @@ export function VersusPlayField({
                   ↑ 表に返す
                 </button>
               )}
-              </button>
               <button
                 onClick={handleSetCardToRemove}
                 style={{
