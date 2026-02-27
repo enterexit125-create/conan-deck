@@ -44,10 +44,6 @@ interface VersusPlayFieldProps {
 const CARD_WIDTH = 100;
 const CARD_GAP = "0.3rem";
 
-// セットカードのサイズ（右横に重ねて縦並び）
-const SET_CARD_WIDTH = 32;  // セットカードの幅（タップしやすいサイズ）
-const SET_CARD_HEIGHT = 45; // セットカードの高さ
-
 // プレイヤーカラーテーマ
 const PLAYER_THEMES = {
   1: {
@@ -138,6 +134,13 @@ export function VersusPlayField({
   const [selectedCardForStatus, setSelectedCardForStatus] = useState<{
     card: Card;
     index: number;
+    player: 1 | 2;
+  } | null>(null);
+
+  // セットカード一覧モーダルの状態
+  const [setCardListModalOpen, setSetCardListModalOpen] = useState(false);
+  const [selectedFieldForSetList, setSelectedFieldForSetList] = useState<{
+    fieldIndex: number;
     player: 1 | 2;
   } | null>(null);
 
@@ -278,6 +281,25 @@ export function VersusPlayField({
     setStatusModalOpen(false);
   }
 
+  // セットカード一覧モーダルを開く
+  function openSetCardListModal(fieldIndex: number, player: 1 | 2) {
+    setSelectedFieldForSetList({ fieldIndex, player });
+    setSetCardListModalOpen(true);
+  }
+
+  // セットカード一覧から個別カードを選択
+  function handleSelectSetCardFromList(setCardIndex: number, card: Card) {
+    if (!selectedFieldForSetList) return;
+    setSelectedSetCardInfo({
+      fieldIndex: selectedFieldForSetList.fieldIndex,
+      player: selectedFieldForSetList.player,
+      setCardIndex,
+      card
+    });
+    setSetCardListModalOpen(false);
+    setSetCardDetailModalOpen(true);
+  }
+
   // セットカードをタップしたとき
   function handleSetCardTap(fieldIndex: number, player: 1 | 2, setCardIndex: number, card: Card) {
     setSelectedSetCardInfo({ fieldIndex, player, setCardIndex, card });
@@ -348,20 +370,13 @@ export function VersusPlayField({
   }) {
     const rotation = getCardRotation(cardState);
     const setCardsForThis = getSetCardsForField(idx, player);
-    // セットカードの重なり具合（12pxずつずらす - タップしやすいように）
-    const setCardOffset = 12;
-    const setCardsHeight = setCardsForThis.length > 0 
-      ? SET_CARD_HEIGHT + (setCardsForThis.length - 1) * setCardOffset 
-      : 0;
     
     return (
       <div
         style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "flex-start",
-          gap: "4px",
-          marginRight: setCardsForThis.length > 0 ? "4px" : "0"
+          position: "relative",
+          width: `${CARD_WIDTH}px`,
+          flexShrink: 0
         }}
       >
         {/* メインカード */}
@@ -374,7 +389,6 @@ export function VersusPlayField({
             overflow: "visible",
             cursor: "pointer",
             position: "relative",
-            flexShrink: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center"
@@ -417,71 +431,40 @@ export function VersusPlayField({
             status={status}
             onTap={() => handleBadgeTap(card, idx, player)}
           />
-        </div>
-
-        {/* セットカード（カードの右横に重ねて縦並び） */}
-        {setCardsForThis.length > 0 && (
-          <div style={{
-            position: "relative",
-            width: `${SET_CARD_WIDTH}px`,
-            height: `${setCardsHeight}px`,
-            marginTop: "4px"
-          }}>
-            {setCardsForThis.map((setCard, setIdx) => (
-              <div
-                key={`set-${idx}-${setIdx}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSetCardTap(idx, player, setIdx, setCard);
-                }}
-                style={{
-                  position: "absolute",
-                  top: `${setIdx * setCardOffset}px`,
-                  left: 0,
-                  width: `${SET_CARD_WIDTH}px`,
-                  height: `${SET_CARD_HEIGHT}px`,
-                  cursor: "pointer",
-                  overflow: "hidden",
-                  borderRadius: "3px",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-                  border: "1px solid rgba(255,255,255,0.5)",
-                  zIndex: setIdx + 1
-                }}
-              >
-                <img
-                  src={cardBackImage}
-                  alt="セットカード"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover"
-                  }}
-                />
-              </div>
-            ))}
-            {/* 枚数バッジ */}
-            <div style={{
-              position: "absolute",
-              bottom: "-6px",
-              right: "-6px",
-              background: "#ff9800",
-              color: "white",
-              borderRadius: "50%",
-              width: "18px",
-              height: "18px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.65rem",
-              fontWeight: "bold",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
-              border: "1px solid white",
-              zIndex: 10
-            }}>
+          
+          {/* セットカード枚数バッジ（タップで一覧表示） */}
+          {setCardsForThis.length > 0 && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                openSetCardListModal(idx, player);
+              }}
+              style={{
+                position: "absolute",
+                bottom: "-6px",
+                right: "-6px",
+                background: "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
+                color: "white",
+                borderRadius: "12px",
+                minWidth: "28px",
+                height: "28px",
+                padding: "0 8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "0.8rem",
+                fontWeight: "bold",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                border: "2px solid white",
+                cursor: "pointer",
+                gap: "2px"
+              }}
+            >
+              <span style={{ fontSize: "0.7rem" }}>📥</span>
               {setCardsForThis.length}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
@@ -856,6 +839,116 @@ export function VersusPlayField({
           onViewDetail={handleViewDetail}
           onClose={() => setStatusModalOpen(false)}
         />
+      )}
+
+      {/* セットカード一覧モーダル */}
+      {setCardListModalOpen && selectedFieldForSetList && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem"
+          }}
+          onClick={() => setSetCardListModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              width: "100%",
+              maxWidth: "350px",
+              maxHeight: "80vh",
+              overflow: "auto"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ 
+              margin: "0 0 1rem 0", 
+              fontSize: "1.1rem",
+              textAlign: "center",
+              color: "#ff9800",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem"
+            }}>
+              📥 セットカード一覧
+            </h3>
+            
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: "0.75rem"
+            }}>
+              {getSetCardsForField(selectedFieldForSetList.fieldIndex, selectedFieldForSetList.player).map((setCard, setIdx) => (
+                <div
+                  key={`set-list-${setIdx}`}
+                  onClick={() => handleSelectSetCardFromList(setIdx, setCard)}
+                  style={{
+                    aspectRatio: "0.7",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    border: "2px solid transparent",
+                    position: "relative"
+                  }}
+                >
+                  {/* 裏向きで表示 */}
+                  <img
+                    src={cardBackImage}
+                    alt={`セットカード ${setIdx + 1}`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  {/* 番号バッジ */}
+                  <div style={{
+                    position: "absolute",
+                    top: "4px",
+                    left: "4px",
+                    background: "#ff9800",
+                    color: "white",
+                    borderRadius: "50%",
+                    width: "20px",
+                    height: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.7rem",
+                    fontWeight: "bold"
+                  }}>
+                    {setIdx + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <button
+              onClick={() => setSetCardListModalOpen(false)}
+              style={{
+                width: "100%",
+                marginTop: "1rem",
+                padding: "0.75rem",
+                background: "#e0e0e0",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "0.95rem",
+                cursor: "pointer"
+              }}
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
       )}
 
       {/* セットカード詳細モーダル */}
