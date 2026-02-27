@@ -41,8 +41,8 @@ interface VersusPlayFieldProps {
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
-const CARD_WIDTH = 100;
-const CARD_GAP = "0.3rem";
+const CARD_WIDTH = 90;  // 360px画面で3枚並ぶサイズ
+const CARD_GAP = "0.25rem";
 
 // プレイヤーカラーテーマ
 const PLAYER_THEMES = {
