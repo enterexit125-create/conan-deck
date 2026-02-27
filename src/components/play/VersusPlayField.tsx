@@ -37,6 +37,9 @@ interface VersusPlayFieldProps {
   // 外部からセットカードを追加するためのpending state
   pendingSetCard?: { card: Card; fieldIndex: number; player: 1 | 2 } | null;
   onPendingSetCardProcessed?: () => void;
+  // セットカードの取得・削除要求
+  removeSetCardsRequest?: { fieldIndex: number; player: 1 | 2 } | null;
+  onSetCardsRemoved?: (cards: Card[], fieldIndex: number, player: 1 | 2) => void;
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
@@ -100,7 +103,9 @@ export function VersusPlayField({
   isEvidenceCollapsed,
   onSetCardToRemove,
   pendingSetCard,
-  onPendingSetCardProcessed
+  onPendingSetCardProcessed,
+  removeSetCardsRequest,
+  onSetCardsRemoved
 }: VersusPlayFieldProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -130,6 +135,26 @@ export function VersusPlayField({
       }
     }
   }, [pendingSetCard]);
+
+  // 外部からのセットカード削除要求を処理
+  useEffect(() => {
+    if (removeSetCardsRequest) {
+      const removedCards = removeAllSetCardsForField(
+        removeSetCardsRequest.fieldIndex,
+        removeSetCardsRequest.player
+      );
+      // インデックスを更新
+      updateSetCardIndices(removeSetCardsRequest.player, removeSetCardsRequest.fieldIndex);
+      
+      if (onSetCardsRemoved) {
+        onSetCardsRemoved(
+          removedCards,
+          removeSetCardsRequest.fieldIndex,
+          removeSetCardsRequest.player
+        );
+      }
+    }
+  }, [removeSetCardsRequest]);
 
   // ステータスモーダルの状態
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -250,6 +275,51 @@ export function VersusPlayField({
         i === setCardIndex ? { ...item, faceUp: true } : item
       );
       newMap.set(key, updated);
+      return newMap;
+    });
+  }
+
+  // 現場カードに紐づくセットカードを全て取得して削除
+  function removeAllSetCardsForField(fieldIndex: number, player: 1 | 2): Card[] {
+    const key = getSetCardsKey(fieldIndex, player);
+    const existing = setCards.get(key) ?? [];
+    const cards = existing.map(info => info.card);
+    
+    if (cards.length > 0) {
+      setSetCards(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(key);
+        return newMap;
+      });
+    }
+    
+    return cards;
+  }
+
+  // 現場カードのインデックスが変わった時にセットカードのキーも更新
+  function updateSetCardIndices(player: 1 | 2, removedIndex: number) {
+    setSetCards(prev => {
+      const newMap = new Map<string, SetCardInfo[]>();
+      prev.forEach((value, key) => {
+        // このプレイヤーのfield用のキーかチェック
+        const prefix = `${player}-field-`;
+        if (key.startsWith(prefix)) {
+          const indexStr = key.substring(prefix.length);
+          const index = parseInt(indexStr, 10);
+          if (index > removedIndex) {
+            // インデックスを1つ減らす
+            const newKey = `${player}-field-${index - 1}`;
+            newMap.set(newKey, value);
+          } else if (index < removedIndex) {
+            // そのまま保持
+            newMap.set(key, value);
+          }
+          // index === removedIndex は削除済みなのでスキップ
+        } else {
+          // 他のプレイヤーのキーはそのまま
+          newMap.set(key, value);
+        }
+      });
       return newMap;
     });
   }

@@ -66,6 +66,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     player: 1 | 2;
   } | null>(null);
 
+  // セットカード削除要求用のstate
+  const [removeSetCardsRequest, setRemoveSetCardsRequest] = useState<{
+    fieldIndex: number;
+    player: 1 | 2;
+  } | null>(null);
+
   // パートナーと事件カードを取得
   const partnerCard = cards.find(c => c.type === "パートナー") ?? null;
   const incidentCard = cards.find(c => c.type === "事件") ?? null;
@@ -195,6 +201,9 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     
     const card = currentPlayerState.field[index];
     const newField = currentPlayerState.field.filter((_, i) => i !== index);
+    
+    // セットカードの削除を要求（VersusPlayFieldで処理される）
+    setRemoveSetCardsRequest({ fieldIndex: index, player: currentPlayer });
     
     updatePlayerState(currentPlayer, {
       field: newField,
@@ -466,6 +475,25 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         isEvidenceCollapsed={isEvidenceCollapsed}
         pendingSetCard={pendingSetCard}
         onPendingSetCardProcessed={() => setPendingSetCard(null)}
+        removeSetCardsRequest={removeSetCardsRequest}
+        onSetCardsRemoved={(cards, fieldIndex, player) => {
+          // セットカードをリムーブへ追加
+          if (cards.length > 0) {
+            if (player === 1) {
+              setPlayer1(prev => prev ? {
+                ...prev,
+                remove: [...prev.remove, ...cards]
+              } : null);
+            } else {
+              setPlayer2(prev => prev ? {
+                ...prev,
+                remove: [...prev.remove, ...cards]
+              } : null);
+            }
+          }
+          // 要求をクリア
+          setRemoveSetCardsRequest(null);
+        }}
         onSetCardToRemove={(card, fieldIndex, setCardIndex, player) => {
           // セットカードをリムーブへ送る
           if (player === 1) {
