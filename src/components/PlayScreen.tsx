@@ -466,23 +466,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         isEvidenceCollapsed={isEvidenceCollapsed}
         pendingSetCard={pendingSetCard}
         onPendingSetCardProcessed={() => setPendingSetCard(null)}
-        onFlipSetCard={(card, fieldIndex, setCardIndex, player) => {
-          // セットカードを表に返す → 現場に追加
-          const targetState = player === 1 ? player1 : player2;
-          if (targetState) {
-            if (player === 1) {
-              setPlayer1(prev => prev ? {
-                ...prev,
-                field: [...prev.field, card]
-              } : null);
-            } else {
-              setPlayer2(prev => prev ? {
-                ...prev,
-                field: [...prev.field, card]
-              } : null);
-            }
-          }
-        }}
         onSetCardToRemove={(card, fieldIndex, setCardIndex, player) => {
           // セットカードをリムーブへ送る
           if (player === 1) {

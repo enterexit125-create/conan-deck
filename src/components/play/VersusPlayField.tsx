@@ -33,7 +33,6 @@ interface VersusPlayFieldProps {
   onToggleEvidenceCollapse: () => void;
   isEvidenceCollapsed: boolean;
   // セットカード用のコールバック
-  onFlipSetCard?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
   onSetCardToRemove?: (card: Card, fieldIndex: number, setCardIndex: number, player: 1 | 2) => void;
   // 外部からセットカードを追加するためのpending state
   pendingSetCard?: { card: Card; fieldIndex: number; player: 1 | 2 } | null;
@@ -99,7 +98,6 @@ export function VersusPlayField({
   onCardDetailClick,
   onToggleEvidenceCollapse,
   isEvidenceCollapsed,
-  onFlipSetCard,
   onSetCardToRemove,
   pendingSetCard,
   onPendingSetCardProcessed
@@ -116,8 +114,12 @@ export function VersusPlayField({
   // カード状態の管理（アクティブ/スリープ/スタン）
   const [cardStates, setCardStates] = useState<Map<string, CardState>>(new Map());
 
-  // セットカードの管理（キー: "プレイヤー-field-インデックス" → カードの配列）
-  const [setCards, setSetCards] = useState<Map<string, Card[]>>(new Map());
+  // セットカードの管理（キー: "プレイヤー-field-インデックス" → カードと表裏状態の配列）
+  interface SetCardInfo {
+    card: Card;
+    faceUp: boolean;  // true: 表向き, false: 裏向き
+  }
+  const [setCards, setSetCards] = useState<Map<string, SetCardInfo[]>>(new Map());
 
   // 外部からのセットカード追加を処理
   useEffect(() => {
@@ -151,6 +153,7 @@ export function VersusPlayField({
     player: 1 | 2;
     setCardIndex: number;
     card: Card;
+    faceUp: boolean;
   } | null>(null);
 
   // 現在のプレイヤーのテーマを取得
@@ -198,18 +201,18 @@ export function VersusPlayField({
   }
 
   // セットカードを取得
-  function getSetCardsForField(fieldIndex: number, player: 1 | 2): Card[] {
+  function getSetCardsForField(fieldIndex: number, player: 1 | 2): SetCardInfo[] {
     const key = getSetCardsKey(fieldIndex, player);
     return setCards.get(key) ?? [];
   }
 
-  // セットカードを追加
+  // セットカードを追加（裏向きで追加）
   function addSetCard(fieldIndex: number, player: 1 | 2, card: Card) {
     const key = getSetCardsKey(fieldIndex, player);
     setSetCards(prev => {
       const newMap = new Map(prev);
       const existing = newMap.get(key) ?? [];
-      newMap.set(key, [...existing, card]);
+      newMap.set(key, [...existing, { card, faceUp: false }]);
       return newMap;
     });
   }
@@ -221,7 +224,7 @@ export function VersusPlayField({
     setSetCards(prev => {
       const newMap = new Map(prev);
       const existing = newMap.get(key) ?? [];
-      removedCard = existing[setCardIndex] ?? null;
+      removedCard = existing[setCardIndex]?.card ?? null;
       const newCards = existing.filter((_, i) => i !== setCardIndex);
       if (newCards.length === 0) {
         newMap.delete(key);
@@ -231,6 +234,20 @@ export function VersusPlayField({
       return newMap;
     });
     return removedCard;
+  }
+
+  // セットカードを表に返す（削除せずに表向きにする）
+  function flipSetCard(fieldIndex: number, player: 1 | 2, setCardIndex: number) {
+    const key = getSetCardsKey(fieldIndex, player);
+    setSetCards(prev => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(key) ?? [];
+      const updated = existing.map((item, i) => 
+        i === setCardIndex ? { ...item, faceUp: true } : item
+      );
+      newMap.set(key, updated);
+      return newMap;
+    });
   }
 
   // カード状態に応じた回転角度を取得
@@ -288,43 +305,34 @@ export function VersusPlayField({
   }
 
   // セットカード一覧から個別カードを選択
-  function handleSelectSetCardFromList(setCardIndex: number, card: Card) {
+  function handleSelectSetCardFromList(setCardIndex: number, card: Card, faceUp: boolean) {
     if (!selectedFieldForSetList) return;
     setSelectedSetCardInfo({
       fieldIndex: selectedFieldForSetList.fieldIndex,
       player: selectedFieldForSetList.player,
       setCardIndex,
-      card
+      card,
+      faceUp
     });
     setSetCardListModalOpen(false);
     setSetCardDetailModalOpen(true);
   }
 
   // セットカードをタップしたとき
-  function handleSetCardTap(fieldIndex: number, player: 1 | 2, setCardIndex: number, card: Card) {
-    setSelectedSetCardInfo({ fieldIndex, player, setCardIndex, card });
+  function handleSetCardTap(fieldIndex: number, player: 1 | 2, setCardIndex: number, card: Card, faceUp: boolean) {
+    setSelectedSetCardInfo({ fieldIndex, player, setCardIndex, card, faceUp });
     setSetCardDetailModalOpen(true);
   }
 
-  // セットカードを表に返す（その場で表向きに）
+  // セットカードを表に返す（セットされたまま表向きにする）
   function handleFlipSetCard() {
     if (!selectedSetCardInfo) return;
     
-    const flippedCard = removeSetCard(
+    flipSetCard(
       selectedSetCardInfo.fieldIndex,
       selectedSetCardInfo.player,
       selectedSetCardInfo.setCardIndex
     );
-    
-    // 親コンポーネントに通知（現場に追加してもらう）
-    if (onFlipSetCard && flippedCard) {
-      onFlipSetCard(
-        flippedCard,
-        selectedSetCardInfo.fieldIndex,
-        selectedSetCardInfo.setCardIndex,
-        selectedSetCardInfo.player
-      );
-    }
     
     setSetCardDetailModalOpen(false);
     setSelectedSetCardInfo(null);
@@ -889,10 +897,10 @@ export function VersusPlayField({
               gridTemplateColumns: "repeat(3, 1fr)",
               gap: "0.75rem"
             }}>
-              {getSetCardsForField(selectedFieldForSetList.fieldIndex, selectedFieldForSetList.player).map((setCard, setIdx) => (
+              {getSetCardsForField(selectedFieldForSetList.fieldIndex, selectedFieldForSetList.player).map((setCardInfo, setIdx) => (
                 <div
                   key={`set-list-${setIdx}`}
-                  onClick={() => handleSelectSetCardFromList(setIdx, setCard)}
+                  onClick={() => handleSelectSetCardFromList(setIdx, setCardInfo.card, setCardInfo.faceUp)}
                   style={{
                     aspectRatio: "0.7",
                     borderRadius: "8px",
@@ -900,22 +908,47 @@ export function VersusPlayField({
                     cursor: "pointer",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                     transition: "transform 0.2s, box-shadow 0.2s",
-                    border: "2px solid transparent",
+                    border: setCardInfo.faceUp ? "2px solid #4caf50" : "2px solid transparent",
                     position: "relative"
                   }}
                 >
-                  {/* 裏向きで表示 */}
-                  <img
-                    src={cardBackImage}
-                    alt={`セットカード ${setIdx + 1}`}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
+                  {/* 表向き/裏向きで表示を切り替え */}
+                  {setCardInfo.faceUp ? (
+                    setCardInfo.card.image ? (
+                      <img
+                        src={URL.createObjectURL(setCardInfo.card.image)}
+                        alt={setCardInfo.card.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.6rem",
+                        padding: "0.2rem",
+                        textAlign: "center"
+                      }}>
+                        {setCardInfo.card.name}
+                      </div>
+                    )
+                  ) : (
+                    <img
+                      src={cardBackImage}
+                      alt={`セットカード ${setIdx + 1}`}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  )}
                   {/* 番号バッジ */}
                   <div style={{
                     position: "absolute",
                     top: "4px",
                     left: "4px",
-                    background: "#ff9800",
+                    background: setCardInfo.faceUp ? "#4caf50" : "#ff9800",
                     color: "white",
                     borderRadius: "50%",
                     width: "20px",
@@ -1021,20 +1054,24 @@ export function VersusPlayField({
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <button
-                onClick={handleFlipSetCard}
-                style={{
-                  padding: "0.75rem",
-                  background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  cursor: "pointer",
-                  fontWeight: "bold"
-                }}
-              >
-                ↑ 表に返す
+              {/* 裏向きの場合のみ「表に返す」を表示 */}
+              {!selectedSetCardInfo.faceUp && (
+                <button
+                  onClick={handleFlipSetCard}
+                  style={{
+                    padding: "0.75rem",
+                    background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "8px",
+                    fontSize: "0.95rem",
+                    cursor: "pointer",
+                    fontWeight: "bold"
+                  }}
+                >
+                  ↑ 表に返す
+                </button>
+              )}
               </button>
               <button
                 onClick={handleSetCardToRemove}
