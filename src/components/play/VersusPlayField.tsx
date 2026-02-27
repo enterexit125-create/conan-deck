@@ -220,12 +220,15 @@ export function VersusPlayField({
   // セットカードを削除
   function removeSetCard(fieldIndex: number, player: 1 | 2, setCardIndex: number): Card | null {
     const key = getSetCardsKey(fieldIndex, player);
-    let removedCard: Card | null = null;
+    const existing = setCards.get(key) ?? [];
+    const removedCardInfo = existing[setCardIndex];
+    
+    if (!removedCardInfo) return null;
+    
     setSetCards(prev => {
       const newMap = new Map(prev);
-      const existing = newMap.get(key) ?? [];
-      removedCard = existing[setCardIndex]?.card ?? null;
-      const newCards = existing.filter((_, i) => i !== setCardIndex);
+      const existingCards = newMap.get(key) ?? [];
+      const newCards = existingCards.filter((_, i) => i !== setCardIndex);
       if (newCards.length === 0) {
         newMap.delete(key);
       } else {
@@ -233,7 +236,8 @@ export function VersusPlayField({
       }
       return newMap;
     });
-    return removedCard;
+    
+    return removedCardInfo.card;
   }
 
   // セットカードを表に返す（削除せずに表向きにする）
