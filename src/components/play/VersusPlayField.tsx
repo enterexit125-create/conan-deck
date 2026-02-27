@@ -44,10 +44,9 @@ interface VersusPlayFieldProps {
 const CARD_WIDTH = 100;
 const CARD_GAP = "0.3rem";
 
-// セットカードのサイズ（横向きで下からはみ出す）
-const SET_CARD_WIDTH = 60;  // 横向きカードの幅（縦向きの高さ相当）
-const SET_CARD_VISIBLE = 20; // 下からはみ出して見える高さ
-const SET_CARD_OFFSET_X = 8; // 横にずらす量（斜めに重ねる効果）
+// セットカードのサイズ（右横に重ねて縦並び）
+const SET_CARD_WIDTH = 32;  // セットカードの幅（タップしやすいサイズ）
+const SET_CARD_HEIGHT = 45; // セットカードの高さ
 
 // プレイヤーカラーテーマ
 const PLAYER_THEMES = {
@@ -349,63 +348,22 @@ export function VersusPlayField({
   }) {
     const rotation = getCardRotation(cardState);
     const setCardsForThis = getSetCardsForField(idx, player);
-    // セットカードがある場合、下に少しスペースを確保
-    const extraBottomSpace = setCardsForThis.length > 0 ? SET_CARD_VISIBLE : 0;
+    // セットカードの重なり具合（12pxずつずらす - タップしやすいように）
+    const setCardOffset = 12;
+    const setCardsHeight = setCardsForThis.length > 0 
+      ? SET_CARD_HEIGHT + (setCardsForThis.length - 1) * setCardOffset 
+      : 0;
     
     return (
       <div
         style={{
-          position: "relative",
-          width: `${CARD_WIDTH}px`,
-          marginBottom: `${extraBottomSpace}px`
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "flex-start",
+          gap: "4px",
+          marginRight: setCardsForThis.length > 0 ? "4px" : "0"
         }}
       >
-        {/* セットカード（メインカードの下に横向きで配置） */}
-        {setCardsForThis.length > 0 && (
-          <div style={{
-            position: "absolute",
-            bottom: `-${SET_CARD_VISIBLE}px`,
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 1
-          }}>
-            {setCardsForThis.map((setCard, setIdx) => (
-              <div
-                key={`set-${idx}-${setIdx}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSetCardTap(idx, player, setIdx, setCard);
-                }}
-                style={{
-                  position: "absolute",
-                  // 複数枚の場合、少しずつ横にずらして斜めに見せる
-                  left: `${setIdx * SET_CARD_OFFSET_X}px`,
-                  bottom: `${setIdx * 3}px`, // 少し上にもずらす
-                  width: `${SET_CARD_WIDTH}px`,
-                  height: `${SET_CARD_WIDTH * 0.7}px`, // カードの縦横比
-                  cursor: "pointer",
-                  overflow: "hidden",
-                  borderRadius: "4px",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.4)",
-                  transform: "rotate(90deg)", // 横向き
-                  transformOrigin: "center center",
-                  zIndex: setCardsForThis.length - setIdx // 後ろのカードが上に
-                }}
-              >
-                <img
-                  src={cardBackImage}
-                  alt="セットカード"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover"
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* メインカード */}
         <div
           onClick={() => handleCardTap(card, idx, player)}
@@ -416,7 +374,7 @@ export function VersusPlayField({
             overflow: "visible",
             cursor: "pointer",
             position: "relative",
-            zIndex: 10,
+            flexShrink: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center"
@@ -459,30 +417,71 @@ export function VersusPlayField({
             status={status}
             onTap={() => handleBadgeTap(card, idx, player)}
           />
-          {/* セットカード枚数バッジ */}
-          {setCardsForThis.length > 0 && (
+        </div>
+
+        {/* セットカード（カードの右横に重ねて縦並び） */}
+        {setCardsForThis.length > 0 && (
+          <div style={{
+            position: "relative",
+            width: `${SET_CARD_WIDTH}px`,
+            height: `${setCardsHeight}px`,
+            marginTop: "4px"
+          }}>
+            {setCardsForThis.map((setCard, setIdx) => (
+              <div
+                key={`set-${idx}-${setIdx}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSetCardTap(idx, player, setIdx, setCard);
+                }}
+                style={{
+                  position: "absolute",
+                  top: `${setIdx * setCardOffset}px`,
+                  left: 0,
+                  width: `${SET_CARD_WIDTH}px`,
+                  height: `${SET_CARD_HEIGHT}px`,
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  borderRadius: "3px",
+                  boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
+                  border: "1px solid rgba(255,255,255,0.5)",
+                  zIndex: setIdx + 1
+                }}
+              >
+                <img
+                  src={cardBackImage}
+                  alt="セットカード"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover"
+                  }}
+                />
+              </div>
+            ))}
+            {/* 枚数バッジ */}
             <div style={{
               position: "absolute",
-              bottom: "-8px",
-              right: "-8px",
+              bottom: "-6px",
+              right: "-6px",
               background: "#ff9800",
               color: "white",
               borderRadius: "50%",
-              width: "24px",
-              height: "24px",
+              width: "18px",
+              height: "18px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: "0.75rem",
+              fontSize: "0.65rem",
               fontWeight: "bold",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
-              border: "2px solid white",
-              zIndex: 15
+              boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+              border: "1px solid white",
+              zIndex: 10
             }}>
               {setCardsForThis.length}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   }
