@@ -657,7 +657,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? "300px" : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "50px" : "300px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -675,10 +675,10 @@ export function VersusPlayField({
             }}>
               {opponentPlayerState.field.length === 0 ? (
                 <div style={{ 
-                  padding: "1rem", 
+                  padding: "0.5rem", 
                   textAlign: "center", 
                   color: "#999",
-                  fontSize: "0.85rem"
+                  fontSize: "0.8rem"
                 }}>
                   カードなし
                 </div>
@@ -787,16 +787,13 @@ export function VersusPlayField({
 
       {/* 自分の現場 */}
       <div style={{ 
-        flex: 1,
+        flexShrink: 0,
         padding: "0.2rem 0",
         background: theme.background,
         borderBottom: `1px solid ${theme.primary}`,
-        minHeight: 0,
-        overflow: "hidden",
         transition: "background 0.4s ease, border-color 0.4s ease"
       }}>
         <div style={{ 
-          height: "100%",
           background: theme.fieldCardBg,
           borderRadius: "0",
           padding: "0.2rem",
@@ -822,32 +819,41 @@ export function VersusPlayField({
             <span>{theme.emoji}</span>
             <span>自分（{theme.label}）の現場</span>
           </div>
-          <div style={{
-            flex: 1,
-            display: "flex",
-            flexWrap: "wrap",
-            gap: CARD_GAP,
-            overflow: "auto",
-            alignContent: "flex-start",
-            alignItems: "flex-start",
-            padding: "0.3rem"
-          }}>
-            {currentPlayerState.field.map((card, idx) => {
-              const status = getCardStatus(card.id, idx, currentPlayer);
-              const cardState = getCardState(card.id, idx, currentPlayer);
-              
-              return (
-                <FieldCardWithSet
-                  key={`current-field-${card.id}-${idx}`}
-                  card={card}
-                  idx={idx}
-                  player={currentPlayer}
-                  status={status}
-                  cardState={cardState}
-                />
-              );
-            })}
-          </div>
+          {currentPlayerState.field.length === 0 ? (
+            <div style={{
+              padding: "0.5rem",
+              textAlign: "center",
+              color: "#999",
+              fontSize: "0.8rem"
+            }}>
+              カードなし
+            </div>
+          ) : (
+            <div style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: CARD_GAP,
+              alignContent: "flex-start",
+              alignItems: "flex-start",
+              padding: "0.3rem"
+            }}>
+              {currentPlayerState.field.map((card, idx) => {
+                const status = getCardStatus(card.id, idx, currentPlayer);
+                const cardState = getCardState(card.id, idx, currentPlayer);
+                
+                return (
+                  <FieldCardWithSet
+                    key={`current-field-${card.id}-${idx}`}
+                    card={card}
+                    idx={idx}
+                    player={currentPlayer}
+                    status={status}
+                    cardState={cardState}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
