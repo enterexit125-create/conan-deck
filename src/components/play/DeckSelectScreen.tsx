@@ -13,10 +13,18 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
   
   // モーダル表示状態（1: P1選択中, 2: P2選択中, null: 閉じてる）
   const [selectingPlayer, setSelectingPlayer] = useState<1 | 2 | null>(null);
+  
+  // 検索クエリ
+  const [searchQuery, setSearchQuery] = useState("");
 
   // 選択されたデッキの情報を取得
   const player1Deck = decks.find(d => d.id === player1DeckId);
   const player2Deck = decks.find(d => d.id === player2DeckId);
+  
+  // 検索でフィルタリングされたデッキ
+  const filteredDecks = decks.filter(deck => 
+    deck.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // デッキ選択処理
   function selectDeck(deckId: number) {
@@ -26,6 +34,13 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
       setPlayer2DeckId(deckId);
     }
     setSelectingPlayer(null);
+    setSearchQuery(""); // 検索をリセット
+  }
+  
+  // モーダルを開く
+  function openModal(player: 1 | 2) {
+    setSearchQuery(""); // 検索をリセット
+    setSelectingPlayer(player);
   }
 
   // ゲーム開始
@@ -79,7 +94,7 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
         
         {/* プレイヤー1選択ボタン */}
         <button
-          onClick={() => setSelectingPlayer(1)}
+          onClick={() => openModal(1)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -125,7 +140,7 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
 
         {/* プレイヤー2選択ボタン */}
         <button
-          onClick={() => setSelectingPlayer(2)}
+          onClick={() => openModal(2)}
           style={{
             display: "flex",
             alignItems: "center",
@@ -258,13 +273,75 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
               </button>
             </div>
 
+            {/* 検索バー */}
+            <div style={{
+              padding: "0.75rem 1rem",
+              borderBottom: "1px solid #e0e0e0",
+              background: "#f9f9f9"
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                background: "white",
+                borderRadius: "8px",
+                border: "2px solid #e0e0e0",
+                padding: "0.5rem 0.75rem",
+                gap: "0.5rem"
+              }}>
+                <span style={{ fontSize: "1rem", color: "#999" }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="デッキ名で検索..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    flex: 1,
+                    border: "none",
+                    outline: "none",
+                    fontSize: "1rem",
+                    background: "transparent"
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    style={{
+                      background: "#e0e0e0",
+                      border: "none",
+                      borderRadius: "50%",
+                      width: "24px",
+                      height: "24px",
+                      fontSize: "0.8rem",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#666"
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* デッキ一覧 */}
             <div style={{
               flex: 1,
               overflowY: "auto",
               padding: "1rem"
             }}>
-              {decks.map((deck) => {
+              {filteredDecks.length === 0 ? (
+                <div style={{
+                  textAlign: "center",
+                  padding: "2rem",
+                  color: "#999"
+                }}>
+                  <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔍</div>
+                  <div>「{searchQuery}」に一致するデッキがありません</div>
+                </div>
+              ) : (
+                filteredDecks.map((deck) => {
                 const isSelected = selectingPlayer === 1 
                   ? deck.id === player1DeckId 
                   : deck.id === player2DeckId;
@@ -346,7 +423,8 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                     }}>▶</span>
                   </button>
                 );
-              })}
+              })
+              )}
             </div>
           </div>
         </div>
