@@ -27,6 +27,7 @@ interface VersusPlayFieldProps {
   onStartTurn: () => void;
   onStartMulligan: () => void;
   onSwitchPlayer: () => void;
+  onEndTurn: () => void;  // ターン終了
   onReset: () => void;
   onCardClick: (card: Card, index: number, location: "hand" | "field" | "remove" | "evidence" | "file") => void;
   onCardDetailClick: (card: Card) => void;
@@ -96,6 +97,7 @@ export function VersusPlayField({
   onStartTurn,
   onStartMulligan,
   onSwitchPlayer,
+  onEndTurn,
   onReset,
   onCardClick,
   onCardDetailClick,
@@ -719,7 +721,7 @@ export function VersusPlayField({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        gap: "0.5rem",
+        gap: "0.4rem",
         padding: "0.3rem",
         background: "white",
         borderTop: "1px solid #ddd",
@@ -737,36 +739,62 @@ export function VersusPlayField({
             background: theme.headerBg,
             border: "none",
             color: "white",
+            borderRadius: "6px",
             transition: "background 0.4s ease"
           }}
         >
           ◀
         </button>
         
-        {/* プレイヤー切り替えボタン - 大きく目立つように */}
+        {/* プレイヤー切り替えボタン */}
         <button
           onClick={onSwitchPlayer}
           style={{ 
-            padding: "0.5rem 1.2rem", 
-            fontSize: "0.9rem",
+            padding: "0.4rem 0.8rem", 
+            fontSize: "0.8rem",
             lineHeight: 1.2,
             background: currentPlayer === 1 
               ? "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)"
               : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
             color: "white",
-            border: "3px solid white",
-            borderRadius: "8px",
+            border: "2px solid white",
+            borderRadius: "6px",
             cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
             display: "flex",
             alignItems: "center",
-            gap: "0.4rem",
+            gap: "0.3rem",
             transition: "all 0.3s ease"
           }}
         >
           <span>🔄</span>
           <span style={{ fontWeight: "bold" }}>
             {currentPlayer === 1 ? "P2へ" : "P1へ"}
+          </span>
+        </button>
+
+        {/* ターン終了ボタン */}
+        <button
+          onClick={onEndTurn}
+          style={{ 
+            padding: "0.4rem 0.8rem", 
+            fontSize: "0.8rem",
+            lineHeight: 1.2,
+            background: "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)",
+            color: "white",
+            border: "2px solid white",
+            borderRadius: "6px",
+            cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.3rem",
+            transition: "all 0.3s ease"
+          }}
+        >
+          <span>⏭️</span>
+          <span style={{ fontWeight: "bold" }}>
+            ターン終了
           </span>
         </button>
 
@@ -780,6 +808,7 @@ export function VersusPlayField({
             background: theme.headerBg,
             border: "none",
             color: "white",
+            borderRadius: "6px",
             transition: "background 0.4s ease"
           }}
         >
