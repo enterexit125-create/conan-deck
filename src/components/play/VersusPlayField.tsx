@@ -658,7 +658,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "36px" : "140px") : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "36px" : "280px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
