@@ -44,7 +44,7 @@ interface VersusPlayFieldProps {
 
 // カードサイズの定数（スマホ向け・3枚横並び）
 const CARD_WIDTH = 76;  // 90pxと63pxの中間
-const CARD_GAP = "0.2rem";
+const CARD_GAP = "0.5rem";
 
 // プレイヤーカラーテーマ
 const PLAYER_THEMES = {
@@ -689,7 +689,8 @@ export function VersusPlayField({
                   flexWrap: "wrap",
                   gap: CARD_GAP,
                   padding: "0.3rem",
-                  alignItems: "flex-start"
+                  alignItems: "flex-start",
+                  justifyContent: "center"
                 }}>
                   {opponentPlayerState.field.map((card, idx) => {
                     const status = getCardStatus(card.id, idx, opponentPlayer);
@@ -847,6 +848,7 @@ export function VersusPlayField({
               gap: CARD_GAP,
               alignContent: "flex-start",
               alignItems: "flex-start",
+              justifyContent: "center",
               padding: "0.3rem"
             }}>
               {currentPlayerState.field.map((card, idx) => {
