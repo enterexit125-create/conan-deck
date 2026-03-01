@@ -428,6 +428,11 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
   }
 
+  // ターン終了（相手のターンへ）
+  function endTurn() {
+    setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
+  }
+
   // リセット
   function resetPlay() {
     setIsPlaying(false);
@@ -468,6 +473,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         onStartTurn={startTurn}
         onStartMulligan={startMulligan}
         onSwitchPlayer={switchPlayer}
+        onEndTurn={endTurn}
         onReset={resetPlay}
         onCardClick={openCardMenu}
         onCardDetailClick={openCardDetail}
