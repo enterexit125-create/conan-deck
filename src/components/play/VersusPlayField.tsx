@@ -561,15 +561,6 @@ export function VersusPlayField({
       background: theme.background,
       transition: "background 0.4s ease"
     }}>
-      {/* スクロール可能なメインエリア */}
-      <div style={{
-        flex: 1,
-        overflowY: "auto",
-        overflowX: "hidden",
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column"
-      }}>
         {/* ヘッダー - プレイヤーに応じて色が変わる */}
         <div style={{
           display: "flex",
@@ -579,8 +570,7 @@ export function VersusPlayField({
           background: theme.headerBg,
           boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
           zIndex: 10,
-          position: "sticky",
-          top: 0,
+          flexShrink: 0,
           transition: "background 0.4s ease"
         }}>
           <h2 style={{ 
@@ -625,7 +615,8 @@ export function VersusPlayField({
         {/* 相手の現場（アコーディオン式） */}
         <div style={{ 
           background: theme.opponentBg,
-          transition: "background 0.4s ease"
+          transition: "background 0.4s ease",
+          flexShrink: 0
         }}>
         {/* ヘッダー（タップで開閉） */}
         <div
@@ -634,7 +625,7 @@ export function VersusPlayField({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            padding: "0.4rem 0.75rem",
+            padding: "0.3rem 0.75rem",
             background: theme.opponentHeader,
             color: "white",
             cursor: "pointer",
@@ -667,12 +658,12 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "50px" : "300px") : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "36px" : "140px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
           <div style={{ 
-            padding: "0.2rem 0",
+            padding: "0.1rem 0",
             minHeight: 0
           }}>
             <div style={{ 
@@ -728,12 +719,11 @@ export function VersusPlayField({
         justifyContent: "center",
         alignItems: "center",
         gap: "0.5rem",
-        padding: "0.4rem",
+        padding: "0.3rem",
         background: "white",
         borderTop: "1px solid #ddd",
         borderBottom: "1px solid #ddd",
-        position: "sticky",
-        top: "44px",
+        flexShrink: 0,
         zIndex: 5
       }}>
         <button
@@ -798,11 +788,17 @@ export function VersusPlayField({
 
       {/* 自分の現場 */}
       <div style={{ 
+        flex: 1,
+        minHeight: 0,
         padding: "0.2rem 0",
         background: "transparent",
-        transition: "background 0.4s ease, border-color 0.4s ease"
+        transition: "background 0.4s ease, border-color 0.4s ease",
+        display: "flex",
+        flexDirection: "column"
       }}>
         <div style={{ 
+          flex: 1,
+          minHeight: 0,
           background: theme.fieldCardBg,
           borderRadius: "8px",
           padding: "0.2rem",
@@ -810,7 +806,8 @@ export function VersusPlayField({
           display: "flex",
           flexDirection: "column",
           margin: "0 0.2rem",
-          transition: "background 0.4s ease"
+          transition: "background 0.4s ease",
+          overflow: "hidden"
         }}>
           <div style={{ 
             fontSize: "0.75rem",
@@ -830,8 +827,10 @@ export function VersusPlayField({
           </div>
           {currentPlayerState.field.length === 0 ? (
             <div style={{
-              padding: "0.5rem",
-              textAlign: "center",
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               color: "#999",
               fontSize: "0.8rem"
             }}>
@@ -839,6 +838,10 @@ export function VersusPlayField({
             </div>
           ) : (
             <div style={{
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+              overflowX: "hidden",
               display: "flex",
               flexWrap: "wrap",
               gap: CARD_GAP,
@@ -865,14 +868,13 @@ export function VersusPlayField({
           )}
         </div>
       </div>
-      </div>{/* スクロール可能なメインエリアの終わり */}
 
       {/* 自分の手札 - 画面下部に固定 */}
       <div style={{
         padding: "0.2rem",
         background: theme.handBg,
         flexShrink: 0,
-        height: "130px",
+        height: "140px",
         transition: "background 0.4s ease"
       }}>
         <HandArea
