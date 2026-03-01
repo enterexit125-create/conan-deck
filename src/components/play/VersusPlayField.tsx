@@ -553,70 +553,78 @@ export function VersusPlayField({
 
   return (
     <div style={{ 
-      height: "100dvh", 
+      height: "100svh", 
+      maxHeight: "-webkit-fill-available",
       display: "flex", 
       flexDirection: "column",
       overflow: "hidden",
       background: theme.background,
       transition: "background 0.4s ease"
     }}>
-      {/* ヘッダー - プレイヤーに応じて色が変わる */}
+      {/* スクロール可能なメインエリア */}
       <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: "0.4rem 0.75rem",
-        background: theme.headerBg,
-        boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-        zIndex: 10,
-        flexShrink: 0,
-        transition: "background 0.4s ease"
+        flex: 1,
+        overflowY: "auto",
+        overflowX: "hidden",
+        minHeight: 0
       }}>
-        <h2 style={{ 
-          margin: 0, 
-          fontSize: "1rem", 
-          fontWeight: "bold",
-          color: "white",
+        {/* ヘッダー - プレイヤーに応じて色が変わる */}
+        <div style={{
           display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          gap: "0.5rem"
+          padding: "0.4rem 0.75rem",
+          background: theme.headerBg,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+          zIndex: 10,
+          position: "sticky",
+          top: 0,
+          transition: "background 0.4s ease"
         }}>
-          <span style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: "28px",
-            height: "28px",
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.3)",
-            fontSize: "0.9rem"
-          }}>
-            {theme.emoji}
-          </span>
-          {theme.label}を操作中
-        </h2>
-        <button 
-          onClick={onReset} 
-          style={{ 
-            padding: "0.3rem 0.6rem", 
-            fontSize: "0.85rem",
-            background: "rgba(255,255,255,0.2)",
-            border: "none",
-            borderRadius: "6px",
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: "1rem", 
+            fontWeight: "bold",
             color: "white",
-            cursor: "pointer"
-          }}
-        >
-          🔙 戻る
-        </button>
-      </div>
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem"
+          }}>
+            <span style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "28px",
+              height: "28px",
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.3)",
+              fontSize: "0.9rem"
+            }}>
+              {theme.emoji}
+            </span>
+            {theme.label}を操作中
+          </h2>
+          <button 
+            onClick={onReset} 
+            style={{ 
+              padding: "0.3rem 0.6rem", 
+              fontSize: "0.85rem",
+              background: "rgba(255,255,255,0.2)",
+              border: "none",
+              borderRadius: "6px",
+              color: "white",
+              cursor: "pointer"
+            }}
+          >
+            🔙 戻る
+          </button>
+        </div>
 
-      {/* 相手の現場（アコーディオン式） */}
-      <div style={{ 
-        background: theme.opponentBg,
-        flexShrink: 0,
-        transition: "background 0.4s ease"
-      }}>
+        {/* 相手の現場（アコーディオン式） */}
+        <div style={{ 
+          background: theme.opponentBg,
+          transition: "background 0.4s ease"
+        }}>
         {/* ヘッダー（タップで開閉） */}
         <div
           onClick={() => setIsOpponentFieldOpen(!isOpponentFieldOpen)}
@@ -722,8 +730,9 @@ export function VersusPlayField({
         background: "white",
         borderTop: "1px solid #ddd",
         borderBottom: "1px solid #ddd",
-        zIndex: 5,
-        flexShrink: 0
+        position: "sticky",
+        top: "44px",
+        zIndex: 5
       }}>
         <button
           className="btn-primary"
@@ -787,7 +796,6 @@ export function VersusPlayField({
 
       {/* 自分の現場 */}
       <div style={{ 
-        flexShrink: 0,
         padding: "0.2rem 0",
         background: theme.background,
         borderBottom: `1px solid ${theme.primary}`,
@@ -856,8 +864,9 @@ export function VersusPlayField({
           )}
         </div>
       </div>
+      </div>{/* スクロール可能なメインエリアの終わり */}
 
-      {/* 自分の手札 - プレイヤーに応じて色が変わる */}
+      {/* 自分の手札 - 画面下部に固定 */}
       <div style={{
         padding: "0.2rem",
         background: theme.handBg,
