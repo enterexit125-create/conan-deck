@@ -566,7 +566,9 @@ export function VersusPlayField({
         flex: 1,
         overflowY: "auto",
         overflowX: "hidden",
-        minHeight: 0
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column"
       }}>
         {/* ヘッダー - プレイヤーに応じて色が変わる */}
         <div style={{
@@ -797,13 +799,12 @@ export function VersusPlayField({
       {/* 自分の現場 */}
       <div style={{ 
         padding: "0.2rem 0",
-        background: theme.background,
-        borderBottom: `1px solid ${theme.primary}`,
+        background: "transparent",
         transition: "background 0.4s ease, border-color 0.4s ease"
       }}>
         <div style={{ 
           background: theme.fieldCardBg,
-          borderRadius: "0",
+          borderRadius: "8px",
           padding: "0.2rem",
           boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           display: "flex",
