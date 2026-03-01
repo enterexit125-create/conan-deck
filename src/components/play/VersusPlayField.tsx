@@ -43,7 +43,7 @@ interface VersusPlayFieldProps {
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
-const CARD_WIDTH = 63;  // 90px × 0.7 = 63px
+const CARD_WIDTH = 76;  // 90pxと63pxの中間
 const CARD_GAP = "0.2rem";
 
 // プレイヤーカラーテーマ
@@ -658,7 +658,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "200px") : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "240px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -874,7 +874,7 @@ export function VersusPlayField({
         padding: "0.2rem",
         background: theme.handBg,
         flexShrink: 0,
-        height: "110px",
+        height: "125px",
         transition: "background 0.4s ease"
       }}>
         <HandArea
