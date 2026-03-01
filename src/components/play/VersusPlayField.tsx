@@ -115,6 +115,9 @@ export function VersusPlayField({
   // 相手の現場の開閉状態
   const [isOpponentFieldOpen, setIsOpponentFieldOpen] = useState(true);
 
+  // ターン終了確認モーダルの状態
+  const [endTurnModalOpen, setEndTurnModalOpen] = useState(false);
+
   // カードステータスの管理（キー: "プレイヤー-カードID-インデックス"）
   const [cardStatuses, setCardStatuses] = useState<Map<string, CardStatus>>(new Map());
 
@@ -775,7 +778,7 @@ export function VersusPlayField({
 
         {/* ターン終了ボタン */}
         <button
-          onClick={onEndTurn}
+          onClick={() => setEndTurnModalOpen(true)}
           style={{ 
             padding: "0.4rem 0.8rem", 
             fontSize: "0.8rem",
@@ -1238,6 +1241,95 @@ export function VersusPlayField({
                 }}
               >
                 閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ターン終了確認モーダル */}
+      {endTurnModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem"
+          }}
+          onClick={() => setEndTurnModalOpen(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "1.5rem",
+              width: "100%",
+              maxWidth: "300px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{ 
+              margin: "0 0 1rem 0", 
+              fontSize: "1.2rem",
+              textAlign: "center",
+              color: "#333"
+            }}>
+              ⏭️ ターン終了
+            </h3>
+            
+            <p style={{
+              textAlign: "center",
+              color: "#666",
+              fontSize: "0.95rem",
+              margin: "0 0 1.5rem 0"
+            }}>
+              {theme.label}のターンを終了しますか？
+            </p>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button
+                onClick={() => {
+                  setEndTurnModalOpen(false);
+                  onEndTurn();
+                }}
+                style={{
+                  padding: "0.85rem",
+                  background: "linear-gradient(135deg, #f39c12 0%, #e67e22 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "1rem",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.5rem"
+                }}
+              >
+                <span>✓</span>
+                ターン終了する
+              </button>
+              <button
+                onClick={() => setEndTurnModalOpen(false)}
+                style={{
+                  padding: "0.75rem",
+                  background: "#e0e0e0",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                キャンセル
               </button>
             </div>
           </div>
