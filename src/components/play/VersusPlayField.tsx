@@ -688,7 +688,11 @@ export function VersusPlayField({
           </h2>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button 
-              onClick={onShowLog}
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log("ログボタンクリック！onShowLog:", onShowLog);
+                onShowLog();
+              }}
               style={{ 
                 padding: "0.3rem 0.6rem", 
                 fontSize: "0.85rem",
@@ -696,7 +700,9 @@ export function VersusPlayField({
                 border: "none",
                 borderRadius: "6px",
                 color: "white",
-                cursor: "pointer"
+                cursor: "pointer",
+                position: "relative",
+                zIndex: 100
               }}
             >
               📋 ログ
