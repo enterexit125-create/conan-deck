@@ -1,16 +1,21 @@
 import type { Card } from "../../../db";
 import { AccordionSection } from "./AccordionSection";
+import cardBackImage from "/card-back.png";
 
 interface RightSidePanelProps {
   isOpen: boolean;
   deckCount: number;
   playFile: Card[];
   partnerCard: Card | null;
+  partnerZone: Card[];
+  partnerState: "normal" | "reasoning" | "assist";
   incidentCard: Card | null;
+  opponentTraceFound: boolean;
   onDrawCard: () => void;
-  onStartTurn: () => void;
+  onRefreshDeck: () => void;
   onFileCardClick: (card: Card, index: number) => void;
   onPartnerClick: (card: Card) => void;
+  onPartnerZoneCardClick: (card: Card, index: number) => void;
   onIncidentClick: (card: Card) => void;
   onClose: () => void;
 }
@@ -23,11 +28,15 @@ export function RightSidePanel({
   deckCount,
   playFile,
   partnerCard,
+  partnerZone,
+  partnerState,
   incidentCard,
+  opponentTraceFound,
   onDrawCard,
-  onStartTurn,
+  onRefreshDeck,
   onFileCardClick,
   onPartnerClick,
+  onPartnerZoneCardClick,
   onIncidentClick,
   onClose
 }: RightSidePanelProps) {
@@ -127,43 +136,62 @@ export function RightSidePanel({
                 alignItems: "center",
                 gap: "0.75rem"
               }}>
+                {/* カード裏面 + 枚数バッジ */}
                 <div style={{
-                  width: "50px",
-                  height: "70px",
-                  background: "linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)",
+                  width: "60px",
+                  height: "84px",
                   borderRadius: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)"
+                  overflow: "hidden",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                  position: "relative",
+                  flexShrink: 0
                 }}>
-                  <span style={{ color: "white", fontSize: "1.2rem", fontWeight: "bold" }}>
+                  <img
+                    src={cardBackImage}
+                    alt="山札"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                  {/* 枚数バッジ */}
+                  <div style={{
+                    position: "absolute",
+                    bottom: "4px",
+                    right: "4px",
+                    background: "rgba(0,0,0,0.7)",
+                    color: "white",
+                    fontSize: "0.75rem",
+                    fontWeight: "bold",
+                    padding: "2px 6px",
+                    borderRadius: "4px"
+                  }}>
                     {deckCount}
-                  </span>
+                  </div>
                 </div>
-                <div style={{ 
-                  display: "flex", 
-                  flexDirection: "column", 
-                  gap: "0.3rem",
-                  flex: 1 
-                }}>
+                
+                {/* ドローボタン */}
+                <button
+                  onClick={onDrawCard}
+                  disabled={deckCount === 0}
+                  style={{
+                    padding: "0.5rem",
+                    background: deckCount === 0 
+                      ? "#ccc" 
+                      : "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontSize: "0.8rem",
+                    fontWeight: "bold",
+                    cursor: deckCount === 0 ? "not-allowed" : "pointer",
+                    opacity: deckCount === 0 ? 0.6 : 1
+                  }}
+                >
+                  🃏 ドロー
+                </button>
+                
+                {/* リフレッシュボタン（山札0枚時のみ表示） */}
+                {deckCount === 0 && (
                   <button
-                    onClick={onDrawCard}
-                    style={{
-                      padding: "0.5rem",
-                      background: "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontSize: "0.8rem",
-                      fontWeight: "bold",
-                      cursor: "pointer"
-                    }}
-                  >
-                    🃏 ドロー
-                  </button>
-                  <button
-                    onClick={onStartTurn}
+                    onClick={onRefreshDeck}
                     style={{
                       padding: "0.5rem",
                       background: "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
@@ -175,10 +203,26 @@ export function RightSidePanel({
                       cursor: "pointer"
                     }}
                   >
-                    ⏩ 手番開始
+                    🔄 リフレッシュ
                   </button>
-                </div>
+                )}
               </div>
+              
+              {/* 痕跡発見済みメッセージ */}
+              {opponentTraceFound && (
+                <div style={{
+                  marginTop: "0.5rem",
+                  padding: "0.4rem 0.6rem",
+                  background: "linear-gradient(135deg, #ff5722 0%, #e64a19 100%)",
+                  color: "white",
+                  borderRadius: "4px",
+                  fontSize: "0.75rem",
+                  fontWeight: "bold",
+                  textAlign: "center"
+                }}>
+                  🔍 痕跡発見済み
+                </div>
+              )}
             </div>
           </AccordionSection>
 
@@ -186,95 +230,43 @@ export function RightSidePanel({
           <AccordionSection
             title="FILE"
             icon="📁"
-            count={playFile.length}
+            count={playFile.length + (partnerState === "assist" && partnerCard ? 1 : 0)}
             defaultOpen={true}
             headerColor="#ff5722"
           >
-            {playFile.length === 0 ? (
-              <div style={{
-                padding: "1rem",
-                textAlign: "center",
-                color: "#999",
-                fontSize: "0.8rem"
-              }}>
-                FILEカードはありません
-              </div>
-            ) : (
-              <div style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "0.3rem"
-              }}>
-                {playFile.map((card, idx) => (
-                  <div
-                    key={`file-${card.id}-${idx}`}
-                    onClick={() => onFileCardClick(card, idx)}
-                    style={{
-                      width: `${CARD_WIDTH}px`,
-                      aspectRatio: "0.7",
-                      borderRadius: "4px",
-                      overflow: "hidden",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-                      cursor: "pointer"
-                    }}
-                  >
-                    {card.image ? (
-                      <img
-                        src={URL.createObjectURL(card.image)}
-                        alt={card.name}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      />
-                    ) : (
-                      <div style={{
-                        width: "100%",
-                        height: "100%",
-                        background: "linear-gradient(135deg, #ff5722 0%, #e64a19 100%)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        fontSize: "0.5rem",
-                        padding: "0.1rem",
-                        textAlign: "center"
-                      }}>
-                        {card.name}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </AccordionSection>
-
-          {/* パートナーエリア */}
-          <AccordionSection
-            title="パートナー"
-            icon="👤"
-            defaultOpen={false}
-            headerColor="#e91e63"
-          >
             <div style={{
               display: "flex",
-              justifyContent: "center",
-              padding: "0.5rem"
+              flexWrap: "wrap",
+              gap: "0.3rem"
             }}>
-              {partnerCard ? (
+              {/* アシスト時のパートナーカード */}
+              {partnerState === "assist" && partnerCard && (
                 <div
                   onClick={() => onPartnerClick(partnerCard)}
                   style={{
-                    width: "70px",
-                    height: "98px",
-                    borderRadius: "6px",
+                    width: "73px",
+                    height: "52px",
+                    borderRadius: "4px",
                     overflow: "hidden",
-                    boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-                    cursor: "pointer"
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    cursor: "pointer",
+                    border: "2px solid #e91e63",
+                    position: "relative"
                   }}
                 >
                   {partnerCard.image ? (
                     <img
                       src={URL.createObjectURL(partnerCard.image)}
                       alt={partnerCard.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      style={{ 
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        width: "52px",
+                        height: "73px",
+                        objectFit: "cover",
+                        transform: "translate(-50%, -50%) rotate(90deg)"
+                      }}
                     />
                   ) : (
                     <div style={{
@@ -285,20 +277,202 @@ export function RightSidePanel({
                       alignItems: "center",
                       justifyContent: "center",
                       color: "white",
-                      fontSize: "0.6rem",
-                      padding: "0.2rem",
+                      fontSize: "0.5rem",
+                      padding: "0.1rem",
                       textAlign: "center"
                     }}>
                       {partnerCard.name}
                     </div>
                   )}
+                  {/* Pバッジ */}
+                  <div style={{
+                    position: "absolute",
+                    top: "2px",
+                    right: "2px",
+                    background: "#e91e63",
+                    color: "white",
+                    fontSize: "0.6rem",
+                    fontWeight: "bold",
+                    width: "16px",
+                    height: "16px",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1
+                  }}>
+                    P
+                  </div>
                 </div>
-              ) : (
+              )}
+              
+              {/* 通常のFILEカード（裏向き） */}
+              {playFile.map((card, idx) => (
+                <div
+                  key={`file-${card.id}-${idx}`}
+                  onClick={() => onFileCardClick(card, idx)}
+                  style={{
+                    width: `${CARD_WIDTH}px`,
+                    aspectRatio: "0.7",
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                    cursor: "pointer"
+                  }}
+                >
+                  <img
+                    src={cardBackImage}
+                    alt="裏向きカード"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+              ))}
+              
+              {/* FILEもアシストパートナーもない場合 */}
+              {playFile.length === 0 && !(partnerState === "assist" && partnerCard) && (
                 <div style={{
                   padding: "1rem",
                   textAlign: "center",
                   color: "#999",
-                  fontSize: "0.8rem"
+                  fontSize: "0.8rem",
+                  width: "100%"
+                }}>
+                  FILEカードはありません
+                </div>
+              )}
+            </div>
+          </AccordionSection>
+
+          {/* パートナーエリア */}
+          <AccordionSection
+            title="パートナー"
+            icon="👤"
+            defaultOpen={true}
+            headerColor="#e91e63"
+          >
+            <div style={{
+              display: "flex",
+              gap: "0.75rem",
+              padding: "0.5rem",
+              alignItems: "flex-start"
+            }}>
+              {/* デッキのパートナーカード */}
+              {partnerCard && (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ 
+                    fontSize: "0.65rem", 
+                    color: "#666", 
+                    marginBottom: "0.2rem" 
+                  }}>
+                    パートナー
+                    {partnerState === "reasoning" && " 🔄"}
+                    {partnerState === "assist" && " 🅿️"}
+                  </div>
+                  <div
+                    onClick={() => onPartnerClick(partnerCard)}
+                    style={{
+                      width: (partnerState === "reasoning" || partnerState === "assist") ? "84px" : "60px",
+                      height: (partnerState === "reasoning" || partnerState === "assist") ? "60px" : "84px",
+                      borderRadius: "4px",
+                      overflow: "hidden",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                      cursor: "pointer",
+                      border: partnerState !== "normal" ? "2px solid #4caf50" : "none",
+                      position: "relative"
+                    }}
+                  >
+                    {partnerCard.image ? (
+                      <img
+                        src={URL.createObjectURL(partnerCard.image)}
+                        alt={partnerCard.name}
+                        style={{ 
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          width: (partnerState === "reasoning" || partnerState === "assist") ? "60px" : "100%",
+                          height: (partnerState === "reasoning" || partnerState === "assist") ? "84px" : "100%",
+                          objectFit: "cover",
+                          transform: (partnerState === "reasoning" || partnerState === "assist") 
+                            ? "translate(-50%, -50%) rotate(90deg)" 
+                            : "translate(-50%, -50%)"
+                        }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #e91e63 0%, #c2185b 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.55rem",
+                        padding: "0.2rem",
+                        textAlign: "center"
+                      }}>
+                        {partnerCard.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* パートナーゾーンに置かれたカード */}
+              {partnerZone.length > 0 && (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ 
+                    fontSize: "0.65rem", 
+                    color: "#666", 
+                    marginBottom: "0.2rem" 
+                  }}>
+                    ゾーン
+                  </div>
+                  <div
+                    onClick={() => onPartnerZoneCardClick(partnerZone[0], 0)}
+                    style={{
+                      width: "60px",
+                      height: "84px",
+                      borderRadius: "4px",
+                      overflow: "hidden",
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                      cursor: "pointer",
+                      border: "2px solid #e91e63"
+                    }}
+                  >
+                    {partnerZone[0].image ? (
+                      <img
+                        src={URL.createObjectURL(partnerZone[0].image)}
+                        alt={partnerZone[0].name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: "100%",
+                        height: "100%",
+                        background: "linear-gradient(135deg, #e91e63 0%, #c2185b 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: "0.55rem",
+                        padding: "0.2rem",
+                        textAlign: "center"
+                      }}>
+                        {partnerZone[0].name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* パートナーもパートナーゾーンも空の場合 */}
+              {!partnerCard && partnerZone.length === 0 && (
+                <div style={{
+                  padding: "1rem",
+                  textAlign: "center",
+                  color: "#999",
+                  fontSize: "0.8rem",
+                  width: "100%"
                 }}>
                   パートナー未設定
                 </div>

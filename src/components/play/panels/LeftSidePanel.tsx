@@ -1,5 +1,6 @@
 import type { Card } from "../../../db";
 import { AccordionSection } from "./AccordionSection";
+import cardBackImage from "/card-back.png";
 
 interface LeftSidePanelProps {
   isOpen: boolean;
@@ -147,16 +148,11 @@ export function LeftSidePanel({
                           style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />
                       ) : (
-                        <div style={{
-                          width: "100%",
-                          height: "100%",
-                          background: "linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center"
-                        }}>
-                          <span style={{ fontSize: "1.2rem" }}>🔒</span>
-                        </div>
+                        <img
+                          src={cardBackImage}
+                          alt="裏向きカード"
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
                       )}
                       {/* 番号バッジ */}
                       <div style={{

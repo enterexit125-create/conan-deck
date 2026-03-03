@@ -82,8 +82,6 @@ interface PlayerState {
   partnerZone: Card[]; // パートナーエリアに置いたカード
   evidenceFaceUp: Set<number | undefined>;
   mulliganDone: boolean;
-  partnerState: "normal" | "reasoning" | "assist"; // パートナーの状態（通常/推理/アシスト）
-  traceFound: boolean; // 痕跡発見済み（相手のリフレッシュにより）
 }
 
 export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
@@ -104,20 +102,17 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   const [newMulliganCardIndices, setNewMulliganCardIndices] = useState<number[]>([]); // マリガンで新しく来たカードのインデックス
   const [newHandCardIndices, setNewHandCardIndices] = useState<number[]>([]); // 今ターンで手札に追加されたカードのインデックス
   const [newFieldCardIndices, setNewFieldCardIndices] = useState<number[]>([]); // 今ターンで現場に出たカードのインデックス
-  const [turnEndTrigger, setTurnEndTrigger] = useState(0); // ターン終了トリガー
   
   // モーダル表示状態
   const [showCardMenu, setShowCardMenu] = useState(false);
   const [selectedCard, setSelectedCard] = useState<{ 
     card: Card; 
     index: number; 
-    location: "hand" | "field" | "remove" | "evidence" | "file" | "partnerZone"
+    location: "hand" | "field" | "remove" | "evidence" | "file" 
   } | null>(null);
   const [showMoveDestination, setShowMoveDestination] = useState(false);
   const [showRemoveMoveModal, setShowRemoveMoveModal] = useState(false); // リムーブからの移動モーダル
   const [showHandMoveModal, setShowHandMoveModal] = useState(false); // 手札からの移動モーダル
-  const [showPartnerZoneMoveModal, setShowPartnerZoneMoveModal] = useState(false); // パートナーゾーンからの移動モーダル
-  const [showPartnerCardModal, setShowPartnerCardModal] = useState(false); // パートナーカードモーダル
   const [showCardDetail, setShowCardDetail] = useState(false);
   const [detailCard, setDetailCard] = useState<Card | null>(null);
   
@@ -156,12 +151,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
   // ゲーム開始
   async function startPlay(player1DeckId: number, player2DeckId: number) {
-    // プレイヤー1のデッキを初期化（先攻）
-    const p1State = await initializeDeck(player1DeckId, true);
+    // プレイヤー1のデッキを初期化
+    const p1State = await initializeDeck(player1DeckId);
     if (!p1State) return;
     
-    // プレイヤー2のデッキを初期化（後攻）
-    const p2State = await initializeDeck(player2DeckId, false);
+    // プレイヤー2のデッキを初期化
+    const p2State = await initializeDeck(player2DeckId);
     if (!p2State) return;
 
     setPlayer1(p1State);
@@ -171,7 +166,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   }
 
   // デッキを初期化してPlayerStateを返す
-  async function initializeDeck(deckId: number, isFirstPlayer: boolean): Promise<PlayerState | null> {
+  async function initializeDeck(deckId: number): Promise<PlayerState | null> {
     const dcs = await db.deckCards.where("deckId").equals(deckId).toArray();
     
     const allPlayCards: Card[] = [];
@@ -196,10 +191,10 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
 
-    // 初期配置（先攻のみFILE1枚）
+    // 初期配置
     const hand = shuffled.slice(0, 5);
-    const fileCard = isFirstPlayer ? shuffled.slice(5, 6) : [];
-    const deck = isFirstPlayer ? shuffled.slice(6) : shuffled.slice(5);
+    const fileCard = shuffled.slice(5, 6);
+    const deck = shuffled.slice(6);
 
     return {
       deckId,
@@ -211,19 +206,14 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       evidence: [],
       partnerZone: [],
       evidenceFaceUp: new Set(),
-      mulliganDone: false,
-      partnerState: "normal" as const,
-      traceFound: false
+      mulliganDone: false
     };
   }
 
   // カードドロー
   function drawCard() {
-    if (!currentPlayerState) return;
-    
-    // 山札が0枚の場合はドローできない
-    if (currentPlayerState.deck.length === 0) {
-      alert("山札がありません。リフレッシュしてください。");
+    if (!currentPlayerState || currentPlayerState.deck.length === 0) {
+      alert("デッキにカードがありません！");
       return;
     }
 
@@ -238,48 +228,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     
     // 新しい手札カードのインデックスを追加
     setNewHandCardIndices(prev => [...prev, newIndex]);
-  }
-
-  // リフレッシュ処理（山札0枚時にリムーブを山札に戻す）
-  function refreshDeck() {
-    if (!currentPlayerState) return;
-    
-    if (currentPlayerState.deck.length > 0) {
-      alert("山札がまだあります。");
-      return;
-    }
-    
-    if (currentPlayerState.remove.length === 0) {
-      alert("リムーブエリアにもカードがありません！");
-      return;
-    }
-    
-    // リムーブエリアのカードをシャッフルして山札に
-    const shuffled = [...currentPlayerState.remove];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    
-    updatePlayerState(currentPlayer, {
-      deck: shuffled,
-      remove: []
-    });
-    
-    // 相手に証拠を1枚追加（相手の山札から）
-    const opponent = currentPlayer === 1 ? 2 : 1;
-    const opponentState = currentPlayer === 1 ? player2 : player1;
-    if (opponentState && opponentState.deck.length > 0) {
-      const evidenceCard = opponentState.deck[0];
-      const newOpponentDeck = opponentState.deck.slice(1);
-      updatePlayerState(opponent, {
-        deck: newOpponentDeck,
-        evidence: [...opponentState.evidence, evidenceCard],
-        traceFound: true  // 痕跡発見済みフラグ
-      });
-    }
-    
-    alert("リフレッシュ！リムーブを山札に戻しました。相手に証拠が1枚追加されました。");
   }
 
   // 手番開始
@@ -369,33 +317,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     
     updatePlayerState(currentPlayer, updates);
     setShowCardMenu(false);
-  }
-
-  // パートナーゾーンからの移動
-  function movePartnerZoneCard(fromIndex: number, destination: "field" | "remove") {
-    if (!currentPlayerState) return;
-    
-    const card = currentPlayerState.partnerZone[fromIndex];
-    const newPartnerZone = currentPlayerState.partnerZone.filter((_, i) => i !== fromIndex);
-    
-    const updates: Partial<PlayerState> = {
-      partnerZone: newPartnerZone
-    };
-    
-    switch (destination) {
-      case "field":
-        updates.field = [...currentPlayerState.field, card];
-        // 新しい現場カードとしてハイライト
-        setNewFieldCardIndices(prev => [...prev, currentPlayerState.field.length]);
-        break;
-      case "remove":
-        updates.remove = [...currentPlayerState.remove, card];
-        break;
-    }
-    
-    updatePlayerState(currentPlayer, updates);
-    setShowPartnerZoneMoveModal(false);
-    setSelectedCard(null);
+    setShowFieldMoveModal(false);
   }
 
   // 現場からリムーブへ
@@ -587,14 +509,9 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   }
 
   // カードメニューを開く
-  function openCardMenu(card: Card, index: number, location: "hand" | "field" | "remove" | "evidence" | "file" | "partnerZone") {
+  function openCardMenu(card: Card, index: number, location: "hand" | "field" | "remove" | "evidence" | "file") {
     setSelectedCard({ card, index, location });
-    if (location === "partnerZone") {
-      // パートナーゾーンの場合は直接移動モーダルを表示
-      setShowPartnerZoneMoveModal(true);
-    } else {
-      setShowCardMenu(true);
-    }
+    setShowCardMenu(true);
   }
 
   // カードメニューアクション
@@ -673,18 +590,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     setShowCardDetail(true);
   }
 
-  // パートナーカードをタップ
-  function openPartnerCardModal(card: Card) {
-    setDetailCard(card);
-    setShowPartnerCardModal(true);
-  }
-
-  // パートナーの状態を変更
-  function setPartnerState(state: "normal" | "reasoning" | "assist") {
-    updatePlayerState(currentPlayer, { partnerState: state });
-    setShowPartnerCardModal(false);
-  }
-
   // マリガン開始
   function startMulligan() {
     setIsMulliganMode(true);
@@ -757,43 +662,11 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
   // ターン終了（相手のターンへ）
   function endTurn() {
-    if (!currentPlayerState) return;
-    
-    // ターン終了時に手番側がFILE2枚追加
-    if (currentPlayerState.deck.length >= 2) {
-      const newFileCards = currentPlayerState.deck.slice(0, 2);
-      const remainingDeck = currentPlayerState.deck.slice(2);
-      updatePlayerState(currentPlayer, {
-        file: [...currentPlayerState.file, ...newFileCards],
-        deck: remainingDeck,
-        partnerState: "normal"  // パートナーを縦に戻す
-      });
-    } else if (currentPlayerState.deck.length === 1) {
-      // 山札が1枚の場合は1枚だけ追加
-      const newFileCards = currentPlayerState.deck.slice(0, 1);
-      updatePlayerState(currentPlayer, {
-        file: [...currentPlayerState.file, ...newFileCards],
-        deck: [],
-        partnerState: "normal"  // パートナーを縦に戻す
-      });
-    } else {
-      // 山札が0枚の場合
-      updatePlayerState(currentPlayer, {
-        partnerState: "normal"  // パートナーを縦に戻す
-      });
-    }
-    
     // ターン終了時に新カードハイライトをリセット
     setNewHandCardIndices([]);
     setNewFieldCardIndices([]);
     setNewMulliganCardIndices([]);
-    
-    // プレイヤーを切り替え
-    const nextPlayer = currentPlayer === 1 ? 2 : 1;
-    setCurrentPlayer(nextPlayer);
-    
-    // ターン終了トリガーをインクリメント（カード状態更新用）
-    setTurnEndTrigger(prev => prev + 1);
+    setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
   }
 
   // リセット
@@ -946,7 +819,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         partnerCard={partnerCard}
         incidentCard={incidentCard}
         onDrawCard={drawCard}
-        onRefreshDeck={refreshDeck}
         onStartTurn={startTurn}
         onStartMulligan={startMulligan}
         onSwitchPlayer={switchPlayer}
@@ -954,10 +826,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         onReset={resetPlay}
         onCardClick={openCardMenu}
         onCardDetailClick={openCardDetail}
-        onPartnerCardClick={openPartnerCardModal}
-        partnerState={currentPlayerState.partnerState}
-        opponentTraceFound={opponentPlayerState.traceFound}
-        turnEndTrigger={turnEndTrigger}
         onToggleEvidenceCollapse={() => setIsEvidenceCollapsed(!isEvidenceCollapsed)}
         isEvidenceCollapsed={isEvidenceCollapsed}
         pendingSetCard={pendingSetCard}
@@ -1285,221 +1153,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               </button>
               <button
                 onClick={() => setShowHandMoveModal(false)}
-                style={{
-                  padding: "0.75rem",
-                  background: "#f5f5f5",
-                  color: "#333",
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  cursor: "pointer"
-                }}
-              >
-                ◀ 閉じる
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* パートナーゾーンからの移動モーダル */}
-      {showPartnerZoneMoveModal && selectedCard?.location === "partnerZone" && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "1rem"
-          }}
-          onClick={() => setShowPartnerZoneMoveModal(false)}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "16px",
-              padding: "1.5rem",
-              width: "100%",
-              maxWidth: "280px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 style={{ 
-              margin: "0 0 1rem 0", 
-              fontSize: "1.1rem",
-              color: "#333"
-            }}>
-              {selectedCard.card.name}
-            </h3>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <button
-                onClick={() => movePartnerZoneCard(selectedCard.index, "field")}
-                style={{
-                  padding: "0.85rem",
-                  background: "linear-gradient(135deg, #f48fb1 0%, #e91e63 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
-              >
-                🎯 現場へ
-              </button>
-              <button
-                onClick={() => movePartnerZoneCard(selectedCard.index, "remove")}
-                style={{
-                  padding: "0.85rem",
-                  background: "linear-gradient(135deg, #f48fb1 0%, #e91e63 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
-              >
-                🗑️ リムーブへ
-              </button>
-              <button
-                onClick={() => {
-                  setDetailCard(selectedCard.card);
-                  setShowCardDetail(true);
-                  setShowPartnerZoneMoveModal(false);
-                }}
-                style={{
-                  padding: "0.85rem",
-                  background: "linear-gradient(135deg, #f48fb1 0%, #e91e63 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
-              >
-                🔍 拡大表示
-              </button>
-              <button
-                onClick={() => setShowPartnerZoneMoveModal(false)}
-                style={{
-                  padding: "0.75rem",
-                  background: "#f5f5f5",
-                  color: "#333",
-                  border: "1px solid #ddd",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  cursor: "pointer"
-                }}
-              >
-                ◀ 閉じる
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* パートナーカードモーダル */}
-      {showPartnerCardModal && detailCard && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-            padding: "1rem"
-          }}
-          onClick={() => setShowPartnerCardModal(false)}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: "16px",
-              padding: "1.5rem",
-              width: "100%",
-              maxWidth: "280px",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <h3 style={{ 
-              margin: "0 0 1rem 0", 
-              fontSize: "1.1rem",
-              color: "#333"
-            }}>
-              👤 {detailCard.name}
-            </h3>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <button
-                onClick={() => setPartnerState(currentPlayerState.partnerState === "reasoning" ? "normal" : "reasoning")}
-                style={{
-                  padding: "0.85rem",
-                  background: currentPlayerState.partnerState === "reasoning"
-                    ? "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)"
-                    : "linear-gradient(135deg, #f48fb1 0%, #e91e63 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
-              >
-                🔄 推理 {currentPlayerState.partnerState === "reasoning" ? "（解除）" : "（横にする）"}
-              </button>
-              <button
-                onClick={() => setPartnerState(currentPlayerState.partnerState === "assist" ? "normal" : "assist")}
-                style={{
-                  padding: "0.85rem",
-                  background: currentPlayerState.partnerState === "assist"
-                    ? "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)"
-                    : "linear-gradient(135deg, #f48fb1 0%, #e91e63 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
-              >
-                🅿️ アシスト {currentPlayerState.partnerState === "assist" ? "（解除）" : "（FILEに表示）"}
-              </button>
-              <button
-                onClick={() => {
-                  setShowPartnerCardModal(false);
-                  setShowCardDetail(true);
-                }}
-                style={{
-                  padding: "0.85rem",
-                  background: "linear-gradient(135deg, #f48fb1 0%, #e91e63 100%)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "0.95rem",
-                  fontWeight: "bold",
-                  cursor: "pointer"
-                }}
-              >
-                🔍 拡大表示
-              </button>
-              <button
-                onClick={() => setShowPartnerCardModal(false)}
                 style={{
                   padding: "0.75rem",
                   background: "#f5f5f5",

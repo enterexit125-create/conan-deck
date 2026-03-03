@@ -77,100 +77,100 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
       {/* ヘッダー */}
       <div style={{
         textAlign: "center",
-        padding: "1.5rem",
+        padding: "1.25rem",
         background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
         borderRadius: "12px",
         color: "white",
-        marginBottom: "1.5rem"
+        marginBottom: "1.25rem"
       }}>
-        <h2 style={{ margin: 0, fontSize: "1.4rem" }}>🎮 一人回しモード</h2>
-        <p style={{ margin: "0.5rem 0 0", fontSize: "0.9rem", opacity: 0.9 }}>
+        <h2 style={{ margin: 0, fontSize: "1.2rem" }}>🎮 一人回しモード</h2>
+        <p style={{ margin: "0.4rem 0 0", fontSize: "0.8rem", opacity: 0.9 }}>
           2つのデッキを選んで対戦練習
         </p>
       </div>
 
       {/* デッキ選択ボタン */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         
-        {/* プレイヤー1選択ボタン */}
+        {/* 先攻選択ボタン */}
         <button
           onClick={() => openModal(1)}
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "1.2rem 1.5rem",
+            padding: "0.9rem 1.2rem",
             background: player1Deck 
               ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
               : "white",
             color: player1Deck ? "white" : "#333",
             border: player1Deck ? "none" : "2px dashed #667eea",
-            borderRadius: "12px",
+            borderRadius: "10px",
             cursor: "pointer",
-            fontSize: "1rem",
+            fontSize: "0.9rem",
             fontWeight: "bold",
             boxShadow: player1Deck 
-              ? "0 4px 12px rgba(102, 126, 234, 0.3)"
+              ? "0 3px 10px rgba(102, 126, 234, 0.3)"
               : "none",
             transition: "all 0.2s"
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={{ fontSize: "1.5rem" }}>🔵</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <span style={{ fontSize: "1.2rem" }}>🔵</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: "0.8rem", opacity: 0.8 }}>プレイヤー1</div>
-              <div style={{ fontSize: "1.1rem" }}>
-                {player1Deck ? player1Deck.name : "タップしてデッキを選択"}
+              <div style={{ fontSize: "0.7rem", opacity: 0.8 }}>先攻</div>
+              <div style={{ fontSize: "0.95rem" }}>
+                {player1Deck ? player1Deck.name : "デッキを選択"}
               </div>
             </div>
           </div>
-          <span style={{ fontSize: "1.2rem" }}>▶</span>
+          <span style={{ fontSize: "1rem" }}>▶</span>
         </button>
 
         {/* VS表示 */}
         <div style={{
           textAlign: "center",
-          fontSize: "1.3rem",
+          fontSize: "1.1rem",
           fontWeight: "bold",
           color: "#999",
-          padding: "0.5rem"
+          padding: "0.3rem"
         }}>
           ⚔️ VS ⚔️
         </div>
 
-        {/* プレイヤー2選択ボタン */}
+        {/* 後攻選択ボタン */}
         <button
           onClick={() => openModal(2)}
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "1.2rem 1.5rem",
+            padding: "0.9rem 1.2rem",
             background: player2Deck 
               ? "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)"
               : "white",
             color: player2Deck ? "white" : "#333",
             border: player2Deck ? "none" : "2px dashed #e74c3c",
-            borderRadius: "12px",
+            borderRadius: "10px",
             cursor: "pointer",
-            fontSize: "1rem",
+            fontSize: "0.9rem",
             fontWeight: "bold",
             boxShadow: player2Deck 
-              ? "0 4px 12px rgba(231, 76, 60, 0.3)"
+              ? "0 3px 10px rgba(231, 76, 60, 0.3)"
               : "none",
             transition: "all 0.2s"
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={{ fontSize: "1.5rem" }}>🔴</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+            <span style={{ fontSize: "1.2rem" }}>🔴</span>
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: "0.8rem", opacity: 0.8 }}>プレイヤー2</div>
-              <div style={{ fontSize: "1.1rem" }}>
-                {player2Deck ? player2Deck.name : "タップしてデッキを選択"}
+              <div style={{ fontSize: "0.7rem", opacity: 0.8 }}>後攻</div>
+              <div style={{ fontSize: "0.95rem" }}>
+                {player2Deck ? player2Deck.name : "デッキを選択"}
               </div>
             </div>
           </div>
-          <span style={{ fontSize: "1.2rem" }}>▶</span>
+          <span style={{ fontSize: "1rem" }}>▶</span>
         </button>
       </div>
 
@@ -180,21 +180,21 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
         disabled={player1DeckId === null || player2DeckId === null}
         style={{
           width: "100%",
-          marginTop: "2rem",
-          padding: "1.2rem",
-          fontSize: "1.2rem",
+          marginTop: "1.5rem",
+          padding: "1rem",
+          fontSize: "1rem",
           fontWeight: "bold",
           background: (player1DeckId !== null && player2DeckId !== null)
             ? "linear-gradient(135deg, #4caf50 0%, #388e3c 100%)"
             : "#ccc",
           color: "white",
           border: "none",
-          borderRadius: "12px",
+          borderRadius: "10px",
           cursor: (player1DeckId !== null && player2DeckId !== null) 
             ? "pointer" 
             : "not-allowed",
           boxShadow: (player1DeckId !== null && player2DeckId !== null)
-            ? "0 4px 12px rgba(76, 175, 80, 0.4)"
+            ? "0 3px 10px rgba(76, 175, 80, 0.4)"
             : "none",
           transition: "all 0.3s"
         }}
@@ -235,7 +235,7 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
           >
             {/* モーダルヘッダー */}
             <div style={{
-              padding: "1.25rem",
+              padding: "1rem",
               borderBottom: "1px solid #e0e0e0",
               display: "flex",
               justifyContent: "space-between",
@@ -245,12 +245,12 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                 : "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)",
               color: "white"
             }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontSize: "1.3rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                <span style={{ fontSize: "1.1rem" }}>
                   {selectingPlayer === 1 ? "🔵" : "🔴"}
                 </span>
-                <span style={{ fontSize: "1.1rem", fontWeight: "bold" }}>
-                  プレイヤー{selectingPlayer}のデッキを選択
+                <span style={{ fontSize: "0.95rem", fontWeight: "bold" }}>
+                  {selectingPlayer === 1 ? "先攻" : "後攻"}のデッキを選択
                 </span>
               </div>
               <button
@@ -259,10 +259,10 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                   background: "rgba(255,255,255,0.2)",
                   border: "none",
                   color: "white",
-                  width: "36px",
-                  height: "36px",
+                  width: "32px",
+                  height: "32px",
                   borderRadius: "50%",
-                  fontSize: "1.2rem",
+                  fontSize: "1rem",
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
@@ -275,7 +275,7 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
 
             {/* 検索バー */}
             <div style={{
-              padding: "0.75rem 1rem",
+              padding: "0.6rem 0.9rem",
               borderBottom: "1px solid #e0e0e0",
               background: "#f9f9f9"
             }}>
@@ -285,10 +285,10 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                 background: "white",
                 borderRadius: "8px",
                 border: "2px solid #e0e0e0",
-                padding: "0.5rem 0.75rem",
-                gap: "0.5rem"
+                padding: "0.4rem 0.6rem",
+                gap: "0.4rem"
               }}>
-                <span style={{ fontSize: "1rem", color: "#999" }}>🔍</span>
+                <span style={{ fontSize: "0.9rem", color: "#999" }}>🔍</span>
                 <input
                   type="text"
                   placeholder="デッキ名で検索..."
@@ -298,7 +298,7 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                     flex: 1,
                     border: "none",
                     outline: "none",
-                    fontSize: "1rem",
+                    fontSize: "0.9rem",
                     background: "transparent"
                   }}
                 />
@@ -309,9 +309,9 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                       background: "#e0e0e0",
                       border: "none",
                       borderRadius: "50%",
-                      width: "24px",
-                      height: "24px",
-                      fontSize: "0.8rem",
+                      width: "22px",
+                      height: "22px",
+                      fontSize: "0.75rem",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
@@ -329,16 +329,16 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
             <div style={{
               flex: 1,
               overflowY: "auto",
-              padding: "1rem"
+              padding: "0.75rem"
             }}>
               {filteredDecks.length === 0 ? (
                 <div style={{
                   textAlign: "center",
-                  padding: "2rem",
+                  padding: "1.5rem",
                   color: "#999"
                 }}>
-                  <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🔍</div>
-                  <div>「{searchQuery}」に一致するデッキがありません</div>
+                  <div style={{ fontSize: "1.5rem", marginBottom: "0.4rem" }}>🔍</div>
+                  <div style={{ fontSize: "0.85rem" }}>「{searchQuery}」に一致するデッキがありません</div>
                 </div>
               ) : (
                 filteredDecks.map((deck) => {
@@ -357,9 +357,9 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                       width: "100%",
                       display: "flex",
                       alignItems: "center",
-                      gap: "1rem",
-                      padding: "1rem 1.25rem",
-                      marginBottom: "0.75rem",
+                      gap: "0.75rem",
+                      padding: "0.85rem 1rem",
+                      marginBottom: "0.6rem",
                       background: isSelected 
                         ? (selectingPlayer === 1 
                             ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -367,22 +367,22 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                         : "#f5f5f5",
                       color: isSelected ? "white" : "#333",
                       border: "none",
-                      borderRadius: "12px",
+                      borderRadius: "10px",
                       cursor: "pointer",
-                      fontSize: "1rem",
+                      fontSize: "0.9rem",
                       fontWeight: "600",
                       textAlign: "left",
                       transition: "all 0.2s",
                       boxShadow: isSelected 
-                        ? "0 4px 12px rgba(0,0,0,0.2)"
+                        ? "0 3px 10px rgba(0,0,0,0.2)"
                         : "0 2px 4px rgba(0,0,0,0.05)",
                       opacity: isOtherPlayerSelected ? 0.5 : 1
                     }}
                   >
                     {/* チェックマーク */}
                     <div style={{
-                      width: "28px",
-                      height: "28px",
+                      width: "24px",
+                      height: "24px",
                       borderRadius: "50%",
                       border: isSelected 
                         ? "2px solid white" 
@@ -396,7 +396,7 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
                       {isSelected && (
                         <span style={{ 
                           color: selectingPlayer === 1 ? "#667eea" : "#e74c3c",
-                          fontSize: "1rem",
+                          fontSize: "0.85rem",
                           fontWeight: "bold"
                         }}>✓</span>
                       )}
@@ -404,21 +404,21 @@ export function DeckSelectScreen({ decks, onSelectDecks, onCreateDeck }: DeckSel
 
                     {/* デッキ名 */}
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "1.1rem" }}>{deck.name}</div>
+                      <div style={{ fontSize: "0.95rem" }}>{deck.name}</div>
                       {isOtherPlayerSelected && (
                         <div style={{ 
-                          fontSize: "0.8rem", 
+                          fontSize: "0.7rem", 
                           opacity: 0.7,
-                          marginTop: "0.25rem"
+                          marginTop: "0.2rem"
                         }}>
-                          {selectingPlayer === 1 ? "P2が選択中" : "P1が選択中"}
+                          {selectingPlayer === 1 ? "後攻が選択中" : "先攻が選択中"}
                         </div>
                       )}
                     </div>
 
                     {/* 矢印 */}
                     <span style={{ 
-                      fontSize: "1.2rem", 
+                      fontSize: "1rem", 
                       opacity: 0.5 
                     }}>▶</span>
                   </button>

@@ -8,7 +8,7 @@ interface CardMenuModalProps {
     location: "hand" | "field" | "remove" | "evidence" | "file" 
   } | null;
   evidenceFaceUp: Set<number | undefined>;
-  onAction: (action: "play" | "remove" | "evidence" | "view" | "toggleFace" | "move" | "setToField") => void;
+  onAction: (action: "play" | "remove" | "evidence" | "view" | "toggleFace" | "move" | "setToField" | "toHand" | "toDeckTop" | "toDeckBottom" | "toPartner") => void;
   onClose: () => void;
   // セット先のカード一覧（現場のカード）
   fieldCards?: Card[];
@@ -85,6 +85,13 @@ export function CardMenuModal({
                   📥 セットして出す
                 </button>
               )}
+              <button
+                className="btn-primary"
+                onClick={() => onAction("move")}
+                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
+              >
+                ↔️ 移動する
+              </button>
             </>
           )}
           {selectedCard.location === "field" && (
@@ -94,16 +101,53 @@ export function CardMenuModal({
                 onClick={() => onAction("remove")}
                 style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
               >
-                🗑️ リムーブ
+                🗑️ リムーブへ
               </button>
               <button
                 className="btn-primary"
                 onClick={() => onAction("evidence")}
                 style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
               >
-                📜 証拠にする
+                📜 証拠へ
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => onAction("toHand")}
+                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
+              >
+                ✋ 手札へ
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => onAction("toDeckTop")}
+                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
+              >
+                🎴 山札へ（一番上）
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => onAction("toDeckBottom")}
+                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
+              >
+                🎴 山札へ（一番下）
+              </button>
+              <button
+                className="btn-primary"
+                onClick={() => onAction("toPartner")}
+                style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
+              >
+                👤 パートナーへ
               </button>
             </>
+          )}
+          {selectedCard.location === "remove" && (
+            <button
+              className="btn-primary"
+              onClick={() => onAction("move")}
+              style={{ width: "100%", padding: "0.75rem", fontSize: "1rem" }}
+            >
+              ↔️ 移動する
+            </button>
           )}
           {selectedCard.location === "evidence" && (
             <>

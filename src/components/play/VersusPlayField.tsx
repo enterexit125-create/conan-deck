@@ -13,8 +13,11 @@ interface PlayerState {
   remove: Card[];
   evidence: Card[];
   file: Card[];
+  partnerZone: Card[];
   evidenceFaceUp: Set<number | undefined>;
   mulliganDone: boolean;
+  partnerState: "normal" | "reasoning" | "assist";
+  traceFound: boolean;
 }
 
 interface VersusPlayFieldProps {
@@ -24,13 +27,18 @@ interface VersusPlayFieldProps {
   partnerCard: Card | null;
   incidentCard: Card | null;
   onDrawCard: () => void;
+  onRefreshDeck: () => void;
   onStartTurn: () => void;
   onStartMulligan: () => void;
   onSwitchPlayer: () => void;
   onEndTurn: () => void;  // ターン終了
   onReset: () => void;
-  onCardClick: (card: Card, index: number, location: "hand" | "field" | "remove" | "evidence" | "file") => void;
+  onCardClick: (card: Card, index: number, location: "hand" | "field" | "remove" | "evidence" | "file" | "partnerZone") => void;
   onCardDetailClick: (card: Card) => void;
+  onPartnerCardClick: (card: Card) => void;
+  partnerState: "normal" | "reasoning" | "assist";
+  opponentTraceFound: boolean;
+  turnEndTrigger: number;  // ターン終了時にインクリメントされるカウンター
   onToggleEvidenceCollapse: () => void;
   isEvidenceCollapsed: boolean;
   // セットカード用のコールバック
@@ -41,6 +49,15 @@ interface VersusPlayFieldProps {
   // セットカードの取得・削除要求
   removeSetCardsRequest?: { fieldIndex: number; player: 1 | 2 } | null;
   onSetCardsRemoved?: (cards: Card[], fieldIndex: number, player: 1 | 2) => void;
+  // マリガンで新しく来たカードのインデックス
+  newMulliganCardIndices?: number[];
+  onClearNewMulliganCards?: () => void;
+  // 今ターンで手札に追加されたカードのインデックス
+  newHandCardIndices?: number[];
+  onClearNewHandCards?: () => void;
+  // 今ターンで現場に出たカードのインデックス
+  newFieldCardIndices?: number[];
+  onClearNewFieldCards?: () => void;
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
@@ -94,6 +111,7 @@ export function VersusPlayField({
   partnerCard,
   incidentCard,
   onDrawCard,
+  onRefreshDeck,
   onStartTurn,
   onStartMulligan,
   onSwitchPlayer,
@@ -101,13 +119,23 @@ export function VersusPlayField({
   onReset,
   onCardClick,
   onCardDetailClick,
+  onPartnerCardClick,
+  partnerState,
+  opponentTraceFound,
+  turnEndTrigger,
   onToggleEvidenceCollapse,
   isEvidenceCollapsed,
   onSetCardToRemove,
   pendingSetCard,
   onPendingSetCardProcessed,
   removeSetCardsRequest,
-  onSetCardsRemoved
+  onSetCardsRemoved,
+  newMulliganCardIndices = [],
+  onClearNewMulliganCards,
+  newHandCardIndices = [],
+  onClearNewHandCards,
+  newFieldCardIndices = [],
+  onClearNewFieldCards
 }: VersusPlayFieldProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -160,6 +188,36 @@ export function VersusPlayField({
       }
     }
   }, [removeSetCardsRequest]);
+
+  // ターン終了時にカード状態を更新（次の手番側のスタン→スリープ、スリープ→アクティブ）
+  useEffect(() => {
+    if (turnEndTrigger > 0) {
+      // currentPlayerは既に次の手番側に切り替わった後の値
+      // currentPlayerStateは次の手番側の状態
+      const nextPlayer = currentPlayer;
+      
+      setCardStates(prev => {
+        const newStates = new Map(prev);
+        
+        // 次の手番側の現場カードの状態を更新
+        // currentPlayerStateが次の手番側のデータ
+        currentPlayerState.field.forEach((card, idx) => {
+          const key = `${nextPlayer}-${card.id}-${idx}`;
+          const state = prev.get(key) ?? "active";
+          
+          if (state === "stand") {
+            // スタン → スリープ
+            newStates.set(key, "sleep");
+          } else if (state === "sleep") {
+            // スリープ → アクティブ
+            newStates.delete(key); // アクティブはデフォルトなので削除
+          }
+        });
+        
+        return newStates;
+      });
+    }
+  }, [turnEndTrigger]);
 
   // ステータスモーダルの状態
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -447,13 +505,15 @@ export function VersusPlayField({
     idx, 
     player, 
     status, 
-    cardState 
+    cardState,
+    isNew = false
   }: { 
     card: Card; 
     idx: number; 
     player: 1 | 2; 
     status: CardStatus;
     cardState: CardState;
+    isNew?: boolean;
   }) {
     const rotation = getCardRotation(cardState);
     const setCardsForThis = getSetCardsForField(idx, player);
@@ -486,7 +546,9 @@ export function VersusPlayField({
             height: "100%",
             borderRadius: "4px",
             overflow: "hidden",
-            boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+            boxShadow: isNew 
+              ? "0 0 0 3px #ff4757, 0 0 12px #ff4757"
+              : "0 2px 4px rgba(0,0,0,0.2)",
             transform: rotation,
             transition: "transform 0.3s ease"
           }}>
@@ -513,6 +575,26 @@ export function VersusPlayField({
               </div>
             )}
           </div>
+          
+          {/* NEWバッジ */}
+          {isNew && (
+            <div style={{
+              position: "absolute",
+              top: "2px",
+              left: "2px",
+              background: "#ff4757",
+              color: "white",
+              fontSize: "0.5rem",
+              fontWeight: "bold",
+              padding: "1px 4px",
+              borderRadius: "3px",
+              zIndex: 10,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+            }}>
+              NEW
+            </div>
+          )}
+          
           {/* ステータスバッジ */}
           <CardStatusBadge
             status={status}
@@ -652,13 +734,29 @@ export function VersusPlayField({
               {opponentPlayerState.field.length}
             </span>
           </div>
-          <span style={{
-            fontSize: "0.8rem",
-            transition: "transform 0.2s",
-            transform: isOpponentFieldOpen ? "rotate(180deg)" : "rotate(0deg)"
-          }}>
-            ▼
-          </span>
+          
+          {/* 相手の各エリア枚数 */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span style={{ fontSize: "0.65rem", opacity: 0.9 }}>
+              🎴{opponentPlayerState.deck.length}
+            </span>
+            <span style={{ fontSize: "0.65rem", opacity: 0.9 }}>
+              ✋{opponentPlayerState.hand.length}
+            </span>
+            <span style={{ fontSize: "0.65rem", opacity: 0.9 }}>
+              🔍{opponentPlayerState.evidence.length}
+            </span>
+            <span style={{ fontSize: "0.65rem", opacity: 0.9 }}>
+              📁{opponentPlayerState.file.length}
+            </span>
+            <span style={{
+              fontSize: "0.8rem",
+              transition: "transform 0.2s",
+              transform: isOpponentFieldOpen ? "rotate(180deg)" : "rotate(0deg)"
+            }}>
+              ▲
+            </span>
+          </div>
         </div>
 
         {/* コンテンツ（アニメーション付き） */}
@@ -886,6 +984,7 @@ export function VersusPlayField({
               {currentPlayerState.field.map((card, idx) => {
                 const status = getCardStatus(card.id, idx, currentPlayer);
                 const cardState = getCardState(card.id, idx, currentPlayer);
+                const isNew = newFieldCardIndices.includes(idx);
                 
                 return (
                   <FieldCardWithSet
@@ -895,6 +994,7 @@ export function VersusPlayField({
                     player={currentPlayer}
                     status={status}
                     cardState={cardState}
+                    isNew={isNew}
                   />
                 );
               })}
@@ -916,6 +1016,10 @@ export function VersusPlayField({
           mulliganDone={currentPlayerState.mulliganDone}
           onCardClick={(card, index) => onCardClick(card, index, "hand")}
           onStartMulligan={onStartMulligan}
+          newMulliganCardIndices={newMulliganCardIndices}
+          onClearNewMulliganCards={onClearNewMulliganCards}
+          newHandCardIndices={newHandCardIndices}
+          onClearNewHandCards={onClearNewHandCards}
         />
       </div>
 
@@ -938,11 +1042,15 @@ export function VersusPlayField({
         deckCount={currentPlayerState.deck.length}
         playFile={currentPlayerState.file}
         partnerCard={partnerCard}
+        partnerZone={currentPlayerState.partnerZone}
+        partnerState={partnerState}
         incidentCard={incidentCard}
+        opponentTraceFound={opponentTraceFound}
         onDrawCard={onDrawCard}
-        onStartTurn={onStartTurn}
+        onRefreshDeck={onRefreshDeck}
         onFileCardClick={(card, index) => onCardClick(card, index, "file")}
-        onPartnerClick={onCardDetailClick}
+        onPartnerClick={onPartnerCardClick}
+        onPartnerZoneCardClick={(card, index) => onCardClick(card, index, "partnerZone")}
         onIncidentClick={onCardDetailClick}
         onClose={() => setRightPanelOpen(false)}
       />
