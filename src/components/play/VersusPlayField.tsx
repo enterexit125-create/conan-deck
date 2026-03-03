@@ -58,6 +58,8 @@ interface VersusPlayFieldProps {
   // 今ターンで現場に出たカードのインデックス
   newFieldCardIndices?: number[];
   onClearNewFieldCards?: () => void;
+  // ログ機能
+  onShowLog: () => void;
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
@@ -135,7 +137,8 @@ export function VersusPlayField({
   newHandCardIndices = [],
   onClearNewHandCards,
   newFieldCardIndices = [],
-  onClearNewFieldCards
+  onClearNewFieldCards,
+  onShowLog
 }: VersusPlayFieldProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -205,7 +208,7 @@ export function VersusPlayField({
           const key = `${nextPlayer}-${card.id}-${idx}`;
           const state = prev.get(key) ?? "active";
           
-          if (state === "stand") {
+          if (state === "stun") {
             // スタン → スリープ
             newStates.set(key, "sleep");
           } else if (state === "sleep") {
@@ -683,20 +686,36 @@ export function VersusPlayField({
             </span>
             {theme.label}を操作中
           </h2>
-          <button 
-            onClick={onReset} 
-            style={{ 
-              padding: "0.3rem 0.6rem", 
-              fontSize: "0.85rem",
-              background: "rgba(255,255,255,0.2)",
-              border: "none",
-              borderRadius: "6px",
-              color: "white",
-              cursor: "pointer"
-            }}
-          >
-            🔙 戻る
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button 
+              onClick={onShowLog}
+              style={{ 
+                padding: "0.3rem 0.6rem", 
+                fontSize: "0.85rem",
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                borderRadius: "6px",
+                color: "white",
+                cursor: "pointer"
+              }}
+            >
+              📋 ログ
+            </button>
+            <button 
+              onClick={onReset} 
+              style={{ 
+                padding: "0.3rem 0.6rem", 
+                fontSize: "0.85rem",
+                background: "rgba(255,255,255,0.2)",
+                border: "none",
+                borderRadius: "6px",
+                color: "white",
+                cursor: "pointer"
+              }}
+            >
+              🔙 戻る
+            </button>
+          </div>
         </div>
 
         {/* 相手の現場（アコーディオン式） */}
