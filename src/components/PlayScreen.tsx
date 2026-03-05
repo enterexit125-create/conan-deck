@@ -30,9 +30,9 @@ function MulliganCardThumb({ card }: { card: Card }) {
 
   return (
     <div style={{
-      width: "50px",
-      height: "70px",
-      borderRadius: "3px",
+      width: "78px",
+      height: "108px",
+      borderRadius: "4px",
       overflow: "hidden",
       border: "1px solid #ccc",
       background: "#f0f0f0"
@@ -892,16 +892,16 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
             style={{
               background: "white",
               borderRadius: "16px",
-              padding: "1.25rem",
+              padding: "1.5rem",
               width: "100%",
-              maxWidth: "280px",
+              maxWidth: "360px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
               textAlign: "center"
             }}
           >
             <h2 style={{ 
-              margin: "0 0 0.6rem 0", 
-              fontSize: "1rem",
+              margin: "0 0 1rem 0", 
+              fontSize: "1.2rem",
               color: "#333"
             }}>
               🃏 {currentPlayer === 1 ? "先攻" : "後攻"}のマリガン
@@ -912,14 +912,14 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "4px",
-              marginBottom: "0.6rem"
+              gap: "8px",
+              marginBottom: "1rem"
             }}>
               {/* 1段目: 3枚 */}
               <div style={{
                 display: "flex",
                 justifyContent: "center",
-                gap: "4px"
+                gap: "8px"
               }}>
                 {currentPlayerState.hand.slice(0, 3).map((card, index) => (
                   <MulliganCardThumb key={index} card={card} />
@@ -929,7 +929,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               <div style={{
                 display: "flex",
                 justifyContent: "center",
-                gap: "4px"
+                gap: "8px"
               }}>
                 {currentPlayerState.hand.slice(3, 5).map((card, index) => (
                   <MulliganCardThumb key={index + 3} card={card} />
@@ -939,22 +939,22 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
             
             <p style={{
               color: "#666",
-              fontSize: "0.75rem",
-              margin: "0 0 0.6rem 0"
+              fontSize: "0.9rem",
+              margin: "0 0 1rem 0"
             }}>
               手札を入れ替えますか？
             </p>
             
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
               <button
                 onClick={startMulligan}
                 style={{
-                  padding: "0.65rem",
+                  padding: "0.85rem",
                   background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
-                  fontSize: "0.9rem",
+                  fontSize: "1rem",
                   fontWeight: "bold",
                   cursor: "pointer",
                   display: "flex",
@@ -968,12 +968,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               <button
                 onClick={skipMulligan}
                 style={{
-                  padding: "0.55rem",
+                  padding: "0.75rem",
                   background: "#e0e0e0",
                   color: "#333",
                   border: "none",
                   borderRadius: "8px",
-                  fontSize: "0.85rem",
+                  fontSize: "0.95rem",
                   cursor: "pointer"
                 }}
               >
