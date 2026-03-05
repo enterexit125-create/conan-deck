@@ -291,7 +291,7 @@ export function DeckEditor({
                 }}>
                   {/* カード画像 */}
                   <div 
-                    onClick={() => openCardDetail(card)}
+                    onClick={() => openEditDeckCard(card.id!)}
                     style={{
                       width: "80px",
                       height: "112px",
@@ -344,23 +344,6 @@ export function DeckEditor({
                     color: "#999"
                   }}>
                     {card.number || "---"}/{card.type === "キャラ" ? "キ" : "イ"}
-                  </div>
-                  {/* 操作ボタン */}
-                  <div style={{ display: "flex", gap: "2px", marginTop: "0.25rem" }}>
-                    <button 
-                      className="btn-secondary" 
-                      style={{ flex: 1, padding: "0.25rem", fontSize: "0.7rem" }}
-                      onClick={() => openEditDeckCard(card.id!)}
-                    >
-                      ✏️
-                    </button>
-                    <button 
-                      className="btn-danger" 
-                      style={{ flex: 1, padding: "0.25rem", fontSize: "0.7rem" }}
-                      onClick={() => removeCardFromDeck(card.id!)}
-                    >
-                      ➖
-                    </button>
                   </div>
                 </div>
               );
