@@ -260,16 +260,17 @@ export default function App() {
   // カード選択モーダル用のフィルタリングされたカード一覧
   const filteredCardsForModal = useMemo(() => {
     const q = cardSelectSearch.trim().toLowerCase();
-    return cards.filter((c) => {
+    const hasFilter = q || cardSelectColor || cardSelectType || cardSelectLevel;
+    const filtered = cards.filter((c) => {
       const name = (c.name ?? "").toLowerCase();
       const num = (c.number ?? "").toLowerCase();
-      const matchText = !q || name.includes(q) || num.includes(q) || (card.traits ?? "").toLowerCase().includes(q) || (card.memo ?? "").toLowerCase().includes(q);
+      const matchText = !q || name.includes(q) || num.includes(q) || (c.traits ?? "").toLowerCase().includes(q) || (c.memo ?? "").toLowerCase().includes(q);
       const matchColor = !cardSelectColor || c.color === cardSelectColor;
       const matchType = !cardSelectType || c.type === cardSelectType;
       const matchLevel = !cardSelectLevel || c.level === parseInt(cardSelectLevel);
-      
       return matchText && matchColor && matchType && matchLevel;
     });
+    return hasFilter ? filtered : filtered.slice(0, 100);
   }, [cards, cardSelectSearch, cardSelectColor, cardSelectType, cardSelectLevel]);
 
   async function refreshAll() {
