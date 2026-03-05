@@ -783,29 +783,31 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   function endTurn() {
     if (!currentPlayerState) return;
     
-    // ターン終了時に手番側がFILE2枚追加
-    if (currentPlayerState.deck.length >= 2) {
-      const newFileCards = currentPlayerState.deck.slice(0, 2);
-      const remainingDeck = currentPlayerState.deck.slice(2);
-      updatePlayerState(currentPlayer, {
-        file: [...currentPlayerState.file, ...newFileCards],
-        deck: remainingDeck,
-        partnerState: "normal"  // パートナーを縦に戻す
-      });
-    } else if (currentPlayerState.deck.length === 1) {
-      // 山札が1枚の場合は1枚だけ追加
-      const newFileCards = currentPlayerState.deck.slice(0, 1);
-      updatePlayerState(currentPlayer, {
-        file: [...currentPlayerState.file, ...newFileCards],
-        deck: [],
-        partnerState: "normal"  // パートナーを縦に戻す
-      });
-    } else {
-      // 山札が0枚の場合
-      updatePlayerState(currentPlayer, {
-        partnerState: "normal"  // パートナーを縦に戻す
-      });
+    const nextPlayer = currentPlayer === 1 ? 2 : 1;
+    const nextPlayerState = currentPlayer === 1 ? player2 : player1;
+
+    // ターン終了時に次のプレイヤーのFILEに2枚追加（次のプレイヤーの山札から）
+    if (nextPlayerState) {
+      if (nextPlayerState.deck.length >= 2) {
+        const newFileCards = nextPlayerState.deck.slice(0, 2);
+        const remainingDeck = nextPlayerState.deck.slice(2);
+        updatePlayerState(nextPlayer, {
+          file: [...nextPlayerState.file, ...newFileCards],
+          deck: remainingDeck,
+        });
+      } else if (nextPlayerState.deck.length === 1) {
+        const newFileCards = nextPlayerState.deck.slice(0, 1);
+        updatePlayerState(nextPlayer, {
+          file: [...nextPlayerState.file, ...newFileCards],
+          deck: [],
+        });
+      }
     }
+
+    // 手番終了時にパートナーを縦に戻す
+    updatePlayerState(currentPlayer, {
+      partnerState: "normal"
+    });
     
     // ターン終了時に新カードハイライトをリセット
     setNewHandCardIndices([]);
@@ -815,7 +817,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     addLog("ターン終了");
     
     // プレイヤーを切り替え
-    const nextPlayer = currentPlayer === 1 ? 2 : 1;
     setCurrentPlayer(nextPlayer);
     
     // ターン数を更新
