@@ -512,7 +512,7 @@ export function VersusPlayField({
     status, 
     cardState,
     isNew = false,
-    maxCardHeight
+    cardWidth = CARD_WIDTH
   }: { 
     card: Card; 
     idx: number; 
@@ -520,25 +520,26 @@ export function VersusPlayField({
     status: CardStatus;
     cardState: CardState;
     isNew?: boolean;
-    maxCardHeight?: string;
+    cardWidth?: number;
   }) {
     const rotation = getCardRotation(cardState);
     const setCardsForThis = getSetCardsForField(idx, player);
+    const cardHeight = Math.round(cardWidth / 0.7);
     
     return (
       <div
         style={{
           position: "relative",
-          width: "100%",
+          width: `${cardWidth}px`,
+          flexShrink: 0
         }}
       >
         {/* メインカード */}
         <div
           onClick={() => handleCardTap(card, idx, player)}
           style={{
-            width: "100%",
-            aspectRatio: "0.7",
-            maxHeight: maxCardHeight,
+            width: `${cardWidth}px`,
+            height: `${cardHeight}px`,
             borderRadius: "4px",
             overflow: "visible",
             cursor: "pointer",
@@ -794,7 +795,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "175px") : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "165px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -821,11 +822,12 @@ export function VersusPlayField({
                 </div>
               ) : (
                 <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: "0.25rem",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "4px",
                   padding: "0.25rem",
-                  justifyItems: "center"
+                  alignItems: "flex-start",
+                  justifyContent: "center"
                 }}>
                   {opponentPlayerState.field.map((card, idx) => {
                     const status = getCardStatus(card.id, idx, opponentPlayer);
@@ -839,7 +841,7 @@ export function VersusPlayField({
                         player={opponentPlayer}
                         status={status}
                         cardState={cardState}
-                        maxCardHeight="72px"
+                        cardWidth={52}
                       />
                     );
                   })}
@@ -1009,12 +1011,13 @@ export function VersusPlayField({
               minHeight: 0,
               overflowY: "auto",
               overflowX: "hidden",
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "0.25rem",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "6px",
               alignContent: "flex-start",
-              padding: "0.25rem",
-              justifyItems: "center"
+              alignItems: "flex-start",
+              justifyContent: "center",
+              padding: "0.3rem"
             }}>
               {currentPlayerState.field.map((card, idx) => {
                 const status = getCardStatus(card.id, idx, currentPlayer);
@@ -1030,7 +1033,7 @@ export function VersusPlayField({
                     status={status}
                     cardState={cardState}
                     isNew={isNew}
-                    maxCardHeight="105px"
+                    cardWidth={96}
                   />
                 );
               })}
