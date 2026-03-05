@@ -185,7 +185,7 @@ export async function syncToSupabase(
       }));
 
     if (deckRows.length > 0) {
-      const { error } = await supabase.from("decks").upsert(deckRows, { onConflict: "id" });
+      const { error } = await supabase.from("decks").upsert(deckRows);
       if (error) throw error;
       for (const d of unsyncedDecks) {
         await db.decks.update(d.id!, { synced: true });
@@ -236,7 +236,7 @@ export async function syncToSupabase(
         }));
 
       if (rows.length > 0) {
-        const { error } = await supabase.from("cards").upsert(rows, { onConflict: "id" });
+        const { error } = await supabase.from("cards").upsert(rows);
         if (error) throw error;
         for (const c of batch) {
           await db.cards.update(c.id!, {
@@ -269,7 +269,7 @@ export async function syncToSupabase(
         }));
 
       if (rows.length > 0) {
-        const { error } = await supabase.from("deck_cards").upsert(rows, { onConflict: "id" });
+        const { error } = await supabase.from("deck_cards").upsert(rows);
         if (error) throw error;
         for (const dc of batch) {
           await db.deckCards.update(dc.id!, { synced: true });
