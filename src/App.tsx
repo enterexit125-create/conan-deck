@@ -270,7 +270,7 @@ export default function App() {
       const matchLevel = !cardSelectLevel || c.level === parseInt(cardSelectLevel);
       return matchText && matchColor && matchType && matchLevel;
     });
-    return hasFilter ? filtered : filtered.slice(0, 100);
+    return filtered.slice(0, 200); // 常に200件上限（スマホクラッシュ防止）
   }, [cards, cardSelectSearch, cardSelectColor, cardSelectType, cardSelectLevel]);
 
   async function refreshAll() {
@@ -1024,6 +1024,10 @@ export default function App() {
             </div>
 
             {/* カード一覧 */}
+            <div style={{ fontSize: "0.8rem", color: "#999", marginBottom: "0.5rem", textAlign: "right" }}>
+              {filteredCardsForModal.length}件表示
+              {filteredCardsForModal.length >= 200 && <span style={{ color: "#ff8ab8" }}>（上限200件・絞り込んで検索してください）</span>}
+            </div>
             <div style={{ maxHeight: "500px", overflowY: "auto" }}>
               {filteredCardsForModal.length === 0 ? (
                 <div className="empty-state">
