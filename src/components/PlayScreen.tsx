@@ -89,7 +89,9 @@ interface PlayerState {
 export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   // ゲーム状態
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentPlayer, setCurrentPlayer] = useState<1 | 2>(1); // 現在操作中のプレイヤー
+  const [turnPlayer, setTurnPlayer] = useState<1 | 2>(1);    // 実際の手番プレイヤー
+  const [viewingPlayer, setViewingPlayer] = useState<1 | 2>(1); // 現在画面に表示中のプレイヤー
+  const currentPlayer = viewingPlayer; // 表示・操作対象（後方互換用）
   
   // プレイヤー1の状態
   const [player1, setPlayer1] = useState<PlayerState | null>(null);
@@ -160,7 +162,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   }
 
   // ログを追加
-  function addLog(message: string, player: 1 | 2 | null = currentPlayer) {
+  function addLog(message: string, player: 1 | 2 | null = turnPlayer) {
     const now = new Date();
     const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     setGameLog(prev => [...prev, { time, player, message }]);
@@ -178,7 +180,8 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
     setPlayer1(p1State);
     setPlayer2(p2State);
-    setCurrentPlayer(1);
+    setTurnPlayer(1);
+    setViewingPlayer(1);
     setIsPlaying(true);
     setGameLog([]);
     setTurnCount(1);
@@ -776,53 +779,53 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
   // ターン切り替え（上下逆転）- ハイライトは消さない
   function switchPlayer() {
-    setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
+    setViewingPlayer(viewingPlayer === 1 ? 2 : 1);
   }
 
   // ターン終了（相手のターンへ）
   function endTurn() {
-    if (!currentPlayerState) return;
-    
-    const nextPlayer = currentPlayer === 1 ? 2 : 1;
-    const nextPlayerState = currentPlayer === 1 ? player2 : player1;
+    const nextTurnPlayer: 1 | 2 = turnPlayer === 1 ? 2 : 1;
+    const nextPlayerState = nextTurnPlayer === 1 ? player1 : player2;
+    const currentTurnPlayerState = turnPlayer === 1 ? player1 : player2;
 
-    // ターン終了時に次のプレイヤーのFILEに2枚追加（次のプレイヤーの山札から）
+    if (!currentTurnPlayerState) return;
+
+    // 手番プレイヤーのパートナーを縦に戻す
+    updatePlayerState(turnPlayer, { partnerState: "normal" });
+
+    // 次の手番プレイヤーのFILEに2枚追加（次プレイヤーの山札から）
     if (nextPlayerState) {
       if (nextPlayerState.deck.length >= 2) {
         const newFileCards = nextPlayerState.deck.slice(0, 2);
         const remainingDeck = nextPlayerState.deck.slice(2);
-        updatePlayerState(nextPlayer, {
+        updatePlayerState(nextTurnPlayer, {
           file: [...nextPlayerState.file, ...newFileCards],
           deck: remainingDeck,
         });
       } else if (nextPlayerState.deck.length === 1) {
         const newFileCards = nextPlayerState.deck.slice(0, 1);
-        updatePlayerState(nextPlayer, {
+        updatePlayerState(nextTurnPlayer, {
           file: [...nextPlayerState.file, ...newFileCards],
           deck: [],
         });
       }
     }
 
-    // 手番終了時にパートナーを縦に戻す
-    updatePlayerState(currentPlayer, {
-      partnerState: "normal"
-    });
-    
     // ターン終了時に新カードハイライトをリセット
     setNewHandCardIndices([]);
     setNewFieldCardIndices([]);
     setNewMulliganCardIndices([]);
-    
-    addLog("ターン終了");
-    
-    // プレイヤーを切り替え
-    setCurrentPlayer(nextPlayer);
-    
+
+    addLog("ターン終了", turnPlayer);
+
+    // 手番と表示を次のプレイヤーへ切り替え
+    setTurnPlayer(nextTurnPlayer);
+    setViewingPlayer(nextTurnPlayer);
+
     // ターン数を更新
     setTurnCount(prev => prev + 1);
     setTimeout(() => addLog(`ターン${turnCount + 1} 開始`, null), 0);
-    
+
     // ターン終了トリガーをインクリメント（カード状態更新用）
     setTurnEndTrigger(prev => prev + 1);
   }
@@ -972,6 +975,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
       <VersusPlayField
         currentPlayer={currentPlayer}
+        turnPlayer={turnPlayer}
         currentPlayerState={currentPlayerState}
         opponentPlayerState={opponentPlayerState}
         partnerCard={partnerCard}

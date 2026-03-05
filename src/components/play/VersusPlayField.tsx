@@ -22,6 +22,7 @@ interface PlayerState {
 
 interface VersusPlayFieldProps {
   currentPlayer: 1 | 2;
+  turnPlayer: 1 | 2;
   currentPlayerState: PlayerState;
   opponentPlayerState: PlayerState;
   partnerCard: Card | null;
@@ -108,6 +109,7 @@ function getSetCardsKey(fieldIndex: number, player: 1 | 2): string {
 
 export function VersusPlayField({
   currentPlayer,
+  turnPlayer,
   currentPlayerState,
   opponentPlayerState,
   partnerCard,
@@ -879,7 +881,7 @@ export function VersusPlayField({
             padding: "0.4rem 0.8rem", 
             fontSize: "0.8rem",
             lineHeight: 1.2,
-            background: currentPlayer === 1 
+            background: turnPlayer === 1 
               ? "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)"
               : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
             color: "white",
@@ -895,7 +897,10 @@ export function VersusPlayField({
         >
           <span>🔄</span>
           <span style={{ fontWeight: "bold" }}>
-            {currentPlayer === 1 ? "P2へ" : "P1へ"}
+            {currentPlayer === turnPlayer
+              ? (turnPlayer === 1 ? "P2へ" : "P1へ")
+              : (turnPlayer === 1 ? "P1へ戻る" : "P2へ戻る")
+            }
           </span>
         </button>
 
@@ -1041,7 +1046,6 @@ export function VersusPlayField({
           mulliganDone={currentPlayerState.mulliganDone}
           onCardClick={(card, index) => onCardClick(card, index, "hand")}
           onStartMulligan={onStartMulligan}
-          onDrawCard={onDrawCard}
           newMulliganCardIndices={newMulliganCardIndices}
           onClearNewMulliganCards={onClearNewMulliganCards}
           newHandCardIndices={newHandCardIndices}
