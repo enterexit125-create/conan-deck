@@ -146,13 +146,13 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     player: 1 | 2;
   } | null>(null);
 
-  // パートナーと事件カードは現在表示中プレイヤーのデッキから取得
-  const partnerCard = currentPlayerState?.partnerCard ?? null;
-  const incidentCard = currentPlayerState?.incidentCard ?? null;
-
   // 現在のプレイヤーの状態を取得
   const currentPlayerState = currentPlayer === 1 ? player1 : player2;
   const opponentPlayerState = currentPlayer === 1 ? player2 : player1;
+
+  // パートナーと事件カードは現在表示中プレイヤーのデッキから取得
+  const partnerCard = currentPlayerState?.partnerCard ?? null;
+  const incidentCard = currentPlayerState?.incidentCard ?? null;
 
   // プレイヤーの状態を更新
   function updatePlayerState(playerNum: 1 | 2, updates: Partial<PlayerState>) {
