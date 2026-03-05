@@ -6,6 +6,7 @@ interface HandAreaProps {
   mulliganDone: boolean;
   onCardClick: (card: Card, index: number) => void;
   onStartMulligan: () => void;
+  onDrawCard: () => void;
   newMulliganCardIndices?: number[];
   onClearNewMulliganCards?: () => void;
   newHandCardIndices?: number[];
@@ -20,6 +21,7 @@ export function HandArea({
   mulliganDone, 
   onCardClick, 
   onStartMulligan,
+  onDrawCard,
   newMulliganCardIndices = [],
   onClearNewMulliganCards,
   newHandCardIndices = [],
@@ -56,15 +58,32 @@ export function HandArea({
         <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "white" }}>
           🃏 手札 ({playHand.length}枚)
         </div>
-        {!mulliganDone && (
+        <div style={{ display: "flex", gap: "0.3rem", alignItems: "center" }}>
           <button
-            className="btn-secondary"
-            onClick={onStartMulligan}
-            style={{ padding: "0.2rem 0.5rem", fontSize: "0.7rem" }}
+            onClick={onDrawCard}
+            style={{
+              padding: "0.2rem 0.5rem",
+              fontSize: "0.7rem",
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontWeight: "bold"
+            }}
           >
-            🔄 マリガン
+            ＋ドロー
           </button>
-        )}
+          {!mulliganDone && (
+            <button
+              className="btn-secondary"
+              onClick={onStartMulligan}
+              style={{ padding: "0.2rem 0.5rem", fontSize: "0.7rem" }}
+            >
+              🔄 マリガン
+            </button>
+          )}
+        </div>
       </div>
       <div style={{
         flex: 1,
