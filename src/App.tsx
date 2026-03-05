@@ -52,10 +52,14 @@ export default function App() {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState<"cards" | "decks" | "editor" | "play" | "sync">(() => {
+    // localStorageから前回のタブを復元
     const saved = localStorage.getItem("activeTab");
+    console.log("activeTab初期化:", saved);
     if (saved && ["cards", "decks", "editor", "play", "sync"].includes(saved)) {
+      console.log("復元:", saved);
       return saved as "cards" | "decks" | "editor" | "play" | "sync";
     }
+    console.log("デフォルト: cards");
     return "cards";
   });
   const [syncing, setSyncing] = useState(false);
@@ -89,19 +93,9 @@ export default function App() {
   const [showCardDetail, setShowCardDetail] = useState(false);
   const [detailCard, setDetailCard] = useState<Card | null>(null);
 
-  // 初回：デッキが無ければ作る
+  // 初回：デッキ一覧を読み込む
   useEffect(() => {
     const run = async () => {
-      const deckCount = await db.decks.count();
-      if (deckCount === 0) {
-        const id = await db.decks.add({ 
-          name: "デッキ1", 
-          createdAt: Date.now(),
-          synced: false 
-        });
-        setActiveDeckId(id);
-      }
-
       const allDecks = await db.decks.toArray();
       setDecks(allDecks);
 
@@ -131,26 +125,34 @@ export default function App() {
     refresh();
   }, [activeDeckId]);
 
-  // カードIDからカードへの高速ルックアップMap（改善②）
-  const cardMap = useMemo(() => {
-    const m = new Map<number, Card>();
-    for (const c of cards) if (c.id != null) m.set(c.id, c);
-    return m;
-  }, [cards]);
-
   const totalInDeck = useMemo(() => {
     // パートナーと事件を除いた枚数
-    if (!deckCards || deckCards.length === 0) return 0;
-    if (!cards || cards.length === 0) return 0;
+    console.log("totalInDeck再計算:", { 
+      deckCardsLength: deckCards?.length, 
+      cardsLength: cards?.length 
+    });
     
-    return deckCards.reduce((sum, dc) => {
-      const card = cardMap.get(dc.cardId);
+    if (!deckCards || deckCards.length === 0) {
+      console.log("deckCardsが空");
+      return 0;
+    }
+    if (!cards || cards.length === 0) {
+      console.log("cardsが空");
+      return 0;
+    }
+    
+    const total = deckCards.reduce((sum, dc) => {
+      const card = cards.find(c => c.id === dc.cardId);
+      // パートナーと事件を除外
       if (card && card.type !== "パートナー" && card.type !== "事件") {
         return sum + dc.count;
       }
       return sum;
     }, 0);
-  }, [deckCards, cardMap]);
+    
+    console.log("計算結果:", total);
+    return total;
+  }, [deckCards, cards]);
 
   const filteredCards = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -176,14 +178,20 @@ export default function App() {
 
   // パートナーと事件を取得
   const partnerCard = useMemo(() => {
-    const partnerDc = deckCards.find(dc => cardMap.get(dc.cardId)?.type === "パートナー");
-    return partnerDc ? cardMap.get(partnerDc.cardId) ?? null : null;
-  }, [deckCards, cardMap]);
+    const partnerDc = deckCards.find(dc => {
+      const card = cards.find(c => c.id === dc.cardId);
+      return card?.type === "パートナー";
+    });
+    return partnerDc ? cards.find(c => c.id === partnerDc.cardId) : null;
+  }, [deckCards, cards]);
 
   const incidentCard = useMemo(() => {
-    const incidentDc = deckCards.find(dc => cardMap.get(dc.cardId)?.type === "事件");
-    return incidentDc ? cardMap.get(incidentDc.cardId) ?? null : null;
-  }, [deckCards, cardMap]);
+    const incidentDc = deckCards.find(dc => {
+      const card = cards.find(c => c.id === dc.cardId);
+      return card?.type === "事件";
+    });
+    return incidentDc ? cards.find(c => c.id === incidentDc.cardId) : null;
+  }, [deckCards, cards]);
 
   // レベル分布の計算（グラフ用）
   const levelDistribution = useMemo(() => {
@@ -193,14 +201,14 @@ export default function App() {
     });
     
     deckCards.forEach(dc => {
-      const card = cardMap.get(dc.cardId);
+      const card = cards.find(c => c.id === dc.cardId);
       if (card?.level && card.type !== "パートナー" && card.type !== "事件") {
         dist[card.level] = (dist[card.level] || 0) + dc.count;
       }
     });
     
     return dist;
-  }, [deckCards, cardMap]);
+  }, [deckCards, cards]);
 
   const maxLevelCount = useMemo(() => {
     return Math.max(...Object.values(levelDistribution), 1);
@@ -209,17 +217,17 @@ export default function App() {
   // キャラとイベントの枚数を計算
   const characterCount = useMemo(() => {
     return deckCards.reduce((sum, dc) => {
-      const card = cardMap.get(dc.cardId);
+      const card = cards.find(c => c.id === dc.cardId);
       return card?.type === "キャラ" ? sum + dc.count : sum;
     }, 0);
-  }, [deckCards, cardMap]);
+  }, [deckCards, cards]);
 
   const eventCount = useMemo(() => {
     return deckCards.reduce((sum, dc) => {
-      const card = cardMap.get(dc.cardId);
+      const card = cards.find(c => c.id === dc.cardId);
       return card?.type === "イベント" ? sum + dc.count : sum;
     }, 0);
-  }, [deckCards, cardMap]);
+  }, [deckCards, cards]);
 
   // レベル別にグループ化したカード（パートナーと事件を除く）
   const cardsByLevel = useMemo(() => {
@@ -229,14 +237,14 @@ export default function App() {
     });
 
     deckCards.forEach(dc => {
-      const card = cardMap.get(dc.cardId);
+      const card = cards.find(c => c.id === dc.cardId);
       if (card && card.type !== "パートナー" && card.type !== "事件" && card.level) {
         grouped[card.level].push({ card, count: dc.count });
       }
     });
 
     return grouped;
-  }, [deckCards, cardMap]);
+  }, [deckCards, cards]);
 
   // カード選択モーダル用のフィルタリングされたカード一覧
   const filteredCardsForModal = useMemo(() => {
@@ -321,19 +329,22 @@ export default function App() {
       return;
     }
 
-    // 追加しようとしているカードの情報を取得（改善②: cardMapを使用）
-    const cardToAdd = cardMap.get(editingDeckCard.cardId);
+    // 追加しようとしているカードの情報を取得
+    const cardToAdd = cards.find(c => c.id === editingDeckCard.cardId);
     if (!cardToAdd || !cardToAdd.number) {
       alert("カード番号が設定されていないカードは追加できません。");
       return;
     }
 
-    // 同じカード番号を持つカードの合計枚数をチェック（改善②: cardMapを使用）
+    // 同じカード番号を持つカードの合計枚数をチェック
+    const sameNumberCards = cards.filter(c => c.number === cardToAdd.number);
+    const sameNumberCardIds = sameNumberCards.map(c => c.id).filter((id): id is number => id !== undefined);
+    
     let totalCountOfSameNumber = 0;
-    for (const [cid, c] of cardMap) {
-      if (c.number === cardToAdd.number) {
-        const dc = deckCardMap.get(cid);
-        if (dc) totalCountOfSameNumber += dc.count;
+    for (const id of sameNumberCardIds) {
+      const dc = deckCardMap.get(id);
+      if (dc) {
+        totalCountOfSameNumber += dc.count;
       }
     }
 
@@ -354,10 +365,7 @@ export default function App() {
     }
 
     setEditingDeckCard({ ...editingDeckCard, count: nextCount });
-    // 改善①: refreshAll()の代わりにdeckCardsのstateを直接更新
-    setDeckCards(prev =>
-      prev.map(dc => dc.cardId === editingDeckCard.cardId ? { ...dc, count: nextCount, synced: false } : dc)
-    );
+    await refreshAll();
   }
 
   // デッキカード枚数を減らす
@@ -375,17 +383,13 @@ export default function App() {
 
     if (nextCount <= 0) {
       await db.deckCards.delete(found.id);
-      // 改善①: refreshAll()の代わりにdeckCardsのstateを直接更新
-      setDeckCards(prev => prev.filter(dc => dc.cardId !== editingDeckCard.cardId));
       closeEditDeckCard();
     } else {
       await db.deckCards.update(found.id, { count: nextCount, synced: false });
       setEditingDeckCard({ ...editingDeckCard, count: nextCount });
-      // 改善①: refreshAll()の代わりにdeckCardsのstateを直接更新
-      setDeckCards(prev =>
-        prev.map(dc => dc.cardId === editingDeckCard.cardId ? { ...dc, count: nextCount, synced: false } : dc)
-      );
     }
+
+    await refreshAll();
   }
 
   async function saveEditCard() {
@@ -434,18 +438,21 @@ export default function App() {
     }
 
     // 追加しようとしているカードの情報を取得
-    const cardToAdd = cardMap.get(cardId);
+    const cardToAdd = cards.find(c => c.id === cardId);
     if (!cardToAdd || !cardToAdd.number) {
       alert("カード番号が設定されていないカードは追加できません。");
       return;
     }
 
-    // 同じカード番号を持つカードの合計枚数をチェック（改善②: cardMapを使用）
+    // 同じカード番号を持つカードの合計枚数をチェック
+    const sameNumberCards = cards.filter(c => c.number === cardToAdd.number);
+    const sameNumberCardIds = sameNumberCards.map(c => c.id).filter((id): id is number => id !== undefined);
+    
     let totalCountOfSameNumber = 0;
-    for (const [cid, c] of cardMap) {
-      if (c.number === cardToAdd.number) {
-        const dc = deckCardMap.get(cid);
-        if (dc) totalCountOfSameNumber += dc.count;
+    for (const id of sameNumberCardIds) {
+      const dc = deckCardMap.get(id);
+      if (dc) {
+        totalCountOfSameNumber += dc.count;
       }
     }
 
@@ -473,15 +480,7 @@ export default function App() {
       });
     }
 
-    // 改善①: refreshAll()の代わりにdeckCardsのstateを直接更新
-    setDeckCards(prev => {
-      const exists = prev.find(dc => dc.cardId === cardId);
-      if (exists) {
-        return prev.map(dc => dc.cardId === cardId ? { ...dc, count: nextCount, synced: false } : dc);
-      } else {
-        return [...prev, { deckId: activeDeckId!, cardId, count: 1, synced: false }];
-      }
-    });
+    await refreshAll();
   }
 
   async function deleteCard(cardId: number) {
@@ -544,8 +543,7 @@ export default function App() {
       .equals([activeDeckId, cardId])
       .delete();
 
-    // 改善①: refreshAll()の代わりにdeckCardsのstateを直接更新
-    setDeckCards(prev => prev.filter(dc => dc.cardId !== cardId));
+    await refreshAll();
     closeCardDetail();
   }
 
@@ -832,9 +830,13 @@ export default function App() {
   }
 
   function switchTab(tab: "cards" | "decks" | "editor" | "play" | "sync") {
+    console.log("switchTab:", tab);
     setActiveTab(tab);
-    localStorage.setItem("activeTab", tab);
+    localStorage.setItem("activeTab", tab); // タブを保存
+    console.log("localStorage保存:", tab);
     setMobileMenuOpen(false);
+    
+    // タブ切り替え時に一番上にスクロール
     window.scrollTo(0, 0);
   }
 
