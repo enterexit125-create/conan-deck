@@ -30,9 +30,9 @@ function MulliganCardThumb({ card }: { card: Card }) {
 
   return (
     <div style={{
-      width: "78px",
-      height: "108px",
-      borderRadius: "4px",
+      width: "50px",
+      height: "70px",
+      borderRadius: "3px",
       overflow: "hidden",
       border: "1px solid #ccc",
       background: "#f0f0f0"
@@ -718,7 +718,81 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
   // パートナーの状態を変更
   function setPartnerState(state: "normal" | "reasoning" | "assist") {
-    updatePlayerState(currentPlayer, { partnerState: state });
+    const prevState = currentPlayerState?.partnerState;
+
+    if (state === "reasoning" && prevState !== "reasoning" && currentPlayerState) {
+      // 推理開始：山札から証拠に追加（山札0枚ならまずリフレッシュ）
+      let deckToUse = currentPlayerState.deck;
+      let removeToUse = currentPlayerState.remove;
+      let didRefresh = false;
+
+      if (deckToUse.length === 0) {
+        if (removeToUse.length === 0) {
+          // 山札もリムーブもない場合はステート変更のみ
+          updatePlayerState(currentPlayer, { partnerState: state });
+          addLog("パートナーが推理中（山札・リムーブなし）");
+          setShowPartnerCardModal(false);
+          return;
+        }
+        // リフレッシュ：リムーブをシャッフルして山札に
+        const shuffled = [...removeToUse];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        deckToUse = shuffled;
+        removeToUse = [];
+        didRefresh = true;
+
+        // リフレッシュのペナルティ：相手に証拠+1
+        const opponent = currentPlayer === 1 ? 2 : 1;
+        const opponentState = currentPlayer === 1 ? player2 : player1;
+        if (opponentState && opponentState.deck.length > 0) {
+          const penaltyCard = opponentState.deck[0];
+          updatePlayerState(opponent, {
+            deck: opponentState.deck.slice(1),
+            evidence: [...opponentState.evidence, penaltyCard],
+            traceFound: true
+          });
+          addLog("リフレッシュ発生 → 相手に証拠+1", currentPlayer === 1 ? 2 : 1);
+        }
+        addLog("リフレッシュ（リムーブ→山札）");
+      }
+
+      // 山札トップを証拠に追加
+      const evidenceCard = deckToUse[0];
+      const newDeck = deckToUse.slice(1);
+      updatePlayerState(currentPlayer, {
+        partnerState: state,
+        deck: newDeck,
+        remove: removeToUse,
+        evidence: [...currentPlayerState.evidence, evidenceCard],
+        traceFound: true
+      });
+      addLog(didRefresh
+        ? "パートナーが推理中 → リフレッシュ後に証拠+1"
+        : "パートナーが推理中 → 証拠+1"
+      );
+
+    } else if (state === "normal" && prevState === "reasoning" && currentPlayerState) {
+      // 推理解除：証拠の末尾を山札トップに戻す
+      if (currentPlayerState.evidence.length > 0) {
+        const lastEvidence = currentPlayerState.evidence[currentPlayerState.evidence.length - 1];
+        const newEvidence = currentPlayerState.evidence.slice(0, -1);
+        updatePlayerState(currentPlayer, {
+          partnerState: state,
+          deck: [lastEvidence, ...currentPlayerState.deck],
+          evidence: newEvidence
+        });
+        addLog("パートナーの推理を解除 → 証拠-1（山札に戻す）");
+      } else {
+        updatePlayerState(currentPlayer, { partnerState: state });
+        addLog("パートナーの推理を解除");
+      }
+    } else {
+      updatePlayerState(currentPlayer, { partnerState: state });
+    }
+
     setShowPartnerCardModal(false);
   }
 
@@ -892,16 +966,16 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
             style={{
               background: "white",
               borderRadius: "16px",
-              padding: "1.5rem",
+              padding: "1.25rem",
               width: "100%",
-              maxWidth: "360px",
+              maxWidth: "280px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
               textAlign: "center"
             }}
           >
             <h2 style={{ 
-              margin: "0 0 1rem 0", 
-              fontSize: "1.2rem",
+              margin: "0 0 0.6rem 0", 
+              fontSize: "1rem",
               color: "#333"
             }}>
               🃏 {currentPlayer === 1 ? "先攻" : "後攻"}のマリガン
@@ -912,14 +986,14 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: "8px",
-              marginBottom: "1rem"
+              gap: "4px",
+              marginBottom: "0.6rem"
             }}>
               {/* 1段目: 3枚 */}
               <div style={{
                 display: "flex",
                 justifyContent: "center",
-                gap: "8px"
+                gap: "4px"
               }}>
                 {currentPlayerState.hand.slice(0, 3).map((card, index) => (
                   <MulliganCardThumb key={index} card={card} />
@@ -929,7 +1003,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               <div style={{
                 display: "flex",
                 justifyContent: "center",
-                gap: "8px"
+                gap: "4px"
               }}>
                 {currentPlayerState.hand.slice(3, 5).map((card, index) => (
                   <MulliganCardThumb key={index + 3} card={card} />
@@ -939,22 +1013,22 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
             
             <p style={{
               color: "#666",
-              fontSize: "0.9rem",
-              margin: "0 0 1rem 0"
+              fontSize: "0.75rem",
+              margin: "0 0 0.6rem 0"
             }}>
               手札を入れ替えますか？
             </p>
             
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               <button
                 onClick={startMulligan}
                 style={{
-                  padding: "0.85rem",
+                  padding: "0.65rem",
                   background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
                   color: "white",
                   border: "none",
                   borderRadius: "8px",
-                  fontSize: "1rem",
+                  fontSize: "0.9rem",
                   fontWeight: "bold",
                   cursor: "pointer",
                   display: "flex",
@@ -968,12 +1042,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               <button
                 onClick={skipMulligan}
                 style={{
-                  padding: "0.75rem",
+                  padding: "0.55rem",
                   background: "#e0e0e0",
                   color: "#333",
                   border: "none",
                   borderRadius: "8px",
-                  fontSize: "0.95rem",
+                  fontSize: "0.85rem",
                   cursor: "pointer"
                 }}
               >
