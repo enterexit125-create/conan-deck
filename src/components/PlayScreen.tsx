@@ -79,11 +79,13 @@ interface PlayerState {
   remove: Card[];
   evidence: Card[];
   file: Card[];
-  partnerZone: Card[]; // パートナーエリアに置いたカード
+  partnerZone: Card[];
   evidenceFaceUp: Set<number | undefined>;
   mulliganDone: boolean;
-  partnerState: "normal" | "reasoning" | "assist"; // パートナーの状態（通常/推理/アシスト）
-  traceFound: boolean; // 痕跡発見済み（相手のリフレッシュにより）
+  partnerState: "normal" | "reasoning" | "assist";
+  traceFound: boolean;
+  partnerCard: Card | null;   // デッキに設定されたパートナー
+  incidentCard: Card | null;  // デッキに設定された事件
 }
 
 export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
@@ -144,9 +146,9 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     player: 1 | 2;
   } | null>(null);
 
-  // パートナーと事件カードを取得
-  const partnerCard = cards.find(c => c.type === "パートナー") ?? null;
-  const incidentCard = cards.find(c => c.type === "事件") ?? null;
+  // パートナーと事件カードは現在表示中プレイヤーのデッキから取得
+  const partnerCard = currentPlayerState?.partnerCard ?? null;
+  const incidentCard = currentPlayerState?.incidentCard ?? null;
 
   // 現在のプレイヤーの状態を取得
   const currentPlayerState = currentPlayer === 1 ? player1 : player2;
@@ -196,10 +198,17 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   async function initializeDeck(deckId: number, isFirstPlayer: boolean): Promise<PlayerState | null> {
     const dcs = await db.deckCards.where("deckId").equals(deckId).toArray();
     
+    let deckPartnerCard: Card | null = null;
+    let deckIncidentCard: Card | null = null;
     const allPlayCards: Card[] = [];
     for (const dc of dcs) {
       const card = await db.cards.get(dc.cardId);
-      if (card && card.type !== "パートナー" && card.type !== "事件") {
+      if (!card) continue;
+      if (card.type === "パートナー") {
+        deckPartnerCard = card;
+      } else if (card.type === "事件") {
+        deckIncidentCard = card;
+      } else {
         for (let i = 0; i < dc.count; i++) {
           allPlayCards.push(card);
         }
@@ -235,7 +244,9 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       evidenceFaceUp: new Set(),
       mulliganDone: false,
       partnerState: "normal" as const,
-      traceFound: false
+      traceFound: false,
+      partnerCard: deckPartnerCard,
+      incidentCard: deckIncidentCard,
     };
   }
 
