@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { db, fullSync, syncFromSupabase, syncToSupabase } from "./db";
+import { db, fullSync, syncFromSupabase, syncToSupabase, resetSyncedFlags } from "./db";
 import type { Card, Deck, DeckCard } from "./db";
 import "./App.css";
 import cardBackImage from "/card-back.png";
@@ -712,6 +712,26 @@ export default function App() {
     setTimeout(() => setSyncMessage(""), 5000);
   }
 
+  async function handleForceUpload() {
+    if (!confirm(`ローカルの全カード(${cards.length}枚)をクラウドに強制アップロードします。よろしいですか？`)) return;
+    setSyncing(true);
+    setSyncMessage("🔁 syncedフラグをリセット中...");
+    await resetSyncedFlags();
+    setSyncMessage("⬆️ 強制アップロード中...");
+    const result = await syncToSupabase((p) => {
+      const pct = p.total > 0 ? Math.round((p.current / p.total) * 100) : 0;
+      setSyncMessage(`⬆️ ${p.message}${p.total > 0 ? ` (${pct}%)` : ""}`);
+    });
+    if (result.success) {
+      setSyncMessage("✅ 強制アップロード完了！");
+      await refreshAll();
+    } else {
+      setSyncMessage("❌ アップロードエラー");
+    }
+    setSyncing(false);
+    setTimeout(() => setSyncMessage(""), 5000);
+  }
+
   async function handleUploadSync() {
     setSyncing(true);
     setSyncMessage("⬆️ アップロード中...");
@@ -1186,6 +1206,14 @@ export default function App() {
                 <button className="btn-secondary" onClick={handleDownloadSync} disabled={syncing}>⬇️ クラウドから取得</button>
                 <button className="btn-secondary" onClick={handleUploadSync} disabled={syncing}>⬆️ クラウドへ保存</button>
               </div>
+              <button 
+                className="btn-secondary" 
+                onClick={handleForceUpload} 
+                disabled={syncing}
+                style={{ background: "linear-gradient(135deg, #ff9800, #f57c00)", color: "white", padding: "0.75rem" }}
+              >
+                🔁 全データを強制アップロード（初回・修復用）
+              </button>
             </div>
           </div>
 

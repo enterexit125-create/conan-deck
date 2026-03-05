@@ -116,9 +116,6 @@ export async function downloadImage(url: string): Promise<Blob | null> {
 // 並列処理ユーティリティ
 // ========================================
 
-/**
- * 並列数を制限しながら非同期タスクを並行処理する
- */
 async function runWithConcurrency<T>(
   items: T[],
   concurrency: number,
@@ -136,7 +133,7 @@ async function runWithConcurrency<T>(
 }
 
 // ========================================
-// Supabase同期機能（スマホ最適化版）
+// 共通型
 // ========================================
 
 export type SyncProgress = {
@@ -145,6 +142,155 @@ export type SyncProgress = {
   total: number;
   message: string;
 };
+
+// ========================================
+// syncedフラグをリセット（強制再アップロード用）
+// ========================================
+
+export async function resetSyncedFlags() {
+  await db.cards.toCollection().modify({ synced: false });
+  await db.decks.toCollection().modify({ synced: false });
+  await db.deckCards.toCollection().modify({ synced: false });
+  console.log("🔁 syncedフラグをリセットしました");
+}
+
+// ========================================
+// Supabaseへアップロード（upsert版・進捗付き）
+// ========================================
+
+export async function syncToSupabase(
+  onProgress?: (p: SyncProgress) => void
+) {
+  const userId = getUserId();
+  const BATCH_SIZE = 50;
+
+  const report = (phase: string, current: number, total: number, message: string) => {
+    console.log(`[upload][${phase}] ${current}/${total} ${message}`);
+    onProgress?.({ phase, current, total, message });
+  };
+
+  try {
+    // 1. デッキをupsert
+    const allDecks = await db.decks.toArray();
+    const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
+    report("decks", 0, unsyncedDecks.length, `デッキアップロード: ${unsyncedDecks.length}個`);
+
+    const deckRows = unsyncedDecks
+      .filter(d => d.name)
+      .map(d => ({
+        id: d.id,
+        name: d.name,
+        created_at: new Date(d.createdAt).toISOString(),
+        user_id: userId,
+      }));
+
+    if (deckRows.length > 0) {
+      const { error } = await supabase.from("decks").upsert(deckRows, { onConflict: "id" });
+      if (error) throw error;
+      for (const d of unsyncedDecks) {
+        await db.decks.update(d.id!, { synced: true });
+      }
+    }
+    report("decks", unsyncedDecks.length, unsyncedDecks.length, "デッキ完了");
+
+    // 2. カードをアップロード
+    const allCards = await db.cards.toArray();
+    const unsyncedCards = allCards.filter(c => c.synced === false || c.synced === undefined);
+    const totalCards = unsyncedCards.length;
+    report("cards", 0, totalCards, `カードアップロード: ${totalCards}枚`);
+
+    // 画像アップロード（URLがないものだけ）
+    const imageUrlMap = new Map<number, string>();
+    const needsImageUpload = unsyncedCards.filter(c => c.image && c.id && !c.imageUrl);
+    if (needsImageUpload.length > 0) {
+      report("card-images", 0, needsImageUpload.length, `画像アップロード: ${needsImageUpload.length}枚`);
+      let imgDone = 0;
+      for (const card of needsImageUpload) {
+        const url = await uploadImage(card.image!, card.id!);
+        if (url) imageUrlMap.set(card.id!, url);
+        imgDone++;
+        if (imgDone % 10 === 0 || imgDone === needsImageUpload.length) {
+          report("card-images", imgDone, needsImageUpload.length, `画像アップロード: ${imgDone}/${needsImageUpload.length}枚`);
+        }
+      }
+    }
+
+    // カードをバッチupsert
+    let cardsDone = 0;
+    for (let i = 0; i < unsyncedCards.length; i += BATCH_SIZE) {
+      const batch = unsyncedCards.slice(i, i + BATCH_SIZE);
+      const rows = batch
+        .filter(c => c.name)
+        .map(c => ({
+          id: c.id,
+          name: c.name,
+          number: c.number || null,
+          color: c.color || null,
+          type: c.type || null,
+          level: c.level || null,
+          traits: c.traits || null,
+          memo: c.memo || null,
+          image_url: imageUrlMap.get(c.id!) || c.imageUrl || null,
+          updated_at: new Date(c.updatedAt).toISOString(),
+          user_id: userId,
+        }));
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from("cards").upsert(rows, { onConflict: "id" });
+        if (error) throw error;
+        for (const c of batch) {
+          await db.cards.update(c.id!, {
+            synced: true,
+            imageUrl: imageUrlMap.get(c.id!) || c.imageUrl,
+          });
+        }
+      }
+
+      cardsDone += batch.length;
+      report("cards", cardsDone, totalCards, `カードアップロード: ${cardsDone}/${totalCards}枚`);
+    }
+
+    // 3. デッキカードをupsert
+    const allDeckCards = await db.deckCards.toArray();
+    const unsyncedDeckCards = allDeckCards.filter(dc => dc.synced === false || dc.synced === undefined);
+    const totalDC = unsyncedDeckCards.length;
+    report("deckCards", 0, totalDC, `デッキカードアップロード: ${totalDC}個`);
+
+    let dcDone = 0;
+    for (let i = 0; i < unsyncedDeckCards.length; i += BATCH_SIZE) {
+      const batch = unsyncedDeckCards.slice(i, i + BATCH_SIZE);
+      const rows = batch
+        .filter(dc => Number.isInteger(dc.deckId) && Number.isInteger(dc.cardId))
+        .map(dc => ({
+          id: dc.id,
+          deck_id: dc.deckId,
+          card_id: dc.cardId,
+          count: dc.count || 1,
+        }));
+
+      if (rows.length > 0) {
+        const { error } = await supabase.from("deck_cards").upsert(rows, { onConflict: "id" });
+        if (error) throw error;
+        for (const dc of batch) {
+          await db.deckCards.update(dc.id!, { synced: true });
+        }
+      }
+
+      dcDone += batch.length;
+      report("deckCards", dcDone, totalDC, `デッキカード: ${dcDone}/${totalDC}個`);
+    }
+
+    console.log("✅ Supabaseへの同期完了");
+    return { success: true };
+  } catch (error) {
+    console.error("❌ Supabaseアップロードエラー:", error);
+    return { success: false, error };
+  }
+}
+
+// ========================================
+// Supabaseからダウンロード（スマホ最適化版）
+// ========================================
 
 export async function syncFromSupabase(
   onProgress?: (p: SyncProgress) => void
@@ -159,13 +305,11 @@ export async function syncFromSupabase(
   try {
     report("fetch", 0, 1, "クラウドからデータを取得中...");
 
-    // ページネーションで全件取得するヘルパー（count確認付き）
     async function fetchAll(table: string, filters: Record<string, string> = {}) {
-      const PAGE_SIZE = 500; // 安全のため500に下げる（Supabaseのmax_rows設定に左右されにくい）
+      const PAGE_SIZE = 500;
       let from = 0;
       const allData: any[] = [];
 
-      // まず総件数を取得（Supabase が何件持っているか確認）
       let countQuery = (supabase.from(table) as any).select("*", { count: "exact", head: true });
       for (const [key, value] of Object.entries(filters)) {
         countQuery = countQuery.eq(key, value);
@@ -181,7 +325,7 @@ export async function syncFromSupabase(
         let query = (supabase.from(table) as any)
           .select("*")
           .range(from, from + PAGE_SIZE - 1)
-          .order("id", { ascending: true }); // 順序を明示して取りこぼし防止
+          .order("id", { ascending: true });
         for (const [key, value] of Object.entries(filters)) {
           query = query.eq(key, value);
         }
@@ -190,7 +334,7 @@ export async function syncFromSupabase(
         if (!data || data.length === 0) break;
         allData.push(...data);
         console.log(`[fetchAll] ${table}: ${allData.length}/${count ?? "?"} 件取得済み`);
-        if (data.length < PAGE_SIZE) break; // このページが最後
+        if (data.length < PAGE_SIZE) break;
         from += PAGE_SIZE;
       }
       return allData;
@@ -199,14 +343,12 @@ export async function syncFromSupabase(
     const cardsData = await fetchAll("cards", { user_id: userId });
     const decksData = await fetchAll("decks", { user_id: userId });
 
-    // deck_cardsは自分のデッキIDで絞り込みページネーション
     const myDeckIds = decksData.map((d: any) => String(d.id));
     const deckCardsData: any[] = [];
     if (myDeckIds.length > 0) {
       const PAGE_SIZE = 500;
       let from = 0;
 
-      // 総件数確認
       const { count: dcCount } = await supabase
         .from("deck_cards")
         .select("*", { count: "exact", head: true })
@@ -229,9 +371,7 @@ export async function syncFromSupabase(
       }
     }
 
-    // ========================================
     // デッキをバッチ同期
-    // ========================================
     if (decksData.length > 0) {
       report("decks", 0, decksData.length, `デッキ同期中... (${decksData.length}個)`);
       const localDeckIds = new Set((await db.decks.toArray()).map(d => d.id));
@@ -260,9 +400,7 @@ export async function syncFromSupabase(
       report("decks", decksData.length, decksData.length, "デッキ完了");
     }
 
-    // ========================================
     // デッキカードをバッチ同期
-    // ========================================
     if (deckCardsData.length > 0) {
       report("deckCards", 0, deckCardsData.length, `デッキカード同期中... (${deckCardsData.length}個)`);
       const localDeckCardIds = new Set((await db.deckCards.toArray()).map(dc => dc.id));
@@ -291,14 +429,11 @@ export async function syncFromSupabase(
       report("deckCards", deckCardsData.length, deckCardsData.length, "デッキカード完了");
     }
 
-    // ========================================
-    // カード: まずメタデータだけ一括書き込み（画像なし）
-    // ========================================
+    // カード: メタデータを先に一括書き込み
     if (cardsData.length > 0) {
       const totalCards = cardsData.length;
       report("cards-meta", 0, totalCards, `カード情報を保存中... (${totalCards}枚)`);
 
-      // ローカルのカードIDと画像の有無を一度に取得
       const localCards = await db.cards.toArray();
       const localCardMap = new Map(localCards.map(c => [c.id!, c]));
 
@@ -316,7 +451,6 @@ export async function syncFromSupabase(
           level: c.level || undefined,
           traits: c.traits || undefined,
           memo: c.memo || undefined,
-          // 画像はこの段階ではローカルにあるものを保持するだけ
           image: existing?.image,
           imageUrl: c.image_url || undefined,
           updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
@@ -330,7 +464,6 @@ export async function syncFromSupabase(
         }
       }
 
-      // バッチ書き込み（一括なのでスマホでも高速）
       const WRITE_BATCH = 200;
       let written = 0;
       for (let i = 0; i < toAdd.length; i += WRITE_BATCH) {
@@ -351,13 +484,10 @@ export async function syncFromSupabase(
 
       report("cards-meta", totalCards, totalCards, "カード情報完了 — 画像をダウンロード中...");
 
-      // ========================================
       // 画像: ローカルに未取得のものだけ並列ダウンロード
-      // ========================================
       const needsImage = cardsData.filter((c: any) => {
         if (!c.image_url) return false;
         const local = localCardMap.get(c.id);
-        // ローカルに画像があればスキップ
         return !local?.image;
       });
 
@@ -367,11 +497,7 @@ export async function syncFromSupabase(
 
       report("images", 0, totalImages, `画像ダウンロード中... (0/${totalImages}枚)`);
 
-      // スマホを考慮して並列数は 3 に制限
-      // (PC では体感差なし、スマホでは安定性が大幅向上)
-      const IMAGE_CONCURRENCY = 3;
-
-      await runWithConcurrency(needsImage, IMAGE_CONCURRENCY, async (c: any) => {
+      await runWithConcurrency(needsImage, 3, async (c: any) => {
         const blob = await downloadImage(c.image_url);
         if (blob) {
           try {
@@ -390,12 +516,8 @@ export async function syncFromSupabase(
         }
       });
 
-      report(
-        "images",
-        totalImages,
-        totalImages,
-        `画像完了: ${downloadedImages}枚取得, ${failedImages}枚スキップ`
-      );
+      report("images", totalImages, totalImages,
+        `画像完了: ${downloadedImages}枚取得, ${failedImages}枚スキップ`);
     }
 
     console.log("✅ Supabaseから同期完了");
@@ -406,247 +528,24 @@ export async function syncFromSupabase(
   }
 }
 
-export async function syncToSupabase() {
-  const userId = getUserId();
-
-  try {
-    // ========================================
-    // 1. デッキをアップロード
-    // ========================================
-    const allDecks = await db.decks.toArray();
-    const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
-    
-    console.log(`📤 デッキアップロード: ${unsyncedDecks.length}個`);
-    
-    const decksToUpdate: number[] = [];
-    const decksToInsert: any[] = [];
-    
-    for (const deck of unsyncedDecks) {
-      if (!deck.name) continue;
-
-      const { data: existingDeck, error: checkError } = await supabase
-        .from("decks")
-        .select("id")
-        .eq("id", deck.id)
-        .eq("user_id", userId)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      const deckData = {
-        id: deck.id,
-        name: deck.name,
-        created_at: new Date(deck.createdAt).toISOString(),
-        user_id: userId,
-      };
-
-      if (existingDeck) {
-        decksToUpdate.push(deck.id!);
-      } else {
-        decksToInsert.push(deckData);
-      }
-    }
-
-    for (const deckId of decksToUpdate) {
-      const deck = unsyncedDecks.find(d => d.id === deckId);
-      if (!deck) continue;
-      
-      await supabase
-        .from("decks")
-        .update({
-          name: deck.name,
-          created_at: new Date(deck.createdAt).toISOString(),
-        })
-        .eq("id", deckId)
-        .eq("user_id", userId);
-      
-      await db.decks.update(deckId, { synced: true });
-    }
-
-    if (decksToInsert.length > 0) {
-      await supabase.from("decks").insert(decksToInsert);
-      for (const deck of decksToInsert) {
-        await db.decks.update(deck.id, { synced: true });
-      }
-    }
-
-    // ========================================
-    // 2. カードをアップロード
-    // ========================================
-    const allCards = await db.cards.toArray();
-    const unsyncedCards = allCards.filter(c => c.synced === false || c.synced === undefined);
-    
-    console.log(`📤 カードアップロード: ${unsyncedCards.length}枚`);
-    
-    // ★ 画像アップロード（既にURLがあればスキップ）
-    const cardsNeedingImageUpload = unsyncedCards.filter(c => c.image && c.id && !c.imageUrl);
-    console.log(`📤 画像アップロード: ${cardsNeedingImageUpload.length}枚`);
-    
-    const imageUrlMap = new Map<number, string>();
-    
-    for (const card of cardsNeedingImageUpload) {
-      const imageUrl = await uploadImage(card.image!, card.id!);
-      if (imageUrl) {
-        imageUrlMap.set(card.id!, imageUrl);
-      }
-    }
-
-    const cardsToUpdate: any[] = [];
-    const cardsToInsert: any[] = [];
-    
-    for (const card of unsyncedCards) {
-      if (!card.name) continue;
-
-      const imageUrl = imageUrlMap.get(card.id!) || card.imageUrl || null;
-
-      const { data: existingCard, error: checkError } = await supabase
-        .from("cards")
-        .select("id")
-        .eq("id", card.id)
-        .eq("user_id", userId)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      const cardData = {
-        id: card.id,
-        name: card.name,
-        number: card.number || null,
-        color: card.color || null,
-        type: card.type || null,
-        level: card.level || null,
-        traits: card.traits || null,
-        memo: card.memo || null,
-        image_url: imageUrl,
-        updated_at: new Date(card.updatedAt).toISOString(),
-        user_id: userId,
-      };
-
-      if (existingCard) {
-        cardsToUpdate.push({ ...cardData, _id: card.id });
-      } else {
-        cardsToInsert.push(cardData);
-      }
-    }
-
-    for (const card of cardsToUpdate) {
-      await supabase
-        .from("cards")
-        .update({
-          name: card.name,
-          number: card.number,
-          color: card.color,
-          type: card.type,
-          level: card.level,
-          traits: card.traits,
-          memo: card.memo,
-          image_url: card.image_url,
-          updated_at: card.updated_at,
-        })
-        .eq("id", card._id)
-        .eq("user_id", userId);
-      
-      await db.cards.update(card._id, { synced: true, imageUrl: card.image_url });
-    }
-
-    const BATCH_SIZE = 50;
-    for (let i = 0; i < cardsToInsert.length; i += BATCH_SIZE) {
-      const batch = cardsToInsert.slice(i, i + BATCH_SIZE);
-      await supabase.from("cards").insert(batch);
-      
-      for (const card of batch) {
-        await db.cards.update(card.id, { synced: true, imageUrl: card.image_url });
-      }
-    }
-
-    // ========================================
-    // 3. デッキカードをアップロード
-    // ========================================
-    const allDeckCards = await db.deckCards.toArray();
-    const unsyncedDeckCards = allDeckCards.filter(dc => dc.synced === false || dc.synced === undefined);
-    
-    console.log(`📤 デッキカードアップロード: ${unsyncedDeckCards.length}個`);
-    
-    const deckCardsToUpdate: any[] = [];
-    const deckCardsToInsert: any[] = [];
-    
-    for (const dc of unsyncedDeckCards) {
-      if (!Number.isInteger(dc.deckId) || !Number.isInteger(dc.cardId)) continue;
-
-      const { data: existingDeckCard, error: checkError } = await supabase
-        .from("deck_cards")
-        .select("id")
-        .eq("id", dc.id)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
-      }
-
-      const deckCardData = {
-        id: dc.id,
-        deck_id: dc.deckId,
-        card_id: dc.cardId,
-        count: dc.count || 1,
-      };
-
-      if (existingDeckCard) {
-        deckCardsToUpdate.push({ ...deckCardData, _id: dc.id });
-      } else {
-        deckCardsToInsert.push(deckCardData);
-      }
-    }
-
-    for (const dc of deckCardsToUpdate) {
-      await supabase
-        .from("deck_cards")
-        .update({
-          deck_id: dc.deck_id,
-          card_id: dc.card_id,
-          count: dc.count,
-        })
-        .eq("id", dc._id);
-      
-      await db.deckCards.update(dc._id, { synced: true });
-    }
-
-    if (deckCardsToInsert.length > 0) {
-      for (let i = 0; i < deckCardsToInsert.length; i += BATCH_SIZE) {
-        const batch = deckCardsToInsert.slice(i, i + BATCH_SIZE);
-        await supabase.from("deck_cards").insert(batch);
-        
-        for (const dc of batch) {
-          await db.deckCards.update(dc.id, { synced: true });
-        }
-      }
-    }
-
-    console.log("✅ Supabaseへの同期完了");
-    return { success: true };
-  } catch (error) {
-    console.error("❌ Supabaseアップロードエラー:", error);
-    return { success: false, error };
-  }
-}
+// ========================================
+// 完全同期
+// ========================================
 
 export async function fullSync(onProgress?: (p: SyncProgress) => void) {
   console.log("🔄 完全同期開始...");
-  
-  const uploadResult = await syncToSupabase();
+
+  const uploadResult = await syncToSupabase(onProgress);
   if (!uploadResult.success) {
     console.error("アップロード失敗");
     return uploadResult;
   }
 
   const downloadResult = await syncFromSupabase(onProgress);
-  
+
   if (downloadResult.success) {
     console.log("✅ 完全同期完了");
   }
-  
+
   return downloadResult;
 }
