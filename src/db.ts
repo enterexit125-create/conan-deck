@@ -9,7 +9,7 @@ export type Card = {
   color?: string;
   type?: string;
   level?: number;
-  traits?: string;  // 特徴（フリー入力）
+  traits?: string;
   memo?: string;
   image?: Blob;
   imageUrl?: string;
@@ -74,9 +74,6 @@ export const db = new AppDB();
 // 画像アップロード機能
 // ========================================
 
-/**
- * 画像をSupabase Storageにアップロード
- */
 export async function uploadImage(blob: Blob, cardId: number): Promise<string | null> {
   try {
     const fileName = `${getUserId()}/card_${cardId}_${Date.now()}.${blob.type.split('/')[1]}`;
@@ -93,7 +90,6 @@ export async function uploadImage(blob: Blob, cardId: number): Promise<string | 
       return null;
     }
 
-    // 公開URLを取得
     const { data: urlData } = supabase.storage
       .from('card-images')
       .getPublicUrl(fileName);
@@ -105,9 +101,6 @@ export async function uploadImage(blob: Blob, cardId: number): Promise<string | 
   }
 }
 
-/**
- * 画像URLから画像をダウンロード
- */
 export async function downloadImage(url: string): Promise<Blob | null> {
   try {
     const response = await fetch(url);
@@ -120,13 +113,15 @@ export async function downloadImage(url: string): Promise<Blob | null> {
 }
 
 // ========================================
-// Supabase同期機能
+// Supabase同期機能（画像最適化版）
 // ========================================
 
 export async function syncFromSupabase() {
   const userId = getUserId();
 
   try {
+    console.log("⬇️ クラウドからデータを取得中...");
+
     const { data: cardsData, error: cardsError } = await supabase
       .from("cards")
       .select("*")
@@ -147,27 +142,49 @@ export async function syncFromSupabase() {
 
     if (deckCardsError) throw deckCardsError;
 
-    // カードを同期（重複を避ける）
+    // カードを同期（★画像最適化版）
     if (cardsData && cardsData.length > 0) {
-      for (const c of cardsData) {
-        let imageBlob: Blob | undefined = undefined;
+      let skippedImages = 0;
+      let downloadedImages = 0;
+      const totalCards = cardsData.length;
+
+      console.log(`📥 カード同期中... (${totalCards}枚)`);
+
+      for (let i = 0; i < cardsData.length; i++) {
+        const c = cardsData[i];
         
-        if (c.image_url) {
-          const blob = await downloadImage(c.image_url);
-          if (blob) imageBlob = blob;
+        // 進捗表示（10枚ごと）
+        if ((i + 1) % 10 === 0 || i === totalCards - 1) {
+          console.log(`  ${i + 1}/${totalCards}枚処理中...`);
         }
-        
+
         // ローカルに既に同じIDのカードがあるかチェック
         const existingLocal = await db.cards.get(c.id);
         
+        let imageBlob: Blob | undefined = undefined;
+        
+        if (c.image_url) {
+          // ★ 画像最適化: ローカルに画像があればスキップ
+          if (existingLocal?.image) {
+            imageBlob = existingLocal.image;
+            skippedImages++;
+          } else {
+            const blob = await downloadImage(c.image_url);
+            if (blob) {
+              imageBlob = blob;
+              downloadedImages++;
+            }
+          }
+        }
+        
         if (existingLocal) {
-          // 既存カードを更新（IDを保持）
           await db.cards.update(c.id, {
             name: c.name || "",
             number: c.number || undefined,
             color: c.color || undefined,
             type: c.type || undefined,
             level: c.level || undefined,
+            traits: c.traits || undefined,
             memo: c.memo || undefined,
             image: imageBlob,
             imageUrl: c.image_url || undefined,
@@ -176,7 +193,6 @@ export async function syncFromSupabase() {
             synced: true,
           });
         } else {
-          // 新規カードを追加（IDを明示的に指定）
           await db.cards.add({
             id: c.id,
             name: c.name || "",
@@ -184,6 +200,7 @@ export async function syncFromSupabase() {
             color: c.color || undefined,
             type: c.type || undefined,
             level: c.level || undefined,
+            traits: c.traits || undefined,
             memo: c.memo || undefined,
             image: imageBlob,
             imageUrl: c.image_url || undefined,
@@ -193,10 +210,14 @@ export async function syncFromSupabase() {
           });
         }
       }
+
+      console.log(`📊 画像: ${downloadedImages}枚ダウンロード, ${skippedImages}枚スキップ`);
     }
 
     // デッキを同期
     if (decksData && decksData.length > 0) {
+      console.log(`📥 デッキ同期中... (${decksData.length}個)`);
+      
       for (const d of decksData) {
         const existingLocal = await db.decks.get(d.id);
         
@@ -221,6 +242,8 @@ export async function syncFromSupabase() {
 
     // デッキカードを同期
     if (deckCardsData && deckCardsData.length > 0) {
+      console.log(`📥 デッキカード同期中... (${deckCardsData.length}個)`);
+      
       for (const dc of deckCardsData) {
         const existingLocal = await db.deckCards.get(dc.id);
         
@@ -256,15 +279,14 @@ export async function syncToSupabase() {
 
   try {
     // ========================================
-    // 1. まずデッキをアップロード（外部キー制約のため）
+    // 1. デッキをアップロード
     // ========================================
     const allDecks = await db.decks.toArray();
     const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
     
-    console.log(`📤 アップロード: ${unsyncedDecks.length}個のデッキ`);
+    console.log(`📤 デッキアップロード: ${unsyncedDecks.length}個`);
     
-    // 更新と新規を分ける
-    const decksToUpdate: any[] = [];
+    const decksToUpdate: number[] = [];
     const decksToInsert: any[] = [];
     
     for (const deck of unsyncedDecks) {
@@ -289,13 +311,12 @@ export async function syncToSupabase() {
       };
 
       if (existingDeck) {
-        decksToUpdate.push(deck.id);
+        decksToUpdate.push(deck.id!);
       } else {
         decksToInsert.push(deckData);
       }
     }
 
-    // バッチ更新
     for (const deckId of decksToUpdate) {
       const deck = unsyncedDecks.find(d => d.id === deckId);
       if (!deck) continue;
@@ -312,7 +333,6 @@ export async function syncToSupabase() {
       await db.decks.update(deckId, { synced: true });
     }
 
-    // バッチ挿入
     if (decksToInsert.length > 0) {
       await supabase.from("decks").insert(decksToInsert);
       for (const deck of decksToInsert) {
@@ -321,25 +341,26 @@ export async function syncToSupabase() {
     }
 
     // ========================================
-    // 2. 次にカードをアップロード（バッチ処理）
+    // 2. カードをアップロード
     // ========================================
     const allCards = await db.cards.toArray();
     const unsyncedCards = allCards.filter(c => c.synced === false || c.synced === undefined);
     
-    console.log(`📤 アップロード: ${unsyncedCards.length}枚のカード`);
+    console.log(`📤 カードアップロード: ${unsyncedCards.length}枚`);
     
-    // 画像アップロード（並列処理）
-    const imageUploadPromises = unsyncedCards
-      .filter(c => c.image && c.id)
-      .map(async (card) => {
-        const imageUrl = await uploadImage(card.image!, card.id!);
-        return { id: card.id, imageUrl };
-      });
+    // ★ 画像アップロード（既にURLがあればスキップ）
+    const cardsNeedingImageUpload = unsyncedCards.filter(c => c.image && c.id && !c.imageUrl);
+    console.log(`📤 画像アップロード: ${cardsNeedingImageUpload.length}枚`);
     
-    const uploadedImages = await Promise.all(imageUploadPromises);
-    const imageUrlMap = new Map(uploadedImages.filter(i => i.imageUrl).map(i => [i.id, i.imageUrl!]));
+    const imageUrlMap = new Map<number, string>();
+    
+    for (const card of cardsNeedingImageUpload) {
+      const imageUrl = await uploadImage(card.image!, card.id!);
+      if (imageUrl) {
+        imageUrlMap.set(card.id!, imageUrl);
+      }
+    }
 
-    // 更新と新規を分ける
     const cardsToUpdate: any[] = [];
     const cardsToInsert: any[] = [];
     
@@ -366,6 +387,7 @@ export async function syncToSupabase() {
         color: card.color || null,
         type: card.type || null,
         level: card.level || null,
+        traits: card.traits || null,
         memo: card.memo || null,
         image_url: imageUrl,
         updated_at: new Date(card.updatedAt).toISOString(),
@@ -379,7 +401,6 @@ export async function syncToSupabase() {
       }
     }
 
-    // バッチ更新
     for (const card of cardsToUpdate) {
       await supabase
         .from("cards")
@@ -389,6 +410,7 @@ export async function syncToSupabase() {
           color: card.color,
           type: card.type,
           level: card.level,
+          traits: card.traits,
           memo: card.memo,
           image_url: card.image_url,
           updated_at: card.updated_at,
@@ -399,7 +421,6 @@ export async function syncToSupabase() {
       await db.cards.update(card._id, { synced: true, imageUrl: card.image_url });
     }
 
-    // バッチ挿入（50件ずつ）
     const BATCH_SIZE = 50;
     for (let i = 0; i < cardsToInsert.length; i += BATCH_SIZE) {
       const batch = cardsToInsert.slice(i, i + BATCH_SIZE);
@@ -411,12 +432,12 @@ export async function syncToSupabase() {
     }
 
     // ========================================
-    // 3. 最後にデッキカードをアップロード（バッチ処理）
+    // 3. デッキカードをアップロード
     // ========================================
     const allDeckCards = await db.deckCards.toArray();
     const unsyncedDeckCards = allDeckCards.filter(dc => dc.synced === false || dc.synced === undefined);
     
-    console.log(`📤 アップロード: ${unsyncedDeckCards.length}個のデッキカード`);
+    console.log(`📤 デッキカードアップロード: ${unsyncedDeckCards.length}個`);
     
     const deckCardsToUpdate: any[] = [];
     const deckCardsToInsert: any[] = [];
@@ -448,7 +469,6 @@ export async function syncToSupabase() {
       }
     }
 
-    // バッチ更新
     for (const dc of deckCardsToUpdate) {
       await supabase
         .from("deck_cards")
@@ -462,7 +482,6 @@ export async function syncToSupabase() {
       await db.deckCards.update(dc._id, { synced: true });
     }
 
-    // バッチ挿入
     if (deckCardsToInsert.length > 0) {
       for (let i = 0; i < deckCardsToInsert.length; i += BATCH_SIZE) {
         const batch = deckCardsToInsert.slice(i, i + BATCH_SIZE);
@@ -485,14 +504,12 @@ export async function syncToSupabase() {
 export async function fullSync() {
   console.log("🔄 完全同期開始...");
   
-  // まずアップロード
   const uploadResult = await syncToSupabase();
   if (!uploadResult.success) {
     console.error("アップロード失敗");
     return uploadResult;
   }
 
-  // 次にダウンロード
   const downloadResult = await syncFromSupabase();
   
   if (downloadResult.success) {

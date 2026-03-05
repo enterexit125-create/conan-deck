@@ -106,6 +106,11 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   const [newFieldCardIndices, setNewFieldCardIndices] = useState<number[]>([]); // 今ターンで現場に出たカードのインデックス
   const [turnEndTrigger, setTurnEndTrigger] = useState(0); // ターン終了トリガー
   
+  // ログ機能
+  const [gameLog, setGameLog] = useState<{time: string; player: 1 | 2 | null; message: string}[]>([]);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [turnCount, setTurnCount] = useState(1); // ターン数
+  
   // モーダル表示状態
   const [showCardMenu, setShowCardMenu] = useState(false);
   const [selectedCard, setSelectedCard] = useState<{ 
@@ -154,6 +159,13 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     }
   }
 
+  // ログを追加
+  function addLog(message: string, player: 1 | 2 | null = currentPlayer) {
+    const now = new Date();
+    const time = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    setGameLog(prev => [...prev, { time, player, message }]);
+  }
+
   // ゲーム開始
   async function startPlay(player1DeckId: number, player2DeckId: number) {
     // プレイヤー1のデッキを初期化（先攻）
@@ -168,6 +180,13 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     setPlayer2(p2State);
     setCurrentPlayer(1);
     setIsPlaying(true);
+    setGameLog([]);
+    setTurnCount(1);
+    // ゲーム開始後にログを追加
+    setTimeout(() => {
+      addLog("ゲーム開始", null);
+      addLog("ターン1 開始", null);
+    }, 0);
   }
 
   // デッキを初期化してPlayerStateを返す
@@ -238,6 +257,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     
     // 新しい手札カードのインデックスを追加
     setNewHandCardIndices(prev => [...prev, newIndex]);
+    addLog("ドローした");
   }
 
   // リフレッシュ処理（山札0枚時にリムーブを山札に戻す）
@@ -279,6 +299,8 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       });
     }
     
+    addLog("リフレッシュ（リムーブ→山札）");
+    addLog("相手に証拠+1", currentPlayer === 1 ? 2 : 1);
     alert("リフレッシュ！リムーブを山札に戻しました。相手に証拠が1枚追加されました。");
   }
 
@@ -322,6 +344,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       prev.filter(i => i !== index).map(i => i > index ? i - 1 : i)
     );
     
+    addLog(`「${card.name}」を現場に出した`);
     setShowCardMenu(false);
   }
 
@@ -746,6 +769,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       mulliganDone: true
     });
     
+    addLog(`マリガン ${drawCount}枚`);
     setIsMulliganMode(false);
     setSelectedForMulligan([]);
   }
@@ -788,9 +812,15 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     setNewFieldCardIndices([]);
     setNewMulliganCardIndices([]);
     
+    addLog("ターン終了");
+    
     // プレイヤーを切り替え
     const nextPlayer = currentPlayer === 1 ? 2 : 1;
     setCurrentPlayer(nextPlayer);
+    
+    // ターン数を更新
+    setTurnCount(prev => prev + 1);
+    setTimeout(() => addLog(`ターン${turnCount + 1} 開始`, null), 0);
     
     // ターン終了トリガーをインクリメント（カード状態更新用）
     setTurnEndTrigger(prev => prev + 1);
@@ -969,6 +999,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         onClearNewHandCards={() => setNewHandCardIndices([])}
         newFieldCardIndices={newFieldCardIndices}
         onClearNewFieldCards={() => setNewFieldCardIndices([])}
+        onShowLog={() => setShowLogModal(true)}
         onSetCardsRemoved={(cards, fieldIndex, player) => {
           // セットカードをリムーブへ追加
           if (cards.length > 0) {
@@ -1512,6 +1543,111 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               >
                 ◀ 閉じる
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ログモーダル */}
+      {showLogModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem"
+          }}
+          onClick={() => setShowLogModal(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "1rem",
+              width: "100%",
+              maxWidth: "360px",
+              maxHeight: "80vh",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+              display: "flex",
+              flexDirection: "column"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              marginBottom: "0.75rem",
+              borderBottom: "1px solid #eee",
+              paddingBottom: "0.5rem"
+            }}>
+              <h3 style={{ margin: 0, fontSize: "1.1rem" }}>📋 ゲームログ</h3>
+              <button
+                onClick={() => setShowLogModal(false)}
+                style={{
+                  background: "#e0e0e0",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "28px",
+                  height: "28px",
+                  fontSize: "1rem",
+                  cursor: "pointer"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div style={{ 
+              flex: 1, 
+              overflowY: "auto",
+              fontSize: "0.85rem"
+            }}>
+              {gameLog.length === 0 ? (
+                <div style={{ color: "#999", textAlign: "center", padding: "2rem" }}>
+                  ログはまだありません
+                </div>
+              ) : (
+                gameLog.map((log, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: "0.4rem 0.5rem",
+                      borderBottom: "1px solid #f0f0f0",
+                      display: "flex",
+                      gap: "0.5rem",
+                      alignItems: "flex-start",
+                      background: log.message.includes("ターン") && log.message.includes("開始") 
+                        ? "#e3f2fd" 
+                        : "transparent"
+                    }}
+                  >
+                    <span style={{ color: "#999", fontSize: "0.75rem", flexShrink: 0 }}>
+                      {log.time}
+                    </span>
+                    {log.player && (
+                      <span style={{ 
+                        background: log.player === 1 ? "#2196f3" : "#f44336",
+                        color: "white",
+                        padding: "0 0.3rem",
+                        borderRadius: "3px",
+                        fontSize: "0.7rem",
+                        flexShrink: 0
+                      }}>
+                        P{log.player}
+                      </span>
+                    )}
+                    <span style={{ flex: 1 }}>{log.message}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

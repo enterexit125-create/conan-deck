@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { db } from '../db';
 
 interface CsvImportModalProps {
@@ -12,95 +12,34 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
   const [total, setTotal] = useState(0);
   const [isImporting, setIsImporting] = useState(false);
   const [errorLog, setErrorLog] = useState<string[]>([]);
+  
+  // 画像ファイル用
+  const [imageFiles, setImageFiles] = useState<Map<string, File>>(new Map());
+  const [imageCount, setImageCount] = useState(0);
+  
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Base64文字列からBlobに変換
-  function base64ToBlob(base64String: string): Blob | null {
-    try {
-      // data:image/jpeg;base64, の部分を削除
-      const base64Data = base64String.replace(/^data:image\/\w+;base64,/, '');
-      
-      // Base64をバイナリに変換
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      
-      const byteArray = new Uint8Array(byteNumbers);
-      
-      // MIMEタイプを推測
-      let mimeType = 'image/jpeg';
-      if (base64String.startsWith('data:image/png')) {
-        mimeType = 'image/png';
-      } else if (base64String.startsWith('data:image/gif')) {
-        mimeType = 'image/gif';
-      } else if (base64String.startsWith('data:image/webp')) {
-        mimeType = 'image/webp';
-      }
-      
-      return new Blob([byteArray], { type: mimeType });
-    } catch (error) {
-      console.error('Base64変換エラー:', error);
-      return null;
+  // 画像ファイルを選択
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    
+    const imageMap = new Map<string, File>();
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      // ファイル名をキーにして保存
+      imageMap.set(file.name, file);
     }
+    
+    setImageFiles(imageMap);
+    setImageCount(imageMap.size);
   }
 
-  // 画像ダウンロード関数（CORS対応 + エラーハンドリング強化）
-  async function downloadImage(imageUrl: string): Promise<Blob | null> {
-    if (!imageUrl || imageUrl.trim() === '') {
-      return null;
-    }
-
-    try {
-      // CORSエラー対策
-      let response = await fetch(imageUrl, {
-        mode: 'cors',
-        cache: 'no-cache',
-      });
-
-      // CORSエラーの場合は no-cors で再試行
-      if (!response.ok && response.type === 'opaque') {
-        response = await fetch(imageUrl, {
-          mode: 'no-cors',
-        });
-      }
-
-      if (!response.ok && response.type !== 'opaque') {
-        console.error(`画像取得失敗: ${imageUrl} (${response.status})`);
-        return null;
-      }
-
-      const blob = await response.blob();
-
-      // Blobサイズチェック
-      if (blob.size === 0) {
-        console.error(`画像サイズが0: ${imageUrl}`);
-        return null;
-      }
-
-      // 画像形式チェック（no-corsの場合はskip）
-      if (blob.type && !blob.type.startsWith('image/')) {
-        console.error(`画像形式ではありません: ${imageUrl} (${blob.type})`);
-        return null;
-      }
-
-      // Blobに画像形式を明示的に設定
-      if (!blob.type) {
-        const ext = imageUrl.split('.').pop()?.toLowerCase();
-        let mimeType = 'image/jpeg';
-        if (ext === 'png') mimeType = 'image/png';
-        if (ext === 'gif') mimeType = 'image/gif';
-        if (ext === 'webp') mimeType = 'image/webp';
-
-        return new Blob([blob], { type: mimeType });
-      }
-
-      return blob;
-    } catch (error) {
-      console.error(`画像ダウンロードエラー: ${imageUrl}`, error);
-      return null;
-    }
+  // FileをBlobに変換
+  async function fileToBlob(file: File): Promise<Blob> {
+    return new Blob([await file.arrayBuffer()], { type: file.type });
   }
 
   // CSVファイル処理
@@ -116,16 +55,40 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
 
-      // ヘッダー行をスキップ
+      // ヘッダー行を解析
+      const headerLine = lines[0];
+      const headers = headerLine.split(',').map(h => h.trim().toLowerCase());
+      
+      // 各列のインデックスを取得
+      const numberIdx = headers.indexOf('number');
+      const nameIdx = headers.indexOf('name');
+      const levelIdx = headers.indexOf('level');
+      const colorIdx = headers.indexOf('color');
+      const typeIdx = headers.indexOf('type');
+      const traitsIdx = headers.indexOf('traits');
+      const memoIdx = headers.indexOf('memo');
+      const imageIdx = headers.indexOf('image');
+      
+      // 必須列チェック
+      if (numberIdx === -1 || nameIdx === -1) {
+        alert('CSVにnumberとname列が必要です');
+        setIsImporting(false);
+        return;
+      }
+
+      // データ行を処理
       const dataLines = lines.slice(1);
       setTotal(dataLines.length);
 
       const errors: string[] = [];
       let successCount = 0;
+      let imageSuccessCount = 0;
 
       for (let i = 0; i < dataLines.length; i++) {
         const line = dataLines[i];
-        const columns = line.split(',').map(col => col.trim());
+        
+        // CSVのパース（引用符内のカンマを考慮）
+        const columns = parseCSVLine(line);
 
         // 最低限の列チェック
         if (columns.length < 2) {
@@ -133,7 +96,14 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
           continue;
         }
 
-        const [number, name, level, color, type, traits, memo] = columns;
+        const number = columns[numberIdx]?.trim() || '';
+        const name = columns[nameIdx]?.trim() || '';
+        const level = levelIdx !== -1 ? columns[levelIdx]?.trim() : '';
+        const color = colorIdx !== -1 ? columns[colorIdx]?.trim() : '';
+        const type = typeIdx !== -1 ? columns[typeIdx]?.trim() : '';
+        const traits = traitsIdx !== -1 ? columns[traitsIdx]?.trim() : '';
+        const memo = memoIdx !== -1 ? columns[memoIdx]?.trim() : '';
+        const imageFileName = imageIdx !== -1 ? columns[imageIdx]?.trim() : '';
 
         if (!number || !name) {
           errors.push(`行${i + 2}: 番号または名前が空です`);
@@ -141,11 +111,32 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
         }
 
         try {
-          // 既存カードチェック
-          const existingCard = await db.cards
-            .where('number')
-            .equals(number)
-            .first();
+          // 既存カードチェック（番号と画像ファイル名の組み合わせで判定）
+          let existingCard = null;
+          
+          // 画像ファイル名がある場合、同じ番号で同じ画像ファイル名のカードを探す
+          if (imageFileName) {
+            const cardsWithSameNumber = await db.cards
+              .where('number')
+              .equals(number)
+              .toArray();
+            
+            // 画像ファイル名が一致するものを探す（なければ最初のもの）
+            existingCard = cardsWithSameNumber.find(c => {
+              // imageUrlに画像ファイル名が含まれているかチェック
+              return c.imageUrl?.includes(imageFileName);
+            });
+            
+            // 一致するものがなく、画像がないカードがあればそれを使う
+            if (!existingCard) {
+              existingCard = cardsWithSameNumber.find(c => !c.image && !c.imageUrl);
+            }
+          } else {
+            existingCard = await db.cards
+              .where('number')
+              .equals(number)
+              .first();
+          }
 
           // levelの型変換
           let levelValue: number | undefined = undefined;
@@ -156,12 +147,11 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
             }
           }
 
-          // 全てのフィールドを明示的にstring型に変換（undefinedを避ける）
+          // 値の正規化
           const nameValue = name.trim();
           const numberValue = number.trim();
           const colorValue = (color && color.trim() !== '') ? color.trim() : '';
           
-          // typeの値を正規化（キャラクター → キャラ など）
           let typeValue = (type && type.trim() !== '') ? type.trim() : '';
           if (typeValue === 'キャラクター') typeValue = 'キャラ';
           if (typeValue === 'イベントカード') typeValue = 'イベント';
@@ -171,9 +161,16 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
           const traitsValue = (traits && traits.trim() !== '') ? traits.trim() : '';
           const memoValue = (memo && memo.trim() !== '') ? memo.trim() : '';
 
+          // 画像ファイルを取得
+          let imageBlob: Blob | undefined = undefined;
+          if (imageFileName && imageFiles.has(imageFileName)) {
+            const imageFile = imageFiles.get(imageFileName)!;
+            imageBlob = await fileToBlob(imageFile);
+            imageSuccessCount++;
+          }
+
           if (existingCard) {
-            // 既存カードを更新（putを使う）
-            // CSVに値がある項目のみ上書き、ない項目は既存の値を保持
+            // 既存カードを更新
             await db.cards.put({
               id: existingCard.id,
               name: nameValue,
@@ -181,9 +178,10 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
               color: colorValue || existingCard.color,
               type: typeValue || existingCard.type,
               level: levelValue !== undefined ? levelValue : existingCard.level,
-              traits: traitsValue || existingCard.traits,  // CSVに値がなければ既存を保持
-              memo: memoValue || existingCard.memo,        // CSVに値がなければ既存を保持
-              image: existingCard.image,  // 既存の画像を保持
+              traits: traitsValue || existingCard.traits,
+              memo: memoValue || existingCard.memo,
+              image: imageBlob || existingCard.image,  // 新しい画像があれば上書き
+              imageUrl: existingCard.imageUrl,
               updatedAt: Date.now(),
               synced: false,
             });
@@ -197,7 +195,7 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
               level: levelValue,
               traits: traitsValue,
               memo: memoValue,
-              image: undefined,  // 画像は手動でアップロード
+              image: imageBlob,
               updatedAt: Date.now(),
               synced: false,
             });
@@ -212,13 +210,48 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
       }
 
       setErrorLog(errors);
-      alert(`取り込み完了！\n成功: ${successCount}件\nエラー: ${errors.length}件`);
+      alert(`取り込み完了！\n成功: ${successCount}件\n画像: ${imageSuccessCount}件\nエラー: ${errors.length}件`);
       onComplete();
     } catch (error) {
       alert(`CSVファイルの読み込みに失敗しました: ${error}`);
     } finally {
       setIsImporting(false);
     }
+  }
+
+  // CSVの1行をパース（引用符内のカンマを考慮）
+  function parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current);
+    return result;
+  }
+
+  // モーダルをリセット
+  function handleClose() {
+    setImageFiles(new Map());
+    setImageCount(0);
+    setErrorLog([]);
+    setProgress(0);
+    setTotal(0);
+    if (csvInputRef.current) csvInputRef.current.value = '';
+    if (imageInputRef.current) imageInputRef.current.value = '';
+    onClose();
   }
 
   if (!show) return null;
@@ -247,23 +280,63 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
       }}>
         <h2>CSV一括取り込み</h2>
 
-        <div style={{ marginBottom: '16px' }}>
-          <p>CSVファイルを選択してください</p>
-          <p style={{ fontSize: '12px', color: '#666' }}>
-            フォーマット: number,name,level,color,type,traits,memo
+        {/* 手順1: 画像フォルダ選択 */}
+        <div style={{ 
+          marginBottom: '20px',
+          padding: '16px',
+          backgroundColor: '#e3f2fd',
+          borderRadius: '8px',
+        }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+            📁 手順1: 画像ファイルを選択（任意）
+          </h3>
+          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 8px 0' }}>
+            複数の画像ファイルをまとめて選択できます
           </p>
-          <p style={{ fontSize: '12px', color: '#666' }}>
-            ※ 画像は取り込み後に手動でアップロードしてください
-          </p>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageSelect}
+            disabled={isImporting}
+          />
+          {imageCount > 0 && (
+            <p style={{ 
+              margin: '8px 0 0 0', 
+              fontSize: '12px', 
+              color: '#4CAF50',
+              fontWeight: 'bold' 
+            }}>
+              ✅ {imageCount}個の画像ファイルを選択中
+            </p>
+          )}
         </div>
 
-        <input
-          type="file"
-          accept=".csv"
-          onChange={handleFileSelect}
-          disabled={isImporting}
-          style={{ marginBottom: '16px' }}
-        />
+        {/* 手順2: CSVファイル選択 */}
+        <div style={{ 
+          marginBottom: '20px',
+          padding: '16px',
+          backgroundColor: '#fff3e0',
+          borderRadius: '8px',
+        }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+            📄 手順2: CSVファイルを選択
+          </h3>
+          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 4px 0' }}>
+            フォーマット: number,name,level,color,type,traits,memo,<strong>image</strong>
+          </p>
+          <p style={{ fontSize: '12px', color: '#666', margin: '0 0 8px 0' }}>
+            ※ image列には画像ファイル名を入力（例: 0337.png）
+          </p>
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileSelect}
+            disabled={isImporting}
+          />
+        </div>
 
         {isImporting && (
           <div style={{ marginBottom: '16px' }}>
@@ -307,7 +380,7 @@ export function CsvImportModal({ show, onClose, onComplete }: CsvImportModalProp
 
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isImporting}
             style={{
               padding: '8px 16px',

@@ -64,6 +64,8 @@ export default function App() {
   });
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
+  const [exportingCSV, setExportingCSV] = useState(false);
+  const [exportingImages, setExportingImages] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showCardForm, setShowCardForm] = useState(false);
   
@@ -721,6 +723,118 @@ export default function App() {
     setTimeout(() => setSyncMessage(""), 3000);
   }
 
+  // CSVエクスポート機能
+  async function handleExportCSV() {
+    try {
+      setExportingCSV(true);
+      const allCards = await db.cards.toArray();
+      
+      if (allCards.length === 0) {
+        alert('エクスポートするカードがありません');
+        return;
+      }
+      
+      // ヘッダー行
+      const headers = ['number', 'name', 'level', 'color', 'type', 'traits', 'memo', 'image'];
+      
+      // データ行を作成
+      const rows = allCards.map(card => {
+        // 画像ファイル名を生成
+        let imageFileName = '';
+        if (card.image) {
+          const ext = card.image.type?.split('/')[1] || 'png';
+          imageFileName = `${card.number || card.id}.${ext}`;
+        }
+        
+        return [
+          card.number || '',
+          card.name || '',
+          card.level?.toString() || '',
+          card.color || '',
+          card.type || '',
+          card.traits || '',
+          // memoにカンマや改行が含まれる場合はダブルクォートで囲む
+          card.memo ? `"${card.memo.replace(/"/g, '""').replace(/\n/g, ' ')}"` : '',
+          imageFileName
+        ].join(',');
+      });
+      
+      // CSV文字列を作成（BOM付きでExcel対応）
+      const csvContent = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n');
+      
+      // ダウンロード
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `cards_backup_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      alert(`✅ ${allCards.length}件のカードをエクスポートしました`);
+    } catch (error) {
+      console.error('CSVエクスポートエラー:', error);
+      alert('❌ CSVエクスポートに失敗しました');
+    } finally {
+      setExportingCSV(false);
+    }
+  }
+
+  // 画像一括ダウンロード機能
+  async function handleExportImages() {
+    try {
+      const allCards = await db.cards.toArray();
+      const cardsWithImages = allCards.filter(card => card.image);
+      
+      if (cardsWithImages.length === 0) {
+        alert('ダウンロードする画像がありません');
+        return;
+      }
+      
+      setExportingImages(true);
+      setSyncMessage('🖼️ 画像を準備中...');
+      
+      // JSZipを動的にインポート
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      
+      // 各カードの画像をZIPに追加
+      for (let i = 0; i < cardsWithImages.length; i++) {
+        const card = cardsWithImages[i];
+        if (!card.image) continue;
+        
+        const ext = card.image.type?.split('/')[1] || 'png';
+        const fileName = `${card.number || card.id}.${ext}`;
+        
+        // Blobをarraybufferに変換
+        const arrayBuffer = await card.image.arrayBuffer();
+        zip.file(fileName, arrayBuffer);
+        
+        setSyncMessage(`🖼️ 画像を準備中... ${i + 1}/${cardsWithImages.length}`);
+      }
+      
+      setSyncMessage('📦 ZIPファイルを作成中...');
+      
+      // ZIPを生成してダウンロード
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `images_backup_${new Date().toISOString().split('T')[0]}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+      
+      setExportingImages(false);
+      setSyncMessage('');
+      alert(`✅ ${cardsWithImages.length}件の画像をエクスポートしました`);
+    } catch (error) {
+      console.error('画像エクスポートエラー:', error);
+      setExportingImages(false);
+      setSyncMessage('');
+      alert('❌ 画像エクスポートに失敗しました');
+    }
+  }
+
   function toggleMobileMenu() {
     setMobileMenuOpen(!mobileMenuOpen);
   }
@@ -1067,28 +1181,49 @@ export default function App() {
               </div>
             </div>
           </div>
+
+          {/* バックアップセクション */}
+          <div className="section" style={{ marginTop: "1.5rem" }}>
+            <div className="section-header">
+              <h2 className="section-title">📥 バックアップ</h2>
+            </div>
+            <div className="info-panel" style={{ marginBottom: "1rem" }}>
+              <div className="info-panel-text">
+                アプリ内のデータをダウンロードして、PCに保存できます。
+              </div>
+            </div>
+            <div className="form-grid">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                <button 
+                  className="btn-secondary" 
+                  onClick={handleExportCSV} 
+                  disabled={exportingCSV || exportingImages}
+                  style={{ padding: "1rem" }}
+                >
+                  {exportingCSV ? "⏳ エクスポート中..." : "📄 CSVエクスポート"}
+                </button>
+                <button 
+                  className="btn-secondary" 
+                  onClick={handleExportImages} 
+                  disabled={exportingCSV || exportingImages}
+                  style={{ padding: "1rem" }}
+                >
+                  {exportingImages ? "⏳ 準備中..." : "🖼️ 画像ダウンロード"}
+                </button>
+              </div>
+            </div>
+          </div>
           </div>
         </div>
       </div>
 
 
-      {/* カード拡大表示モーダル */}
-      <CardDetailModal
-  show={showCardDetail}
-  card={detailCard}
-  showRemoveButton={true}
-  onRemove={removeCardFromDeck}
-  onClose={closeCardDetail}
-/>
-
-
-      {/* CSV取り込みモーダル */}
-
       {/* カード詳細モーダル */}
       <CardDetailModal
         show={showCardDetail}
         card={detailCard}
-        showRemoveButton={false}
+        showRemoveButton={true}
+        onRemove={removeCardFromDeck}
         onClose={closeCardDetail}
       />
 
