@@ -113,14 +113,51 @@ export async function downloadImage(url: string): Promise<Blob | null> {
 }
 
 // ========================================
-// Supabase同期機能（画像最適化版）
+// 並列処理ユーティリティ
 // ========================================
 
-export async function syncFromSupabase() {
+/**
+ * 並列数を制限しながら非同期タスクを並行処理する
+ */
+async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<void>
+): Promise<void> {
+  let index = 0;
+  async function worker() {
+    while (index < items.length) {
+      const i = index++;
+      await fn(items[i], i);
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () => worker());
+  await Promise.all(workers);
+}
+
+// ========================================
+// Supabase同期機能（スマホ最適化版）
+// ========================================
+
+export type SyncProgress = {
+  phase: string;
+  current: number;
+  total: number;
+  message: string;
+};
+
+export async function syncFromSupabase(
+  onProgress?: (p: SyncProgress) => void
+) {
   const userId = getUserId();
 
+  const report = (phase: string, current: number, total: number, message: string) => {
+    console.log(`[${phase}] ${current}/${total} ${message}`);
+    onProgress?.({ phase, current, total, message });
+  };
+
   try {
-    console.log("⬇️ クラウドからデータを取得中...");
+    report("fetch", 0, 1, "クラウドからデータを取得中...");
 
     // ページネーションで全件取得するヘルパー
     async function fetchAll(table: string, filters: Record<string, string> = {}) {
@@ -165,128 +202,173 @@ export async function syncFromSupabase() {
       }
     }
 
-    // カードを同期（★画像最適化版）
-    if (cardsData && cardsData.length > 0) {
-      let skippedImages = 0;
-      let downloadedImages = 0;
-      const totalCards = cardsData.length;
+    // ========================================
+    // デッキをバッチ同期
+    // ========================================
+    if (decksData.length > 0) {
+      report("decks", 0, decksData.length, `デッキ同期中... (${decksData.length}個)`);
+      const localDeckIds = new Set((await db.decks.toArray()).map(d => d.id));
+      const toAdd: Deck[] = [];
+      const toUpdate: [number, Partial<Deck>][] = [];
 
-      console.log(`📥 カード同期中... (${totalCards}枚)`);
-
-      for (let i = 0; i < cardsData.length; i++) {
-        const c = cardsData[i];
-        
-        // 進捗表示（10枚ごと）
-        if ((i + 1) % 10 === 0 || i === totalCards - 1) {
-          console.log(`  ${i + 1}/${totalCards}枚処理中...`);
-        }
-
-        // ローカルに既に同じIDのカードがあるかチェック
-        const existingLocal = await db.cards.get(c.id);
-        
-        let imageBlob: Blob | undefined = undefined;
-        
-        if (c.image_url) {
-          // ★ 画像最適化: ローカルに画像があればスキップ
-          if (existingLocal?.image) {
-            imageBlob = existingLocal.image;
-            skippedImages++;
-          } else {
-            const blob = await downloadImage(c.image_url);
-            if (blob) {
-              imageBlob = blob;
-              downloadedImages++;
-            }
-          }
-        }
-        
-        if (existingLocal) {
-          await db.cards.update(c.id, {
-            name: c.name || "",
-            number: c.number || undefined,
-            color: c.color || undefined,
-            type: c.type || undefined,
-            level: c.level || undefined,
-            traits: c.traits || undefined,
-            memo: c.memo || undefined,
-            image: imageBlob,
-            imageUrl: c.image_url || undefined,
-            updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
-            userId: c.user_id || userId,
-            synced: true,
-          });
-        } else {
-          await db.cards.add({
-            id: c.id,
-            name: c.name || "",
-            number: c.number || undefined,
-            color: c.color || undefined,
-            type: c.type || undefined,
-            level: c.level || undefined,
-            traits: c.traits || undefined,
-            memo: c.memo || undefined,
-            image: imageBlob,
-            imageUrl: c.image_url || undefined,
-            updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
-            userId: c.user_id || userId,
-            synced: true,
-          });
-        }
-      }
-
-      console.log(`📊 画像: ${downloadedImages}枚ダウンロード, ${skippedImages}枚スキップ`);
-    }
-
-    // デッキを同期
-    if (decksData && decksData.length > 0) {
-      console.log(`📥 デッキ同期中... (${decksData.length}個)`);
-      
       for (const d of decksData) {
-        const existingLocal = await db.decks.get(d.id);
-        
-        if (existingLocal) {
-          await db.decks.update(d.id, {
-            name: d.name || "",
-            createdAt: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-            userId: d.user_id || userId,
-            synced: true,
-          });
+        const record: Deck = {
+          id: d.id,
+          name: d.name || "",
+          createdAt: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+          userId: d.user_id || userId,
+          synced: true,
+        };
+        if (localDeckIds.has(d.id)) {
+          toUpdate.push([d.id, record]);
         } else {
-          await db.decks.add({
-            id: d.id,
-            name: d.name || "",
-            createdAt: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-            userId: d.user_id || userId,
-            synced: true,
-          });
+          toAdd.push(record);
         }
       }
+
+      if (toAdd.length > 0) await db.decks.bulkAdd(toAdd);
+      for (const [id, record] of toUpdate) {
+        await db.decks.update(id, record);
+      }
+      report("decks", decksData.length, decksData.length, "デッキ完了");
     }
 
-    // デッキカードを同期
-    if (deckCardsData && deckCardsData.length > 0) {
-      console.log(`📥 デッキカード同期中... (${deckCardsData.length}個)`);
-      
+    // ========================================
+    // デッキカードをバッチ同期
+    // ========================================
+    if (deckCardsData.length > 0) {
+      report("deckCards", 0, deckCardsData.length, `デッキカード同期中... (${deckCardsData.length}個)`);
+      const localDeckCardIds = new Set((await db.deckCards.toArray()).map(dc => dc.id));
+      const toAdd: DeckCard[] = [];
+      const toUpdate: [number, Partial<DeckCard>][] = [];
+
       for (const dc of deckCardsData) {
-        const existingLocal = await db.deckCards.get(dc.id);
-        
-        if (existingLocal) {
-          await db.deckCards.update(dc.id, {
-            deckId: Number(dc.deck_id),
-            cardId: Number(dc.card_id),
-            count: Number(dc.count) || 1,
-            synced: true,
-          });
+        const record: DeckCard = {
+          id: dc.id,
+          deckId: Number(dc.deck_id),
+          cardId: Number(dc.card_id),
+          count: Number(dc.count) || 1,
+          synced: true,
+        };
+        if (localDeckCardIds.has(dc.id)) {
+          toUpdate.push([dc.id, record]);
         } else {
-          await db.deckCards.add({
-            id: dc.id,
-            deckId: Number(dc.deck_id),
-            cardId: Number(dc.card_id),
-            count: Number(dc.count) || 1,
-            synced: true,
-          });
+          toAdd.push(record);
         }
       }
+
+      if (toAdd.length > 0) await db.deckCards.bulkAdd(toAdd);
+      for (const [id, record] of toUpdate) {
+        await db.deckCards.update(id, record);
+      }
+      report("deckCards", deckCardsData.length, deckCardsData.length, "デッキカード完了");
+    }
+
+    // ========================================
+    // カード: まずメタデータだけ一括書き込み（画像なし）
+    // ========================================
+    if (cardsData.length > 0) {
+      const totalCards = cardsData.length;
+      report("cards-meta", 0, totalCards, `カード情報を保存中... (${totalCards}枚)`);
+
+      // ローカルのカードIDと画像の有無を一度に取得
+      const localCards = await db.cards.toArray();
+      const localCardMap = new Map(localCards.map(c => [c.id!, c]));
+
+      const toAdd: Card[] = [];
+      const toUpdate: [number, Partial<Card>][] = [];
+
+      for (const c of cardsData) {
+        const existing = localCardMap.get(c.id);
+        const record: Card = {
+          id: c.id,
+          name: c.name || "",
+          number: c.number || undefined,
+          color: c.color || undefined,
+          type: c.type || undefined,
+          level: c.level || undefined,
+          traits: c.traits || undefined,
+          memo: c.memo || undefined,
+          // 画像はこの段階ではローカルにあるものを保持するだけ
+          image: existing?.image,
+          imageUrl: c.image_url || undefined,
+          updatedAt: c.updated_at ? new Date(c.updated_at).getTime() : Date.now(),
+          userId: c.user_id || userId,
+          synced: true,
+        };
+        if (existing) {
+          toUpdate.push([c.id, record]);
+        } else {
+          toAdd.push(record);
+        }
+      }
+
+      // バッチ書き込み（一括なのでスマホでも高速）
+      const WRITE_BATCH = 200;
+      let written = 0;
+      for (let i = 0; i < toAdd.length; i += WRITE_BATCH) {
+        await db.cards.bulkAdd(toAdd.slice(i, i + WRITE_BATCH));
+        written += Math.min(WRITE_BATCH, toAdd.length - i);
+        report("cards-meta", written, totalCards, `カード情報保存中... (${written}/${totalCards})`);
+      }
+      for (let i = 0; i < toUpdate.length; i += WRITE_BATCH) {
+        const batch = toUpdate.slice(i, i + WRITE_BATCH);
+        await db.transaction("rw", db.cards, async () => {
+          for (const [id, record] of batch) {
+            await db.cards.update(id, record);
+          }
+        });
+        written += Math.min(WRITE_BATCH, toUpdate.length - i);
+        report("cards-meta", written, totalCards, `カード情報保存中... (${written}/${totalCards})`);
+      }
+
+      report("cards-meta", totalCards, totalCards, "カード情報完了 — 画像をダウンロード中...");
+
+      // ========================================
+      // 画像: ローカルに未取得のものだけ並列ダウンロード
+      // ========================================
+      const needsImage = cardsData.filter((c: any) => {
+        if (!c.image_url) return false;
+        const local = localCardMap.get(c.id);
+        // ローカルに画像があればスキップ
+        return !local?.image;
+      });
+
+      const totalImages = needsImage.length;
+      let downloadedImages = 0;
+      let failedImages = 0;
+
+      report("images", 0, totalImages, `画像ダウンロード中... (0/${totalImages}枚)`);
+
+      // スマホを考慮して並列数は 3 に制限
+      // (PC では体感差なし、スマホでは安定性が大幅向上)
+      const IMAGE_CONCURRENCY = 3;
+
+      await runWithConcurrency(needsImage, IMAGE_CONCURRENCY, async (c: any) => {
+        const blob = await downloadImage(c.image_url);
+        if (blob) {
+          try {
+            await db.cards.update(c.id, { image: blob });
+            downloadedImages++;
+          } catch (e) {
+            console.warn("画像保存失敗 card_id=" + c.id, e);
+            failedImages++;
+          }
+        } else {
+          failedImages++;
+        }
+        const done = downloadedImages + failedImages;
+        if (done % 10 === 0 || done === totalImages) {
+          report("images", done, totalImages, `画像ダウンロード中... (${done}/${totalImages}枚)`);
+        }
+      });
+
+      report(
+        "images",
+        totalImages,
+        totalImages,
+        `画像完了: ${downloadedImages}枚取得, ${failedImages}枚スキップ`
+      );
     }
 
     console.log("✅ Supabaseから同期完了");
@@ -524,7 +606,7 @@ export async function syncToSupabase() {
   }
 }
 
-export async function fullSync() {
+export async function fullSync(onProgress?: (p: SyncProgress) => void) {
   console.log("🔄 完全同期開始...");
   
   const uploadResult = await syncToSupabase();
@@ -533,7 +615,7 @@ export async function fullSync() {
     return uploadResult;
   }
 
-  const downloadResult = await syncFromSupabase();
+  const downloadResult = await syncFromSupabase(onProgress);
   
   if (downloadResult.success) {
     console.log("✅ 完全同期完了");

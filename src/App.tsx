@@ -676,7 +676,10 @@ export default function App() {
     setSyncing(true);
     setSyncMessage("🔄 同期中...");
     
-    const result = await fullSync();
+    const result = await fullSync((p) => {
+      const pct = p.total > 0 ? Math.round((p.current / p.total) * 100) : 0;
+      setSyncMessage(`🔄 ${p.message}${p.total > 0 ? ` (${pct}%)` : ""}`);
+    });
     
     if (result.success) {
       setSyncMessage("✅ 同期完了！");
@@ -686,14 +689,17 @@ export default function App() {
     }
     
     setSyncing(false);
-    setTimeout(() => setSyncMessage(""), 3000);
+    setTimeout(() => setSyncMessage(""), 5000);
   }
 
   async function handleDownloadSync() {
     setSyncing(true);
     setSyncMessage("⬇️ ダウンロード中...");
     
-    const result = await syncFromSupabase();
+    const result = await syncFromSupabase((p) => {
+      const pct = p.total > 0 ? Math.round((p.current / p.total) * 100) : 0;
+      setSyncMessage(`⬇️ ${p.message}${p.total > 0 ? ` (${pct}%)` : ""}`);
+    });
     
     if (result.success) {
       setSyncMessage("✅ ダウンロード完了！");
@@ -703,7 +709,7 @@ export default function App() {
     }
     
     setSyncing(false);
-    setTimeout(() => setSyncMessage(""), 3000);
+    setTimeout(() => setSyncMessage(""), 5000);
   }
 
   async function handleUploadSync() {
