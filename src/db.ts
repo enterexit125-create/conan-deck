@@ -138,7 +138,8 @@ export async function syncFromSupabase() {
 
     const { data: deckCardsData, error: deckCardsError } = await supabase
       .from("deck_cards")
-      .select("*");
+      .select("*, decks!inner(user_id)")
+      .eq("decks.user_id", userId);
 
     if (deckCardsError) throw deckCardsError;
 
@@ -164,8 +165,10 @@ export async function syncFromSupabase() {
         let imageBlob: Blob | undefined = undefined;
         
         if (c.image_url) {
-          // ★ 画像最適化: ローカルに画像があればスキップ
-          if (existingLocal?.image) {
+          // ローカルに画像があり、かつ更新日時が同じならスキップ
+          const localUpdatedAt = existingLocal?.updatedAt ?? 0;
+          const remoteUpdatedAt = c.updated_at ? new Date(c.updated_at).getTime() : 0;
+          if (existingLocal?.image && localUpdatedAt >= remoteUpdatedAt) {
             imageBlob = existingLocal.image;
             skippedImages++;
           } else {
@@ -503,18 +506,27 @@ export async function syncToSupabase() {
 
 export async function fullSync() {
   console.log("🔄 完全同期開始...");
-  
-  const uploadResult = await syncToSupabase();
-  if (!uploadResult.success) {
-    console.error("アップロード失敗");
-    return uploadResult;
+
+  // ローカルにデータがあればアップロードも行う
+  const localCardCount = await db.cards.count();
+  const localDeckCount = await db.decks.count();
+  const hasLocalData = localCardCount > 0 || localDeckCount > 0;
+
+  if (hasLocalData) {
+    const uploadResult = await syncToSupabase();
+    if (!uploadResult.success) {
+      console.error("アップロード失敗");
+      return uploadResult;
+    }
+  } else {
+    console.log("ローカルにデータなし → ダウンロードのみ実行");
   }
 
   const downloadResult = await syncFromSupabase();
-  
+
   if (downloadResult.success) {
     console.log("✅ 完全同期完了");
   }
-  
+
   return downloadResult;
 }
