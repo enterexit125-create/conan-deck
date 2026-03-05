@@ -791,7 +791,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "240px") : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "200px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -818,26 +818,26 @@ export function VersusPlayField({
                 </div>
               ) : (
                 <div style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: CARD_GAP,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "0.3rem",
                   padding: "0.3rem",
-                  alignItems: "flex-start",
-                  justifyContent: "center"
+                  justifyItems: "center"
                 }}>
                   {opponentPlayerState.field.map((card, idx) => {
                     const status = getCardStatus(card.id, idx, opponentPlayer);
                     const cardState = getCardState(card.id, idx, opponentPlayer);
                     
                     return (
-                      <FieldCardWithSet
-                        key={`opponent-field-${card.id}-${idx}`}
-                        card={card}
-                        idx={idx}
-                        player={opponentPlayer}
-                        status={status}
-                        cardState={cardState}
-                      />
+                      <div key={`opponent-field-${card.id}-${idx}`} style={{ width: "100%" }}>
+                        <FieldCardWithSet
+                          card={card}
+                          idx={idx}
+                          player={opponentPlayer}
+                          status={status}
+                          cardState={cardState}
+                        />
+                      </div>
                     );
                   })}
                 </div>
