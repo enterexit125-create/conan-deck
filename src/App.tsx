@@ -263,7 +263,7 @@ export default function App() {
     return cards.filter((c) => {
       const name = (c.name ?? "").toLowerCase();
       const num = (c.number ?? "").toLowerCase();
-      const matchText = !q || name.includes(q) || num.includes(q);
+      const matchText = !q || name.includes(q) || num.includes(q) || (card.traits ?? "").toLowerCase().includes(q) || (card.memo ?? "").toLowerCase().includes(q);
       const matchColor = !cardSelectColor || c.color === cardSelectColor;
       const matchType = !cardSelectType || c.type === cardSelectType;
       const matchLevel = !cardSelectLevel || c.level === parseInt(cardSelectLevel);
