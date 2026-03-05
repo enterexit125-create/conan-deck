@@ -310,17 +310,6 @@ export async function syncFromSupabase(
       let from = 0;
       const allData: any[] = [];
 
-      let countQuery = (supabase.from(table) as any).select("*", { count: "exact", head: true });
-      for (const [key, value] of Object.entries(filters)) {
-        countQuery = countQuery.eq(key, value);
-      }
-      const { count, error: countError } = await countQuery;
-      if (countError) {
-        console.warn(`[fetchAll] ${table} の件数取得失敗:`, countError);
-      } else {
-        console.log(`[fetchAll] ${table} 総件数: ${count}`);
-      }
-
       while (true) {
         let query = (supabase.from(table) as any)
           .select("*")
@@ -333,10 +322,11 @@ export async function syncFromSupabase(
         if (error) throw error;
         if (!data || data.length === 0) break;
         allData.push(...data);
-        console.log(`[fetchAll] ${table}: ${allData.length}/${count ?? "?"} 件取得済み`);
+        console.log(`[fetchAll] ${table}: ${allData.length} 件取得済み (このページ: ${data.length})`);
         if (data.length < PAGE_SIZE) break;
         from += PAGE_SIZE;
       }
+      console.log(`[fetchAll] ${table} 合計: ${allData.length} 件`);
       return allData;
     }
 
@@ -349,12 +339,6 @@ export async function syncFromSupabase(
       const PAGE_SIZE = 500;
       let from = 0;
 
-      const { count: dcCount } = await supabase
-        .from("deck_cards")
-        .select("*", { count: "exact", head: true })
-        .in("deck_id", myDeckIds);
-      console.log(`[fetchAll] deck_cards 総件数: ${dcCount}`);
-
       while (true) {
         const { data, error } = await supabase
           .from("deck_cards")
@@ -365,10 +349,11 @@ export async function syncFromSupabase(
         if (error) throw error;
         if (!data || data.length === 0) break;
         deckCardsData.push(...data);
-        console.log(`[fetchAll] deck_cards: ${deckCardsData.length}/${dcCount ?? "?"} 件取得済み`);
+        console.log(`[fetchAll] deck_cards: ${deckCardsData.length} 件取得済み`);
         if (data.length < PAGE_SIZE) break;
         from += PAGE_SIZE;
       }
+      console.log(`[fetchAll] deck_cards 合計: ${deckCardsData.length} 件`);
     }
 
     // デッキをバッチ同期
