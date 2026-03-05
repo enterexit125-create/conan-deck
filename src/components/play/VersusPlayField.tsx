@@ -793,7 +793,6 @@ export function VersusPlayField({
           </div>
         </div>
 
-        {/* コンテンツ（アニメーション付き） */}
         <div style={{
           maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "165px") : "0",
           overflow: "hidden",
@@ -1055,6 +1054,7 @@ export function VersusPlayField({
           mulliganDone={currentPlayerState.mulliganDone}
           onCardClick={(card, index) => onCardClick(card, index, "hand")}
           onStartMulligan={onStartMulligan}
+          onDrawCard={onDrawCard}
           newMulliganCardIndices={newMulliganCardIndices}
           onClearNewMulliganCards={onClearNewMulliganCards}
           newHandCardIndices={newHandCardIndices}
