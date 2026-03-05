@@ -527,15 +527,14 @@ export function VersusPlayField({
       <div
         style={{
           position: "relative",
-          width: `${CARD_WIDTH}px`,
-          flexShrink: 0
+          width: "100%",
         }}
       >
         {/* メインカード */}
         <div
           onClick={() => handleCardTap(card, idx, player)}
           style={{
-            width: `${CARD_WIDTH}px`,
+            width: "100%",
             aspectRatio: "0.7",
             borderRadius: "4px",
             overflow: "visible",
@@ -1007,13 +1006,12 @@ export function VersusPlayField({
               minHeight: 0,
               overflowY: "auto",
               overflowX: "hidden",
-              display: "flex",
-              flexWrap: "wrap",
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
               gap: CARD_GAP,
               alignContent: "flex-start",
-              alignItems: "flex-start",
-              justifyContent: "center",
-              padding: "0.3rem"
+              padding: "0.3rem",
+              justifyItems: "center"
             }}>
               {currentPlayerState.field.map((card, idx) => {
                 const status = getCardStatus(card.id, idx, currentPlayer);
