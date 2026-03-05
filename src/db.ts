@@ -122,26 +122,48 @@ export async function syncFromSupabase() {
   try {
     console.log("⬇️ クラウドからデータを取得中...");
 
-    const { data: cardsData, error: cardsError } = await supabase
-      .from("cards")
-      .select("*")
-      .eq("user_id", userId);
+    // ページネーションで全件取得するヘルパー
+    async function fetchAll(table: string, filters: Record<string, string> = {}) {
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      const allData: any[] = [];
+      while (true) {
+        let query = (supabase.from(table) as any).select("*").range(from, from + PAGE_SIZE - 1);
+        for (const [key, value] of Object.entries(filters)) {
+          query = query.eq(key, value);
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData.push(...data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allData;
+    }
 
-    if (cardsError) throw cardsError;
+    const cardsData = await fetchAll("cards", { user_id: userId });
+    const decksData = await fetchAll("decks", { user_id: userId });
 
-    const { data: decksData, error: decksError } = await supabase
-      .from("decks")
-      .select("*")
-      .eq("user_id", userId);
-
-    if (decksError) throw decksError;
-
-    const { data: deckCardsData, error: deckCardsError } = await supabase
-      .from("deck_cards")
-      .select("*, decks!inner(user_id)")
-      .eq("decks.user_id", userId);
-
-    if (deckCardsError) throw deckCardsError;
+    // deck_cardsは自分のデッキIDで絞り込みページネーション
+    const myDeckIds = decksData.map((d: any) => String(d.id));
+    const deckCardsData: any[] = [];
+    if (myDeckIds.length > 0) {
+      const PAGE_SIZE = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("deck_cards")
+          .select("*")
+          .in("deck_id", myDeckIds)
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        deckCardsData.push(...data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+    }
 
     // カードを同期（★画像最適化版）
     if (cardsData && cardsData.length > 0) {
@@ -165,10 +187,8 @@ export async function syncFromSupabase() {
         let imageBlob: Blob | undefined = undefined;
         
         if (c.image_url) {
-          // ローカルに画像があり、かつ更新日時が同じならスキップ
-          const localUpdatedAt = existingLocal?.updatedAt ?? 0;
-          const remoteUpdatedAt = c.updated_at ? new Date(c.updated_at).getTime() : 0;
-          if (existingLocal?.image && localUpdatedAt >= remoteUpdatedAt) {
+          // ★ 画像最適化: ローカルに画像があればスキップ
+          if (existingLocal?.image) {
             imageBlob = existingLocal.image;
             skippedImages++;
           } else {
@@ -506,27 +526,18 @@ export async function syncToSupabase() {
 
 export async function fullSync() {
   console.log("🔄 完全同期開始...");
-
-  // ローカルにデータがあればアップロードも行う
-  const localCardCount = await db.cards.count();
-  const localDeckCount = await db.decks.count();
-  const hasLocalData = localCardCount > 0 || localDeckCount > 0;
-
-  if (hasLocalData) {
-    const uploadResult = await syncToSupabase();
-    if (!uploadResult.success) {
-      console.error("アップロード失敗");
-      return uploadResult;
-    }
-  } else {
-    console.log("ローカルにデータなし → ダウンロードのみ実行");
+  
+  const uploadResult = await syncToSupabase();
+  if (!uploadResult.success) {
+    console.error("アップロード失敗");
+    return uploadResult;
   }
 
   const downloadResult = await syncFromSupabase();
-
+  
   if (downloadResult.success) {
     console.log("✅ 完全同期完了");
   }
-
+  
   return downloadResult;
 }
