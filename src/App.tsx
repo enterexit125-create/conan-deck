@@ -93,9 +93,19 @@ export default function App() {
   const [showCardDetail, setShowCardDetail] = useState(false);
   const [detailCard, setDetailCard] = useState<Card | null>(null);
 
-  // 初回：デッキ一覧を読み込む
+  // 初回：デッキが無ければ作る
   useEffect(() => {
     const run = async () => {
+      const deckCount = await db.decks.count();
+      if (deckCount === 0) {
+        const id = await db.decks.add({ 
+          name: "デッキ1", 
+          createdAt: Date.now(),
+          synced: false 
+        });
+        setActiveDeckId(id);
+      }
+
       const allDecks = await db.decks.toArray();
       setDecks(allDecks);
 
@@ -1132,6 +1142,7 @@ export default function App() {
             openEditDeckCard={openEditDeckCard}
             removeCardFromDeck={removeCardFromDeck}
             createDeck={createDeck}
+            renameDeck={renameDeck}
           />
         </div>
 

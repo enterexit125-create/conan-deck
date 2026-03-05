@@ -20,6 +20,7 @@ interface DeckEditorProps {
   openEditDeckCard: (cardId: number) => void;
   removeCardFromDeck: (cardId: number) => Promise<void>;
   createDeck: () => Promise<void>;
+  renameDeck: (deckId: number) => Promise<void>;
 }
 
 export function DeckEditor({
@@ -38,6 +39,7 @@ export function DeckEditor({
   openEditDeckCard,
   removeCardFromDeck,
   createDeck,
+  renameDeck,
 }: DeckEditorProps) {
   if (!activeDeck) {
     return (
@@ -61,6 +63,40 @@ export function DeckEditor({
     <div style={{ marginTop: "-1.5rem" }}>
       {/* デッキ完成メッセージ */}
       {totalInDeck === TARGET_DECK_SIZE && (
+        <div style={{ 
+          padding: "0.75rem", 
+          marginBottom: "1rem", 
+          background: "linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%)",
+          borderRadius: "12px",
+          textAlign: "center",
+          fontSize: "1rem",
+          fontWeight: "bold",
+          color: "#1b5e20",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+        }}>
+          ✅ 40枚のデッキが完成しました！
+        </div>
+      )}
+
+      {/* デッキ名 + 変更ボタン */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+        marginBottom: "0.75rem",
+        padding: "0 0.25rem"
+      }}>
+        <span style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#333" }}>
+          {activeDeck.name}
+        </span>
+        <button
+          className="btn-secondary"
+          style={{ padding: "0.25rem 0.75rem", fontSize: "0.8rem" }}
+          onClick={() => renameDeck(activeDeck.id!)}
+        >
+          ✏️ 名前を変更
+        </button>
+      </div>
         <div style={{ 
           padding: "0.75rem", 
           marginBottom: "1rem", 
