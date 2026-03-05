@@ -159,13 +159,29 @@ export async function syncFromSupabase(
   try {
     report("fetch", 0, 1, "クラウドからデータを取得中...");
 
-    // ページネーションで全件取得するヘルパー
+    // ページネーションで全件取得するヘルパー（count確認付き）
     async function fetchAll(table: string, filters: Record<string, string> = {}) {
-      const PAGE_SIZE = 1000;
+      const PAGE_SIZE = 500; // 安全のため500に下げる（Supabaseのmax_rows設定に左右されにくい）
       let from = 0;
       const allData: any[] = [];
+
+      // まず総件数を取得（Supabase が何件持っているか確認）
+      let countQuery = (supabase.from(table) as any).select("*", { count: "exact", head: true });
+      for (const [key, value] of Object.entries(filters)) {
+        countQuery = countQuery.eq(key, value);
+      }
+      const { count, error: countError } = await countQuery;
+      if (countError) {
+        console.warn(`[fetchAll] ${table} の件数取得失敗:`, countError);
+      } else {
+        console.log(`[fetchAll] ${table} 総件数: ${count}`);
+      }
+
       while (true) {
-        let query = (supabase.from(table) as any).select("*").range(from, from + PAGE_SIZE - 1);
+        let query = (supabase.from(table) as any)
+          .select("*")
+          .range(from, from + PAGE_SIZE - 1)
+          .order("id", { ascending: true }); // 順序を明示して取りこぼし防止
         for (const [key, value] of Object.entries(filters)) {
           query = query.eq(key, value);
         }
@@ -173,7 +189,8 @@ export async function syncFromSupabase(
         if (error) throw error;
         if (!data || data.length === 0) break;
         allData.push(...data);
-        if (data.length < PAGE_SIZE) break;
+        console.log(`[fetchAll] ${table}: ${allData.length}/${count ?? "?"} 件取得済み`);
+        if (data.length < PAGE_SIZE) break; // このページが最後
         from += PAGE_SIZE;
       }
       return allData;
@@ -186,17 +203,27 @@ export async function syncFromSupabase(
     const myDeckIds = decksData.map((d: any) => String(d.id));
     const deckCardsData: any[] = [];
     if (myDeckIds.length > 0) {
-      const PAGE_SIZE = 1000;
+      const PAGE_SIZE = 500;
       let from = 0;
+
+      // 総件数確認
+      const { count: dcCount } = await supabase
+        .from("deck_cards")
+        .select("*", { count: "exact", head: true })
+        .in("deck_id", myDeckIds);
+      console.log(`[fetchAll] deck_cards 総件数: ${dcCount}`);
+
       while (true) {
         const { data, error } = await supabase
           .from("deck_cards")
           .select("*")
           .in("deck_id", myDeckIds)
+          .order("id", { ascending: true })
           .range(from, from + PAGE_SIZE - 1);
         if (error) throw error;
         if (!data || data.length === 0) break;
         deckCardsData.push(...data);
+        console.log(`[fetchAll] deck_cards: ${deckCardsData.length}/${dcCount ?? "?"} 件取得済み`);
         if (data.length < PAGE_SIZE) break;
         from += PAGE_SIZE;
       }
