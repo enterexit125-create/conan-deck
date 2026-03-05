@@ -155,8 +155,20 @@ export async function resetSyncedFlags() {
 }
 
 // ========================================
-// Supabaseへアップロード（upsert版・進捗付き）
+// Supabaseへアップロード（insert/update分岐版）
 // ========================================
+
+// Supabaseに既存のIDを一括取得して insert/update を分ける
+async function getExistingIds(table: string, ids: number[]): Promise<Set<number>> {
+  const existing = new Set<number>();
+  const CHUNK = 500;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const chunk = ids.slice(i, i + CHUNK);
+    const { data } = await supabase.from(table).select("id").in("id", chunk);
+    if (data) data.forEach((r: any) => existing.add(Number(r.id)));
+  }
+  return existing;
+}
 
 export async function syncToSupabase(
   onProgress?: (p: SyncProgress) => void
@@ -170,23 +182,26 @@ export async function syncToSupabase(
   };
 
   try {
-    // 1. デッキをupsert
+    // 1. デッキをinsert/update
     const allDecks = await db.decks.toArray();
     const unsyncedDecks = allDecks.filter(d => d.synced === false || d.synced === undefined);
     report("decks", 0, unsyncedDecks.length, `デッキアップロード: ${unsyncedDecks.length}個`);
 
-    const deckRows = unsyncedDecks
-      .filter(d => d.name)
-      .map(d => ({
-        id: d.id,
-        name: d.name,
-        created_at: new Date(d.createdAt).toISOString(),
-        user_id: userId,
-      }));
+    if (unsyncedDecks.length > 0) {
+      const deckIds = unsyncedDecks.map(d => d.id!).filter(Boolean);
+      const existingDeckIds = await getExistingIds("decks", deckIds);
 
-    if (deckRows.length > 0) {
-      const { error } = await supabase.from("decks").upsert(deckRows);
-      if (error) throw error;
+      const toInsert = unsyncedDecks.filter(d => d.name && !existingDeckIds.has(d.id!));
+      const toUpdate = unsyncedDecks.filter(d => d.name && existingDeckIds.has(d.id!));
+
+      if (toInsert.length > 0) {
+        const rows = toInsert.map(d => ({ id: d.id, name: d.name, created_at: new Date(d.createdAt).toISOString(), user_id: userId }));
+        const { error } = await supabase.from("decks").insert(rows);
+        if (error) throw error;
+      }
+      for (const d of toUpdate) {
+        await supabase.from("decks").update({ name: d.name, created_at: new Date(d.createdAt).toISOString() }).eq("id", d.id!);
+      }
       for (const d of unsyncedDecks) {
         await db.decks.update(d.id!, { synced: true });
       }
@@ -215,65 +230,75 @@ export async function syncToSupabase(
       }
     }
 
-    // カードをバッチupsert
+    // 全カードの既存IDをSupabaseから一括取得
+    const cardIds = unsyncedCards.map(c => c.id!).filter(Boolean);
+    const existingCardIds = cardIds.length > 0 ? await getExistingIds("cards", cardIds) : new Set<number>();
+
     let cardsDone = 0;
     for (let i = 0; i < unsyncedCards.length; i += BATCH_SIZE) {
-      const batch = unsyncedCards.slice(i, i + BATCH_SIZE);
-      const rows = batch
-        .filter(c => c.name)
-        .map(c => ({
-          id: c.id,
-          name: c.name,
-          number: c.number || null,
-          color: c.color || null,
-          type: c.type || null,
-          level: c.level || null,
-          traits: c.traits || null,
-          memo: c.memo || null,
-          image_url: imageUrlMap.get(c.id!) || c.imageUrl || null,
-          updated_at: new Date(c.updatedAt).toISOString(),
-          user_id: userId,
-        }));
+      const batch = unsyncedCards.slice(i, i + BATCH_SIZE).filter(c => c.name);
 
-      if (rows.length > 0) {
-        const { error } = await supabase.from("cards").upsert(rows);
+      const toInsert = batch.filter(c => !existingCardIds.has(c.id!));
+      const toUpdate = batch.filter(c => existingCardIds.has(c.id!));
+
+      const makeRow = (c: typeof batch[0]) => ({
+        name: c.name,
+        number: c.number || null,
+        color: c.color || null,
+        type: c.type || null,
+        level: c.level || null,
+        traits: c.traits || null,
+        memo: c.memo || null,
+        image_url: imageUrlMap.get(c.id!) || c.imageUrl || null,
+        updated_at: new Date(c.updatedAt).toISOString(),
+        user_id: userId,
+      });
+
+      if (toInsert.length > 0) {
+        // insertはidを含める（auto-incrementに任せず固定IDで）
+        const rows = toInsert.map(c => ({ id: c.id, ...makeRow(c) }));
+        const { error } = await supabase.from("cards").insert(rows);
         if (error) throw error;
-        for (const c of batch) {
-          await db.cards.update(c.id!, {
-            synced: true,
-            imageUrl: imageUrlMap.get(c.id!) || c.imageUrl,
-          });
-        }
+      }
+      for (const c of toUpdate) {
+        const { error } = await supabase.from("cards").update(makeRow(c)).eq("id", c.id!);
+        if (error) throw error;
+      }
+      for (const c of batch) {
+        await db.cards.update(c.id!, { synced: true, imageUrl: imageUrlMap.get(c.id!) || c.imageUrl });
       }
 
       cardsDone += batch.length;
       report("cards", cardsDone, totalCards, `カードアップロード: ${cardsDone}/${totalCards}枚`);
     }
 
-    // 3. デッキカードをupsert
+    // 3. デッキカードをinsert/update
     const allDeckCards = await db.deckCards.toArray();
     const unsyncedDeckCards = allDeckCards.filter(dc => dc.synced === false || dc.synced === undefined);
     const totalDC = unsyncedDeckCards.length;
     report("deckCards", 0, totalDC, `デッキカードアップロード: ${totalDC}個`);
 
+    const dcIds = unsyncedDeckCards.map(dc => dc.id!).filter(Boolean);
+    const existingDcIds = dcIds.length > 0 ? await getExistingIds("deck_cards", dcIds) : new Set<number>();
+
     let dcDone = 0;
     for (let i = 0; i < unsyncedDeckCards.length; i += BATCH_SIZE) {
-      const batch = unsyncedDeckCards.slice(i, i + BATCH_SIZE);
-      const rows = batch
-        .filter(dc => Number.isInteger(dc.deckId) && Number.isInteger(dc.cardId))
-        .map(dc => ({
-          id: dc.id,
-          deck_id: dc.deckId,
-          card_id: dc.cardId,
-          count: dc.count || 1,
-        }));
+      const batch = unsyncedDeckCards.slice(i, i + BATCH_SIZE)
+        .filter(dc => Number.isInteger(dc.deckId) && Number.isInteger(dc.cardId));
 
-      if (rows.length > 0) {
-        const { error } = await supabase.from("deck_cards").upsert(rows);
+      const toInsert = batch.filter(dc => !existingDcIds.has(dc.id!));
+      const toUpdate = batch.filter(dc => existingDcIds.has(dc.id!));
+
+      if (toInsert.length > 0) {
+        const rows = toInsert.map(dc => ({ id: dc.id, deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }));
+        const { error } = await supabase.from("deck_cards").insert(rows);
         if (error) throw error;
-        for (const dc of batch) {
-          await db.deckCards.update(dc.id!, { synced: true });
-        }
+      }
+      for (const dc of toUpdate) {
+        await supabase.from("deck_cards").update({ deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }).eq("id", dc.id!);
+      }
+      for (const dc of batch) {
+        await db.deckCards.update(dc.id!, { synced: true });
       }
 
       dcDone += batch.length;
