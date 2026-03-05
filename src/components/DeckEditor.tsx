@@ -294,8 +294,8 @@ export function DeckEditor({
                   <div 
                     onClick={() => openEditDeckCard(card.id!)}
                     style={{
-                      width: "80px",
-                      height: "112px",
+                      width: "60px",
+                      height: "84px",
                       borderRadius: "6px",
                       overflow: "hidden",
                       cursor: "pointer",

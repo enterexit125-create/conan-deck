@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import type { Card } from "../../db";
+import { db } from "../../db";
 import { colorMap } from "../../shared/constants";
 
 interface DeckCardEditModalProps {
@@ -16,9 +18,23 @@ export function DeckCardEditModal({
   onDecrement,
   onClose,
 }: DeckCardEditModalProps) {
-  if (!editingDeckCard) return null;
+  const card = cards.find(c => c.id === editingDeckCard?.cardId);
+  const [imageSrc, setImageSrc] = useState<string>("");
 
-  const card = cards.find(c => c.id === editingDeckCard.cardId);
+  useEffect(() => {
+    if (!editingDeckCard || !card?.id) { setImageSrc(""); return; }
+    let url = "";
+    let cancelled = false;
+    (async () => {
+      const stored = await db.cards.get(card.id!);
+      if (cancelled || !stored?.image) return;
+      url = URL.createObjectURL(stored.image);
+      if (!cancelled) setImageSrc(url);
+    })();
+    return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
+  }, [editingDeckCard?.cardId]);
+
+  if (!editingDeckCard) return null;
   if (!card) return null;
 
   return (
@@ -174,28 +190,10 @@ export function DeckCardEditModal({
                 }
               }
             `}</style>
-            {card.image ? (
-              <img
-                src={URL.createObjectURL(card.image)}
-                alt={card.name}
-                style={{
-                  width: "100%",
-                  height: "auto",
-                  display: "block"
-                }}
-              />
+            {imageSrc ? (
+              <img src={imageSrc} alt={card.name} style={{ width: "100%", height: "auto", display: "block" }} />
             ) : (
-              <div style={{
-                aspectRatio: "0.7",
-                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontSize: "2rem"
-              }}>
-                🃏
-              </div>
+              <div style={{ aspectRatio: "0.7", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "2rem" }}>🃏</div>
             )}
           </div>
 
