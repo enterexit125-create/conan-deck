@@ -223,11 +223,11 @@ export function DeckEditor({
           <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", marginBottom: "0.25rem" }}>レベル分布</div>
           <div style={{ 
             display: "flex", 
-            gap: "2px", 
+            gap: "4px", 
             alignItems: "flex-end", 
-            height: "40px",
+            height: "80px",
             background: "#f5f7fa",
-            padding: "0.25rem",
+            padding: "0.5rem 0.25rem 0.25rem",
             borderRadius: "6px"
           }}>
             {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((level) => {
@@ -242,15 +242,20 @@ export function DeckEditor({
                     display: "flex", 
                     flexDirection: "column", 
                     alignItems: "center",
-                    gap: "2px"
+                    gap: "2px",
+                    height: "100%",
+                    justifyContent: "flex-end"
                   }}
                 >
+                  {count > 0 && (
+                    <span style={{ fontSize: "0.6rem", color: "#667eea", fontWeight: "bold", lineHeight: 1 }}>{count}</span>
+                  )}
                   <div style={{
                     width: "100%",
                     height: `${heightPercent}%`,
-                    background: count > 0 ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" : "#e0e0e0",
-                    borderRadius: "2px",
-                    minHeight: count > 0 ? "4px" : "2px",
+                    background: count > 0 ? "linear-gradient(180deg, #667eea 0%, #764ba2 100%)" : "#e0e0e0",
+                    borderRadius: "3px 3px 0 0",
+                    minHeight: count > 0 ? "6px" : "3px",
                     transition: "all 0.3s"
                   }} />
                   <span style={{ fontSize: "0.6rem", color: "#999" }}>{level}</span>
