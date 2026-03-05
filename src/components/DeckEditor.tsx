@@ -97,20 +97,6 @@ export function DeckEditor({
           ✏️ 名前を変更
         </button>
       </div>
-        <div style={{ 
-          padding: "0.75rem", 
-          marginBottom: "1rem", 
-          background: "linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%)",
-          borderRadius: "12px",
-          textAlign: "center",
-          fontSize: "1rem",
-          fontWeight: "bold",
-          color: "#1b5e20",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-        }}>
-          ✅ 40枚のデッキが完成しました！
-        </div>
-      )}
 
       {/* ヘッダー: パートナー、事件、統計情報 */}
       <div style={{
