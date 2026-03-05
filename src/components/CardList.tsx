@@ -294,7 +294,7 @@ export function CardList({
                 )}
                 
                 <div onClick={() => openCardDetail(c)} style={{ cursor: "pointer" }}>
-                  <Thumb blob={c.image} alt={c.name ?? "card"} size="small" />
+                  <Thumb cardId={c.id} alt={c.name ?? "card"} size="small" />
                 </div>
                 <div className="card-name">{c.name}</div>
                 <div className="card-number" style={{ fontSize: "0.8rem" }}>
