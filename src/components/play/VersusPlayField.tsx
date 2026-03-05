@@ -645,13 +645,17 @@ export function VersusPlayField({
 
   return (
     <div style={{ 
-      height: "100svh", 
-      maxHeight: "-webkit-fill-available",
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       display: "flex", 
       flexDirection: "column",
       overflow: "hidden",
       background: theme.background,
-      transition: "background 0.4s ease"
+      transition: "background 0.4s ease",
+      zIndex: 500
     }}>
         {/* ヘッダー - プレイヤーに応じて色が変わる */}
         <div style={{
