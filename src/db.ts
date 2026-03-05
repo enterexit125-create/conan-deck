@@ -200,7 +200,7 @@ export async function syncToSupabase(
         if (error) throw error;
       }
       for (const d of toUpdate) {
-        await supabase.from("decks").update({ name: d.name, created_at: new Date(d.createdAt).toISOString() }).eq("id", d.id!);
+        await supabase.from("decks").update({ name: d.name, created_at: new Date(d.createdAt).toISOString() }).eq("id", String(d.id!));
       }
       for (const d of unsyncedDecks) {
         await db.decks.update(d.id!, { synced: true });
@@ -261,7 +261,7 @@ export async function syncToSupabase(
         if (error) throw error;
       }
       for (const c of toUpdate) {
-        const { error } = await supabase.from("cards").update(makeRow(c)).eq("id", c.id!);
+        const { error } = await supabase.from("cards").update(makeRow(c)).eq("id", String(c.id!));
         if (error) throw error;
       }
       for (const c of batch) {
@@ -295,7 +295,7 @@ export async function syncToSupabase(
         if (error) throw error;
       }
       for (const dc of toUpdate) {
-        await supabase.from("deck_cards").update({ deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }).eq("id", dc.id!);
+        await supabase.from("deck_cards").update({ deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }).eq("id", String(dc.id!));
       }
       for (const dc of batch) {
         await db.deckCards.update(dc.id!, { synced: true });
