@@ -1,5 +1,6 @@
 import type { Card, Deck, DeckCard } from "../db";
 import { colorMap, TARGET_DECK_SIZE } from "../shared/constants";
+import Thumb from "../shared/Thumb";
 
 interface DeckEditorProps {
   activeDeck: Deck | undefined;
@@ -135,8 +136,8 @@ export function DeckEditor({
                 openCardSelectModal("partner");
               }
             }}>
-              {partnerCard?.image ? (
-                <img src={URL.createObjectURL(partnerCard.image)} alt={partnerCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {partnerCard ? (
+                <Thumb cardId={partnerCard.id} alt={partnerCard.name} size="small" />
               ) : (
                 <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>🃏</div>
               )}
@@ -165,8 +166,8 @@ export function DeckEditor({
                 openCardSelectModal("incident");
               }
             }}>
-              {incidentCard?.image ? (
-                <img src={URL.createObjectURL(incidentCard.image)} alt={incidentCard.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              {incidentCard ? (
+                <Thumb cardId={incidentCard.id} alt={incidentCard.name} size="small" />
               ) : (
                 <div style={{ fontSize: "1.5rem", opacity: 0.3 }}>📋</div>
               )}
@@ -302,11 +303,7 @@ export function DeckEditor({
                       boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
                     }}
                   >
-                    {card.image ? (
-                      <img src={URL.createObjectURL(card.image)} alt={card.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", background: "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>🎴</div>
-                    )}
+                    <Thumb cardId={card.id} alt={card.name} size="small" />
                     {/* 枚数バッジ */}
                     <div style={{
                       position: "absolute",
