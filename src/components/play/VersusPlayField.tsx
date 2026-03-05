@@ -511,7 +511,8 @@ export function VersusPlayField({
     player, 
     status, 
     cardState,
-    isNew = false
+    isNew = false,
+    maxCardHeight
   }: { 
     card: Card; 
     idx: number; 
@@ -519,6 +520,7 @@ export function VersusPlayField({
     status: CardStatus;
     cardState: CardState;
     isNew?: boolean;
+    maxCardHeight?: string;
   }) {
     const rotation = getCardRotation(cardState);
     const setCardsForThis = getSetCardsForField(idx, player);
@@ -536,6 +538,7 @@ export function VersusPlayField({
           style={{
             width: "100%",
             aspectRatio: "0.7",
+            maxHeight: maxCardHeight,
             borderRadius: "4px",
             overflow: "visible",
             cursor: "pointer",
@@ -791,7 +794,7 @@ export function VersusPlayField({
 
         {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "200px") : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "175px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -820,8 +823,8 @@ export function VersusPlayField({
                 <div style={{
                   display: "grid",
                   gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: "0.3rem",
-                  padding: "0.3rem",
+                  gap: "0.25rem",
+                  padding: "0.25rem",
                   justifyItems: "center"
                 }}>
                   {opponentPlayerState.field.map((card, idx) => {
@@ -829,15 +832,15 @@ export function VersusPlayField({
                     const cardState = getCardState(card.id, idx, opponentPlayer);
                     
                     return (
-                      <div key={`opponent-field-${card.id}-${idx}`} style={{ width: "100%" }}>
-                        <FieldCardWithSet
-                          card={card}
-                          idx={idx}
-                          player={opponentPlayer}
-                          status={status}
-                          cardState={cardState}
-                        />
-                      </div>
+                      <FieldCardWithSet
+                        key={`opponent-field-${card.id}-${idx}`}
+                        card={card}
+                        idx={idx}
+                        player={opponentPlayer}
+                        status={status}
+                        cardState={cardState}
+                        maxCardHeight="72px"
+                      />
                     );
                   })}
                 </div>
@@ -1008,9 +1011,9 @@ export function VersusPlayField({
               overflowX: "hidden",
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
-              gap: CARD_GAP,
+              gap: "0.25rem",
               alignContent: "flex-start",
-              padding: "0.3rem",
+              padding: "0.25rem",
               justifyItems: "center"
             }}>
               {currentPlayerState.field.map((card, idx) => {
@@ -1027,6 +1030,7 @@ export function VersusPlayField({
                     status={status}
                     cardState={cardState}
                     isNew={isNew}
+                    maxCardHeight="105px"
                   />
                 );
               })}
