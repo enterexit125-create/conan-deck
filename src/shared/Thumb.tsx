@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { db } from "../db";
 
 interface ThumbProps {
-  blob?: Blob;       // 後方互換のため残す（詳細モーダルなど直接blobを渡す場合）
-  cardId?: number;   // こちらを優先 - DBから遅延読み込み
+  blob?: Blob;
+  cardId?: number;
   alt: string;
   size?: "small" | "medium" | "large";
+  width?: number;   // sizeの代わりにpx指定も可
+  height?: number;
   onClick?: () => void;
 }
 
-export default function Thumb({ blob, cardId, alt, size = "medium", onClick }: ThumbProps) {
+export default function Thumb({ blob, cardId, alt, size = "medium", width: widthProp, height: heightProp, onClick }: ThumbProps) {
   const [src, setSrc] = useState<string>("");
   const [isVisible, setIsVisible] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -19,7 +21,9 @@ export default function Thumb({ blob, cardId, alt, size = "medium", onClick }: T
     medium: { width: 180, height: 252 },
     large:  { width: 240, height: 336 },
   };
-  const { width, height } = sizeMap[size];
+  const { width: sizeW, height: sizeH } = sizeMap[size];
+  const width = widthProp ?? sizeW;
+  const height = heightProp ?? sizeH;
 
   // Intersection Observer: 画面内に入ったときだけロード
   useEffect(() => {
@@ -72,6 +76,8 @@ export default function Thumb({ blob, cardId, alt, size = "medium", onClick }: T
       style={{
         width: `${width}px`,
         height: `${height}px`,
+        minWidth: `${width}px`,
+        minHeight: `${height}px`,
         backgroundColor: "#f0f0f0",
         display: "flex",
         alignItems: "center",
@@ -94,12 +100,12 @@ export default function Thumb({ blob, cardId, alt, size = "medium", onClick }: T
         alt={alt}
         onClick={onClick}
         style={{
-          width: `${width}px`,
-          height: `${height}px`,
-          objectFit: "contain",
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
           borderRadius: "8px",
           cursor: onClick ? "pointer" : "default",
-          imageRendering: "-webkit-optimize-contrast",
+          display: "block",
         }}
       />
     </div>

@@ -276,8 +276,8 @@ export function DeckEditor({
 
         {mainDeckCards.length > 0 ? (
           <div style={{
-            display: "flex",
-            flexWrap: "wrap",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
             gap: "0.5rem"
           }}>
             {mainDeckCards.map((dc) => {
@@ -285,26 +285,22 @@ export function DeckEditor({
               if (!card) return null;
 
               return (
-                <div key={dc.id} style={{
-                  position: "relative",
-                  width: "60px",
-                  flexShrink: 0
-                }}>
+                <div key={dc.id} style={{ position: "relative" }}>
                   {/* カード画像 */}
                   <div 
                     onClick={() => openEditDeckCard(card.id!)}
                     style={{
-                      width: "60px",
-                      height: "84px",
                       borderRadius: "6px",
                       overflow: "hidden",
                       cursor: "pointer",
                       position: "relative",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
+                      boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                      aspectRatio: "5/7",
+                      width: "100%"
                     }}
                   >
-                    <div style={{ width: "60px", height: "84px", overflow: "hidden", borderRadius: "6px" }}>
-                      <Thumb cardId={card.id} alt={card.name} size="small" />
+                    <div style={{ width: "100%", height: "100%", overflow: "hidden", borderRadius: "6px" }}>
+                      <Thumb cardId={card.id} alt={card.name} width={120} height={168} />
                     </div>
                     {/* 枚数バッジ */}
                     <div style={{
