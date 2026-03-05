@@ -287,7 +287,7 @@ export function DeckEditor({
               return (
                 <div key={dc.id} style={{
                   position: "relative",
-                  width: "80px",
+                  width: "60px",
                   flexShrink: 0
                 }}>
                   {/* カード画像 */}
@@ -303,7 +303,9 @@ export function DeckEditor({
                       boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
                     }}
                   >
-                    <Thumb cardId={card.id} alt={card.name} size="small" />
+                    <div style={{ width: "60px", height: "84px", overflow: "hidden", borderRadius: "6px" }}>
+                      <Thumb cardId={card.id} alt={card.name} size="small" />
+                    </div>
                     {/* 枚数バッジ */}
                     <div style={{
                       position: "absolute",

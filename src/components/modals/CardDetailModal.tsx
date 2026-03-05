@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import type { Card } from "../../db";
+import { db } from "../../db";
 import { colorMap } from "../../shared/constants";
 
 interface CardDetailModalProps {
@@ -16,6 +18,21 @@ export function CardDetailModal({
   onRemove,
   onClose,
 }: CardDetailModalProps) {
+  const [imageSrc, setImageSrc] = useState<string>("");
+
+  useEffect(() => {
+    if (!show || !card?.id) { setImageSrc(""); return; }
+    let url = "";
+    let cancelled = false;
+    (async () => {
+      const stored = await db.cards.get(card.id!);
+      if (cancelled || !stored?.image) return;
+      url = URL.createObjectURL(stored.image);
+      if (!cancelled) setImageSrc(url);
+    })();
+    return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
+  }, [show, card?.id]);
+
   if (!show || !card) return null;
 
   return (
@@ -150,15 +167,11 @@ export function CardDetailModal({
               }
             }
           `}</style>
-          {card.image ? (
+          {imageSrc ? (
             <img
-              src={URL.createObjectURL(card.image)}
+              src={imageSrc}
               alt={card.name}
-              style={{
-                width: "100%",
-                height: "auto",
-                display: "block"
-              }}
+              style={{ width: "100%", height: "auto", display: "block" }}
             />
           ) : (
             <div style={{
