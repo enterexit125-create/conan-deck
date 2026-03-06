@@ -9,6 +9,8 @@ interface LeftSidePanelProps {
   evidenceFaceUp: Set<number | undefined>;
   isEvidenceCollapsed: boolean;
   onToggleEvidenceCollapse: () => void;
+  deckCount: number;
+  onAddEvidenceFromDeck: () => void;
   onEvidenceCardClick: (card: Card, index: number) => void;
   onRemoveCardClick: (card: Card, index: number) => void;
   onClose: () => void;
@@ -22,6 +24,8 @@ export function LeftSidePanel({
   playEvidence,
   playRemove,
   evidenceFaceUp,
+  deckCount,
+  onAddEvidenceFromDeck,
   onEvidenceCardClick,
   onRemoveCardClick,
   onClose
@@ -110,6 +114,27 @@ export function LeftSidePanel({
             defaultOpen={true}
             headerColor="#9c27b0"
           >
+            <div style={{ padding: "0.4rem 0.5rem 0" }}>
+              <button
+                onClick={onAddEvidenceFromDeck}
+                disabled={deckCount === 0}
+                style={{
+                  width: "100%",
+                  padding: "0.45rem",
+                  background: deckCount === 0
+                    ? "#e0e0e0"
+                    : "linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%)",
+                  color: deckCount === 0 ? "#999" : "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "0.8rem",
+                  fontWeight: "bold",
+                  cursor: deckCount === 0 ? "not-allowed" : "pointer"
+                }}
+              >
+                ＋ 山札から1枚追加{deckCount > 0 ? ` (残${deckCount})` : " (山札なし)"}
+              </button>
+            </div>
             {playEvidence.length === 0 ? (
               <div style={{
                 padding: "1rem",
