@@ -11,6 +11,7 @@ interface HandAreaProps {
   onClearNewMulliganCards?: () => void;
   newHandCardIndices?: number[];
   onClearNewHandCards?: () => void;
+  onCardDetailClick?: (card: Card) => void;
 }
 
 // 手札カードサイズ（スマホ向けに縮小）
@@ -25,7 +26,8 @@ export function HandArea({
   newMulliganCardIndices = [],
   onClearNewMulliganCards,
   newHandCardIndices = [],
-  onClearNewHandCards
+  onClearNewHandCards,
+  onCardDetailClick
 }: HandAreaProps) {
   
   // カードクリック時にハイライトをクリア
@@ -122,6 +124,34 @@ export function HandArea({
                 e.currentTarget.style.transform = "translateY(0)";
               }}
             >
+              {/* 虫眼鏡バッジ */}
+              {onCardDetailClick && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCardDetailClick(card);
+                  }}
+                  style={{
+                    position: "absolute",
+                    top: "2px",
+                    right: "2px",
+                    width: "18px",
+                    height: "18px",
+                    background: "rgba(0,0,0,0.55)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.65rem",
+                    cursor: "pointer",
+                    zIndex: 10,
+                    backdropFilter: "blur(2px)"
+                  }}
+                >
+                  🔍
+                </div>
+              )}
+
               {/* NEWバッジ */}
               {isNew && (
                 <div style={{
