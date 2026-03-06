@@ -924,21 +924,27 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     // 手番プレイヤーのパートナーを縦に戻す
     updatePlayerState(turnPlayer, { partnerState: "normal" });
 
-    // 次の手番プレイヤーのFILEに2枚追加（次プレイヤーの山札から）
+    // 次の手番プレイヤーのFILEに2枚追加 + 解決編なら自動アシスト
     if (nextPlayerState) {
+      const fileUpdates: Partial<PlayerState> = {};
+
       if (nextPlayerState.deck.length >= 2) {
-        const newFileCards = nextPlayerState.deck.slice(0, 2);
-        const remainingDeck = nextPlayerState.deck.slice(2);
-        updatePlayerState(nextTurnPlayer, {
-          file: [...nextPlayerState.file, ...newFileCards],
-          deck: remainingDeck,
-        });
+        fileUpdates.file = [...nextPlayerState.file, ...nextPlayerState.deck.slice(0, 2)];
+        fileUpdates.deck = nextPlayerState.deck.slice(2);
       } else if (nextPlayerState.deck.length === 1) {
-        const newFileCards = nextPlayerState.deck.slice(0, 1);
-        updatePlayerState(nextTurnPlayer, {
-          file: [...nextPlayerState.file, ...newFileCards],
-          deck: [],
-        });
+        fileUpdates.file = [...nextPlayerState.file, ...nextPlayerState.deck.slice(0, 1)];
+        fileUpdates.deck = [];
+      }
+
+      // 解決編のプレイヤーはターン開始時に自動でアシスト
+      if (nextPlayerState.incidentPhase === "resolution") {
+        fileUpdates.partnerState = "assist";
+      }
+
+      updatePlayerState(nextTurnPlayer, fileUpdates);
+
+      if (nextPlayerState.incidentPhase === "resolution") {
+        setTimeout(() => addLog("解決編：パートナーが自動アシスト", nextTurnPlayer), 0);
       }
     }
 
