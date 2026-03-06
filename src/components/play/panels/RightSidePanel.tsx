@@ -11,6 +11,7 @@ interface RightSidePanelProps {
   partnerState: "normal" | "reasoning" | "assist";
   incidentCard: Card | null;
   opponentTraceFound: boolean;
+  incidentPhase: "incident" | "resolution"; // 事件編 or 解決編
   onDrawCard: () => void;
   onRefreshDeck: () => void;
   onFileCardClick: (card: Card, index: number) => void;
@@ -32,6 +33,7 @@ export function RightSidePanel({
   partnerState,
   incidentCard,
   opponentTraceFound,
+  incidentPhase,
   onDrawCard,
   onRefreshDeck,
   onFileCardClick,
@@ -484,14 +486,35 @@ export function RightSidePanel({
           <AccordionSection
             title="事件"
             icon="📋"
-            defaultOpen={true}
+            defaultOpen={false}
             headerColor="#795548"
           >
             <div style={{
               display: "flex",
               justifyContent: "center",
-              padding: "0.5rem"
+              alignItems: "center",
+              padding: "0.5rem",
+              gap: "0.5rem"
             }}>
+              {/* 解決編バッジ（左側） */}
+              {incidentPhase === "resolution" && (
+                <div style={{
+                  writingMode: "vertical-rl",
+                  textOrientation: "mixed",
+                  background: "linear-gradient(180deg, #1565c0 0%, #0d47a1 100%)",
+                  color: "white",
+                  fontSize: "0.7rem",
+                  fontWeight: "bold",
+                  padding: "0.4rem 0.25rem",
+                  borderRadius: "4px",
+                  letterSpacing: "0.05em",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                  flexShrink: 0
+                }}>
+                  解決編
+                </div>
+              )}
+
               {incidentCard ? (
                 <div
                   onClick={() => onIncidentClick(incidentCard)}
@@ -535,6 +558,25 @@ export function RightSidePanel({
                   fontSize: "0.8rem"
                 }}>
                   事件カード未設定
+                </div>
+              )}
+
+              {/* 事件編バッジ（右側） */}
+              {incidentPhase === "incident" && (
+                <div style={{
+                  writingMode: "vertical-rl",
+                  textOrientation: "mixed",
+                  background: "linear-gradient(180deg, #795548 0%, #5d4037 100%)",
+                  color: "white",
+                  fontSize: "0.7rem",
+                  fontWeight: "bold",
+                  padding: "0.4rem 0.25rem",
+                  borderRadius: "4px",
+                  letterSpacing: "0.05em",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                  flexShrink: 0
+                }}>
+                  事件編
                 </div>
               )}
             </div>

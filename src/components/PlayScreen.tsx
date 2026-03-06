@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { db } from "../db";
 import type { Card, Deck } from "../db";
 import { TARGET_DECK_SIZE } from "../shared/constants";
@@ -86,6 +86,7 @@ interface PlayerState {
   traceFound: boolean;
   partnerCard: Card | null;   // デッキに設定されたパートナー
   incidentCard: Card | null;  // デッキに設定された事件
+  incidentPhase: "incident" | "resolution"; // 事件編 or 解決編
 }
 
 export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
@@ -247,6 +248,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       traceFound: false,
       partnerCard: deckPartnerCard,
       incidentCard: deckIncidentCard,
+      incidentPhase: "incident" as const,
     };
   }
 
@@ -936,11 +938,31 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     setIsPlaying(false);
     setPlayer1(null);
     setPlayer2(null);
-    setCurrentPlayer(1);
+    setViewingPlayer(1);
     setIsEvidenceCollapsed(false);
     setIsMulliganMode(false);
     setSelectedForMulligan([]);
   }
+
+  // 先攻（player1）の解決編への切り替えを監視
+  // 先攻FILEが7枚以上になったら先攻だけ「解決編」に（一度切り替わったら戻らない）
+  useEffect(() => {
+    if (!player1) return;
+    if (player1.incidentPhase === "resolution") return;
+    if (player1.file.length >= 7) {
+      setPlayer1(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
+    }
+  }, [player1?.file.length]);
+
+  // 後攻（player2）の解決編への切り替えを監視
+  // 後攻FILEが6枚以上になったら後攻だけ「解決編」に（一度切り替わったら戻らない）
+  useEffect(() => {
+    if (!player2) return;
+    if (player2.incidentPhase === "resolution") return;
+    if (player2.file.length >= 6) {
+      setPlayer2(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
+    }
+  }, [player2?.file.length]);
 
   // デッキ選択画面
   if (!isPlaying) {
@@ -1081,6 +1103,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         opponentPlayerState={opponentPlayerState}
         partnerCard={partnerCard}
         incidentCard={incidentCard}
+        incidentPhase={currentPlayerState.incidentPhase}
         onDrawCard={drawCard}
         onRefreshDeck={refreshDeck}
         onAddEvidenceFromDeck={addEvidenceFromDeck}
