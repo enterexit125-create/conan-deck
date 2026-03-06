@@ -936,16 +936,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         fileUpdates.deck = [];
       }
 
-      // 解決編のプレイヤーはターン開始時に自動でアシスト
-      if (nextPlayerState.incidentPhase === "resolution") {
-        fileUpdates.partnerState = "assist";
-      }
-
       updatePlayerState(nextTurnPlayer, fileUpdates);
-
-      if (nextPlayerState.incidentPhase === "resolution") {
-        setTimeout(() => addLog("解決編：パートナーが自動アシスト", nextTurnPlayer), 0);
-      }
     }
 
     // ターン終了時に新カードハイライトをリセット
@@ -980,11 +971,21 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
   // 先攻（player1）の解決編への切り替えを監視
   // 先攻FILEが7枚以上になったら先攻だけ「解決編」に（一度切り替わったら戻らない）
+  // 解決編になったターンから自動アシスト対象になるため、手番かどうかも見てアシストをセット
   useEffect(() => {
     if (!player1) return;
     if (player1.incidentPhase === "resolution") return;
     if (player1.file.length >= 7) {
-      setPlayer1(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
+      setPlayer1(prev => {
+        if (!prev) return null;
+        // 現在player1が手番なら即アシスト、そうでなければ incidentPhase だけ更新
+        const shouldAssist = turnPlayer === 1;
+        return {
+          ...prev,
+          incidentPhase: "resolution",
+          partnerState: shouldAssist ? "assist" : prev.partnerState
+        };
+      });
     }
   }, [player1?.file.length]);
 
@@ -994,9 +995,26 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     if (!player2) return;
     if (player2.incidentPhase === "resolution") return;
     if (player2.file.length >= 6) {
-      setPlayer2(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
+      setPlayer2(prev => {
+        if (!prev) return null;
+        const shouldAssist = turnPlayer === 2;
+        return {
+          ...prev,
+          incidentPhase: "resolution",
+          partnerState: shouldAssist ? "assist" : prev.partnerState
+        };
+      });
     }
   }, [player2?.file.length]);
+
+  // 解決編プレイヤーのターン開始時に自動アシスト（ターンが切り替わった際に適用）
+  useEffect(() => {
+    const currentState = turnPlayer === 1 ? player1 : player2;
+    if (!currentState) return;
+    if (currentState.incidentPhase === "resolution" && currentState.partnerState === "normal") {
+      updatePlayerState(turnPlayer, { partnerState: "assist" });
+    }
+  }, [turnPlayer]);
 
   // デッキ選択画面
   if (!isPlaying) {
