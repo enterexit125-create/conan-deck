@@ -30,8 +30,8 @@ function MulliganCardThumb({ card }: { card: Card }) {
 
   return (
     <div style={{
-      width: "85px",
-      height: "119px",
+      width: "50px",
+      height: "70px",
       borderRadius: "3px",
       overflow: "hidden",
       border: "1px solid #ccc",
@@ -316,6 +316,22 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     addLog("リフレッシュ（リムーブ→山札）");
     addLog("相手に証拠+1", currentPlayer === 1 ? 2 : 1);
     alert("リフレッシュ！リムーブを山札に戻しました。相手に証拠が1枚追加されました。");
+  }
+
+  // 山札から証拠に1枚追加
+  function addEvidenceFromDeck() {
+    if (!currentPlayerState) return;
+    if (currentPlayerState.deck.length === 0) {
+      alert("山札がありません。");
+      return;
+    }
+    const evidenceCard = currentPlayerState.deck[0];
+    const newDeck = currentPlayerState.deck.slice(1);
+    updatePlayerState(currentPlayer, {
+      deck: newDeck,
+      evidence: [...currentPlayerState.evidence, evidenceCard]
+    });
+    addLog("山札から証拠に1枚追加");
   }
 
   // 手番開始
@@ -968,7 +984,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.25rem",
               width: "100%",
-              maxWidth: "420px",
+              maxWidth: "280px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
               textAlign: "center"
             }}
@@ -1067,6 +1083,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         incidentCard={incidentCard}
         onDrawCard={drawCard}
         onRefreshDeck={refreshDeck}
+        onAddEvidenceFromDeck={addEvidenceFromDeck}
         onStartTurn={startTurn}
         onStartMulligan={startMulligan}
         onSwitchPlayer={switchPlayer}
@@ -1205,7 +1222,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "420px",
+              maxWidth: "280px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1326,7 +1343,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "420px",
+              maxWidth: "280px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1447,7 +1464,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "420px",
+              maxWidth: "280px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1553,7 +1570,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "420px",
+              maxWidth: "280px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1662,7 +1679,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1rem",
               width: "100%",
-              maxWidth: "420px",
+              maxWidth: "360px",
               maxHeight: "80vh",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
               display: "flex",
