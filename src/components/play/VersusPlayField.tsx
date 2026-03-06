@@ -29,7 +29,6 @@ interface VersusPlayFieldProps {
   incidentCard: Card | null;
   onDrawCard: () => void;
   onRefreshDeck: () => void;
-  onAddEvidenceFromDeck: () => void;
   onStartTurn: () => void;
   onStartMulligan: () => void;
   onSwitchPlayer: () => void;
@@ -117,7 +116,6 @@ export function VersusPlayField({
   incidentCard,
   onDrawCard,
   onRefreshDeck,
-  onAddEvidenceFromDeck,
   onStartTurn,
   onStartMulligan,
   onSwitchPlayer,
@@ -586,6 +584,32 @@ export function VersusPlayField({
             )}
           </div>
           
+          {/* 虫眼鏡バッジ */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onCardDetailClick(card);
+            }}
+            style={{
+              position: "absolute",
+              top: "2px",
+              right: "2px",
+              width: "20px",
+              height: "20px",
+              background: "rgba(0,0,0,0.55)",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.7rem",
+              cursor: "pointer",
+              zIndex: 10,
+              backdropFilter: "blur(2px)"
+            }}
+          >
+            🔍
+          </div>
+
           {/* NEWバッジ */}
           {isNew && (
             <div style={{
@@ -1072,8 +1096,6 @@ export function VersusPlayField({
         evidenceFaceUp={currentPlayerState.evidenceFaceUp}
         isEvidenceCollapsed={isEvidenceCollapsed}
         onToggleEvidenceCollapse={onToggleEvidenceCollapse}
-        deckCount={currentPlayerState.deck.length}
-        onAddEvidenceFromDeck={onAddEvidenceFromDeck}
         onEvidenceCardClick={(card, index) => onCardClick(card, index, "evidence")}
         onRemoveCardClick={(card, index) => onCardClick(card, index, "remove")}
         onClose={() => setLeftPanelOpen(false)}
