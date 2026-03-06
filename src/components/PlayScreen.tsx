@@ -921,9 +921,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
     if (!currentTurnPlayerState) return;
 
-    // 手番プレイヤーのパートナーを縦に戻す
-    updatePlayerState(turnPlayer, { partnerState: "normal" });
-
     // 次の手番プレイヤーのFILEに2枚追加 + 解決編なら自動アシスト
     if (nextPlayerState) {
       const fileUpdates: Partial<PlayerState> = {};
@@ -1007,11 +1004,17 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     }
   }, [player2?.file.length]);
 
-  // 解決編プレイヤーのターン開始時に自動アシスト（ターンが切り替わった際に適用）
+  // ターン切り替え時：
+  //   前の手番プレイヤー → partnerState を normal に戻す（自分の手番開始時にリセット）
+  //   新しい手番プレイヤー → 解決編なら assist にセット
   useEffect(() => {
+    if (!isPlaying) return;
+    const prevTurnPlayer: 1 | 2 = turnPlayer === 1 ? 2 : 1;
+    // 前プレイヤーのパートナーを縦に戻す
+    updatePlayerState(prevTurnPlayer, { partnerState: "normal" });
+    // 新しい手番プレイヤーが解決編ならアシスト
     const currentState = turnPlayer === 1 ? player1 : player2;
-    if (!currentState) return;
-    if (currentState.incidentPhase === "resolution" && currentState.partnerState === "normal") {
+    if (currentState?.incidentPhase === "resolution") {
       updatePlayerState(turnPlayer, { partnerState: "assist" });
     }
   }, [turnPlayer]);
