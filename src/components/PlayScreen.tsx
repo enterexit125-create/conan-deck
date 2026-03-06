@@ -1006,14 +1006,25 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
   // 自分の手番開始時：パートナーを normal にリセット（解決編なら assist）
   // 相手の手番中は自分のパートナー状態を一切変えない
+  // ※ 関数型更新で最新の state を参照し、stale closure を回避
   useEffect(() => {
     if (!isPlaying) return;
-    const currentState = turnPlayer === 1 ? player1 : player2;
-    if (!currentState) return;
-    if (currentState.incidentPhase === "resolution") {
-      updatePlayerState(turnPlayer, { partnerState: "assist" });
+    if (turnPlayer === 1) {
+      setPlayer1(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          partnerState: prev.incidentPhase === "resolution" ? "assist" : "normal"
+        };
+      });
     } else {
-      updatePlayerState(turnPlayer, { partnerState: "normal" });
+      setPlayer2(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          partnerState: prev.incidentPhase === "resolution" ? "assist" : "normal"
+        };
+      });
     }
   }, [turnPlayer]);
 
