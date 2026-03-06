@@ -318,6 +318,22 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     alert("リフレッシュ！リムーブを山札に戻しました。相手に証拠が1枚追加されました。");
   }
 
+  // 山札から証拠に1枚追加
+  function addEvidenceFromDeck() {
+    if (!currentPlayerState) return;
+    if (currentPlayerState.deck.length === 0) {
+      alert("山札がありません。");
+      return;
+    }
+    const evidenceCard = currentPlayerState.deck[0];
+    const newDeck = currentPlayerState.deck.slice(1);
+    updatePlayerState(currentPlayer, {
+      deck: newDeck,
+      evidence: [...currentPlayerState.evidence, evidenceCard]
+    });
+    addLog("山札から証拠に1枚追加");
+  }
+
   // 手番開始
   function startTurn() {
     if (!currentPlayerState || currentPlayerState.deck.length < 2) {
@@ -767,7 +783,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         deck: newDeck,
         remove: removeToUse,
         evidence: [...currentPlayerState.evidence, evidenceCard],
-        ...(didRefresh && { traceFound: true })
+        traceFound: true
       });
       addLog(didRefresh
         ? "パートナーが推理中 → リフレッシュ後に証拠+1"
@@ -1067,6 +1083,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         incidentCard={incidentCard}
         onDrawCard={drawCard}
         onRefreshDeck={refreshDeck}
+        onAddEvidenceFromDeck={addEvidenceFromDeck}
         onStartTurn={startTurn}
         onStartMulligan={startMulligan}
         onSwitchPlayer={switchPlayer}

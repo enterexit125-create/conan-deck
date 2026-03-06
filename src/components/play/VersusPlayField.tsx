@@ -29,6 +29,7 @@ interface VersusPlayFieldProps {
   incidentCard: Card | null;
   onDrawCard: () => void;
   onRefreshDeck: () => void;
+  onAddEvidenceFromDeck: () => void;
   onStartTurn: () => void;
   onStartMulligan: () => void;
   onSwitchPlayer: () => void;
@@ -116,6 +117,7 @@ export function VersusPlayField({
   incidentCard,
   onDrawCard,
   onRefreshDeck,
+  onAddEvidenceFromDeck,
   onStartTurn,
   onStartMulligan,
   onSwitchPlayer,
@@ -1070,6 +1072,8 @@ export function VersusPlayField({
         evidenceFaceUp={currentPlayerState.evidenceFaceUp}
         isEvidenceCollapsed={isEvidenceCollapsed}
         onToggleEvidenceCollapse={onToggleEvidenceCollapse}
+        deckCount={currentPlayerState.deck.length}
+        onAddEvidenceFromDeck={onAddEvidenceFromDeck}
         onEvidenceCardClick={(card, index) => onCardClick(card, index, "evidence")}
         onRemoveCardClick={(card, index) => onCardClick(card, index, "remove")}
         onClose={() => setLeftPanelOpen(false)}
