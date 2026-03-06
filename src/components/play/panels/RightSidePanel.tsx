@@ -361,15 +361,16 @@ export function RightSidePanel({
               {/* デッキのパートナーカード */}
               {partnerCard && (
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ 
-                    fontSize: "0.65rem", 
-                    color: "#666", 
-                    marginBottom: "0.2rem" 
-                  }}>
-                    パートナー
-                    {partnerState === "reasoning" && " 🔄"}
-                    {partnerState === "assist" && " 🅿️"}
-                  </div>
+                  {(partnerState === "reasoning" || partnerState === "assist") && (
+                    <div style={{ 
+                      fontSize: "0.65rem", 
+                      color: "#666", 
+                      marginBottom: "0.2rem" 
+                    }}>
+                      {partnerState === "reasoning" && "🔄"}
+                      {partnerState === "assist" && "🅿️"}
+                    </div>
+                  )}
                   <div
                     onClick={() => onPartnerClick(partnerCard)}
                     style={{
