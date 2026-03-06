@@ -14,6 +14,7 @@ interface RightSidePanelProps {
   incidentPhase: "incident" | "resolution"; // 事件編 or 解決編
   onDrawCard: () => void;
   onRefreshDeck: () => void;
+  onDeckCardClick: () => void;
   onFileCardClick: (card: Card, index: number) => void;
   onPartnerClick: (card: Card) => void;
   onPartnerZoneCardClick: (card: Card, index: number) => void;
@@ -36,6 +37,7 @@ export function RightSidePanel({
   incidentPhase,
   onDrawCard,
   onRefreshDeck,
+  onDeckCardClick,
   onFileCardClick,
   onPartnerClick,
   onPartnerZoneCardClick,
@@ -139,15 +141,19 @@ export function RightSidePanel({
                 gap: "0.75rem"
               }}>
                 {/* カード裏面 + 枚数バッジ */}
-                <div style={{
-                  width: "60px",
-                  height: "84px",
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                  position: "relative",
-                  flexShrink: 0
-                }}>
+                <div
+                  onClick={deckCount > 0 ? onDeckCardClick : undefined}
+                  style={{
+                    width: "60px",
+                    height: "84px",
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                    position: "relative",
+                    flexShrink: 0,
+                    cursor: deckCount > 0 ? "pointer" : "default"
+                  }}
+                >
                   <img
                     src={cardBackImage}
                     alt="山札"

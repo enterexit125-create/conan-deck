@@ -125,6 +125,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   } | null>(null);
   const [showMoveDestination, setShowMoveDestination] = useState(false);
   const [showRemoveMoveModal, setShowRemoveMoveModal] = useState(false); // リムーブからの移動モーダル
+  const [showDeckMoveModal, setShowDeckMoveModal] = useState(false); // 山札からの移動モーダル
   const [showHandMoveModal, setShowHandMoveModal] = useState(false); // 手札からの移動モーダル
   const [showPartnerZoneMoveModal, setShowPartnerZoneMoveModal] = useState(false); // パートナーゾーンからの移動モーダル
   const [showPartnerCardModal, setShowPartnerCardModal] = useState(false); // パートナーカードモーダル
@@ -334,6 +335,28 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       evidence: [...currentPlayerState.evidence, evidenceCard]
     });
     addLog("山札から証拠に1枚追加");
+  }
+
+  // 山札トップからの移動
+  function moveDeckTopCard(destination: "hand" | "remove") {
+    if (!currentPlayerState || currentPlayerState.deck.length === 0) return;
+
+    const card = currentPlayerState.deck[0];
+    const newDeck = currentPlayerState.deck.slice(1);
+
+    const updates: Partial<PlayerState> = { deck: newDeck };
+
+    if (destination === "hand") {
+      updates.hand = [...currentPlayerState.hand, card];
+      setNewHandCardIndices(prev => [...prev, currentPlayerState.hand.length]);
+      addLog(`山札から手札へ「${card.name}」`);
+    } else {
+      updates.remove = [...currentPlayerState.remove, card];
+      addLog(`山札からリムーブへ「${card.name}」`);
+    }
+
+    updatePlayerState(currentPlayer, updates);
+    setShowDeckMoveModal(false);
   }
 
   // 手番開始
@@ -1106,6 +1129,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         incidentPhase={currentPlayerState.incidentPhase}
         onDrawCard={drawCard}
         onRefreshDeck={refreshDeck}
+        onDeckCardClick={() => setShowDeckMoveModal(true)}
         onAddEvidenceFromDeck={addEvidenceFromDeck}
         onStartTurn={startTurn}
         onStartMulligan={startMulligan}
@@ -1808,6 +1832,100 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
           setShowSetTargetModal(false);
         }}
       />
+
+      {/* 山札タップの移動モーダル */}
+      {showDeckMoveModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: "1rem"
+          }}
+          onClick={() => setShowDeckMoveModal(false)}
+        >
+          <div
+            style={{
+              background: "white",
+              borderRadius: "16px",
+              padding: "1.5rem",
+              width: "100%",
+              maxWidth: "280px",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 style={{
+              margin: "0 0 0.5rem 0",
+              fontSize: "1.1rem",
+              color: "#333"
+            }}>
+              📚 山札トップ
+            </h3>
+            <p style={{
+              margin: "0 0 1rem 0",
+              fontSize: "0.8rem",
+              color: "#888"
+            }}>
+              山札のトップカードをどこへ移動しますか？
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <button
+                onClick={() => moveDeckTopCard("remove")}
+                style={{
+                  padding: "0.85rem",
+                  background: "linear-gradient(135deg, #607d8b 0%, #455a64 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  fontWeight: "bold",
+                  cursor: "pointer"
+                }}
+              >
+                🗑️ リムーブへ
+              </button>
+              <button
+                onClick={() => moveDeckTopCard("hand")}
+                style={{
+                  padding: "0.85rem",
+                  background: "linear-gradient(135deg, #2196f3 0%, #1565c0 100%)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  fontWeight: "bold",
+                  cursor: "pointer"
+                }}
+              >
+                ✋ 手札へ（ドロー）
+              </button>
+              <button
+                onClick={() => setShowDeckMoveModal(false)}
+                style={{
+                  padding: "0.75rem",
+                  background: "#f5f5f5",
+                  color: "#333",
+                  border: "1px solid #ddd",
+                  borderRadius: "8px",
+                  fontSize: "0.95rem",
+                  cursor: "pointer"
+                }}
+              >
+                ◀ 閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
