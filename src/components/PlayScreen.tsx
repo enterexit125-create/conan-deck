@@ -30,8 +30,8 @@ function MulliganCardThumb({ card }: { card: Card }) {
 
   return (
     <div style={{
-      width: "70px",
-      height: "98px",
+      width: "85px",
+      height: "119px",
       borderRadius: "3px",
       overflow: "hidden",
       border: "1px solid #ccc",
@@ -968,7 +968,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.25rem",
               width: "100%",
-              maxWidth: "360px",
+              maxWidth: "420px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
               textAlign: "center"
             }}
@@ -1205,7 +1205,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "360px",
+              maxWidth: "420px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1326,7 +1326,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "360px",
+              maxWidth: "420px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1447,7 +1447,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "360px",
+              maxWidth: "420px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1553,7 +1553,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.5rem",
               width: "100%",
-              maxWidth: "360px",
+              maxWidth: "420px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)"
             }}
             onClick={e => e.stopPropagation()}
@@ -1662,7 +1662,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1rem",
               width: "100%",
-              maxWidth: "360px",
+              maxWidth: "420px",
               maxHeight: "80vh",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
               display: "flex",
