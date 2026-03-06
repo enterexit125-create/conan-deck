@@ -486,7 +486,7 @@ export function RightSidePanel({
           <AccordionSection
             title="事件"
             icon="📋"
-            defaultOpen={true}
+            defaultOpen={false}
             headerColor="#795548"
           >
             <div style={{
@@ -499,17 +499,16 @@ export function RightSidePanel({
               {/* 解決編バッジ（左側） */}
               {incidentPhase === "resolution" && (
                 <div style={{
-                  writingMode: "vertical-rl",
-                  textOrientation: "mixed",
-                  background: "linear-gradient(180deg, #1565c0 0%, #0d47a1 100%)",
+                  background: "linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)",
                   color: "white",
-                  fontSize: "0.7rem",
+                  fontSize: "1rem",
                   fontWeight: "bold",
-                  padding: "0.4rem 0.25rem",
-                  borderRadius: "4px",
-                  letterSpacing: "0.05em",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                  flexShrink: 0
+                  padding: "0.4rem 0.6rem",
+                  borderRadius: "6px",
+                  letterSpacing: "0.1em",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap"
                 }}>
                   解決編
                 </div>
@@ -564,17 +563,16 @@ export function RightSidePanel({
               {/* 事件編バッジ（右側） */}
               {incidentPhase === "incident" && (
                 <div style={{
-                  writingMode: "vertical-rl",
-                  textOrientation: "mixed",
-                  background: "linear-gradient(180deg, #795548 0%, #5d4037 100%)",
+                  background: "linear-gradient(135deg, #795548 0%, #5d4037 100%)",
                   color: "white",
-                  fontSize: "0.7rem",
+                  fontSize: "1rem",
                   fontWeight: "bold",
-                  padding: "0.4rem 0.25rem",
-                  borderRadius: "4px",
-                  letterSpacing: "0.05em",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                  flexShrink: 0
+                  padding: "0.4rem 0.6rem",
+                  borderRadius: "6px",
+                  letterSpacing: "0.1em",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap"
                 }}>
                   事件編
                 </div>
