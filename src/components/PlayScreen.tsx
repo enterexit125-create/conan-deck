@@ -106,8 +106,8 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
   const [isEvidenceCollapsed, setIsEvidenceCollapsed] = useState(false);
   const [isMulliganMode, setIsMulliganMode] = useState(false);
   const [selectedForMulligan, setSelectedForMulligan] = useState<number[]>([]);
-  const [newMulliganCardIndices, setNewMulliganCardIndices] = useState<number[]>([]); // マリガンで新しく来たカードのインデックス
-  const [newHandCardIndices, setNewHandCardIndices] = useState<number[]>([]); // 今ターンで手札に追加されたカードのインデックス
+  const [newMulliganCardKeys, setNewMulliganCardKeys] = useState<Set<string>>(new Set()); // マリガンで新しく来たカードのinstanceKey
+  const [newHandCardKeys, setNewHandCardKeys] = useState<Set<string>>(new Set()); // 今ターンで手札に追加されたカードのinstanceKey
   const [newFieldCardIndices, setNewFieldCardIndices] = useState<number[]>([]); // 今ターンで現場に出たカードのインデックス
   const [turnEndTrigger, setTurnEndTrigger] = useState(0); // ターン終了トリガー
   
@@ -265,15 +265,16 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
 
     const newCard = currentPlayerState.deck[0];
     const newDeck = currentPlayerState.deck.slice(1);
-    const newIndex = currentPlayerState.hand.length; // 新しいカードのインデックス
+    const key = `${newCard.id}-${Date.now()}-${Math.random()}`;
+    const cardWithKey = { ...newCard, instanceKey: key };
     
     updatePlayerState(currentPlayer, {
-      hand: [...currentPlayerState.hand, newCard],
+      hand: [...currentPlayerState.hand, cardWithKey],
       deck: newDeck
     });
     
-    // 新しい手札カードのインデックスを追加
-    setNewHandCardIndices(prev => [...prev, newIndex]);
+    // 新しい手札カードのkeyを追加
+    setNewHandCardKeys(prev => new Set([...prev, key]));
     addLog("ドローした");
   }
 
@@ -347,8 +348,10 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     const updates: Partial<PlayerState> = { deck: newDeck };
 
     if (destination === "hand") {
-      updates.hand = [...currentPlayerState.hand, card];
-      setNewHandCardIndices(prev => [...prev, currentPlayerState.hand.length]);
+      const key = `${card.id}-${Date.now()}-${Math.random()}`;
+      const cardWithKey = { ...card, instanceKey: key };
+      updates.hand = [...currentPlayerState.hand, cardWithKey];
+      setNewHandCardKeys(prev => new Set([...prev, key]));
       addLog(`山札から手札へ「${card.name}」`);
     } else {
       updates.remove = [...currentPlayerState.remove, card];
@@ -391,13 +394,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     // 新しい現場カードのインデックスを追加
     setNewFieldCardIndices(prev => [...prev, newFieldIndex]);
     
-    // 手札から消えたので、手札の新カードインデックスを更新
-    setNewHandCardIndices(prev => 
-      prev.filter(i => i !== index).map(i => i > index ? i - 1 : i)
-    );
-    setNewMulliganCardIndices(prev => 
-      prev.filter(i => i !== index).map(i => i > index ? i - 1 : i)
-    );
+    // 移動したカードのkeyをハイライトから除去
+    const playedKey = currentPlayerState.hand[index]?.instanceKey;
+    if (playedKey) {
+      setNewHandCardKeys(prev => { const s = new Set(prev); s.delete(playedKey); return s; });
+      setNewMulliganCardKeys(prev => { const s = new Set(prev); s.delete(playedKey); return s; });
+    }
     
     addLog(`「${card.name}」を現場に出した`);
     setShowCardMenu(false);
@@ -419,9 +421,9 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     
     switch (destination) {
       case "hand":
-        updates.hand = [...currentPlayerState.hand, card];
-        // 新しい手札カードとしてハイライト
-        setNewHandCardIndices(prev => [...prev, currentPlayerState.hand.length]);
+        const keyF = `${card.id}-${Date.now()}-${Math.random()}`;
+        updates.hand = [...currentPlayerState.hand, { ...card, instanceKey: keyF }];
+        setNewHandCardKeys(prev => new Set([...prev, keyF]));
         break;
       case "remove":
         updates.remove = [...currentPlayerState.remove, card];
@@ -539,9 +541,9 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     
     switch (destination) {
       case "hand":
-        updates.hand = [...currentPlayerState.hand, card];
-        // 新しい手札カードとしてハイライト
-        setNewHandCardIndices(prev => [...prev, currentPlayerState.hand.length]);
+        const keyR = `${card.id}-${Date.now()}-${Math.random()}`;
+        updates.hand = [...currentPlayerState.hand, { ...card, instanceKey: keyR }];
+        setNewHandCardKeys(prev => new Set([...prev, keyR]));
         break;
       case "field":
         updates.field = [...currentPlayerState.field, card];
@@ -585,13 +587,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         break;
     }
     
-    // 手札のハイライトインデックスを更新
-    setNewHandCardIndices(prev => 
-      prev.filter(i => i !== fromIndex).map(i => i > fromIndex ? i - 1 : i)
-    );
-    setNewMulliganCardIndices(prev => 
-      prev.filter(i => i !== fromIndex).map(i => i > fromIndex ? i - 1 : i)
-    );
+    // 移動したカードのkeyをハイライトから除去
+    const movedKey = currentPlayerState.hand[fromIndex]?.instanceKey;
+    if (movedKey) {
+      setNewHandCardKeys(prev => { const s = new Set(prev); s.delete(movedKey); return s; });
+      setNewMulliganCardKeys(prev => { const s = new Set(prev); s.delete(movedKey); return s; });
+    }
     
     updatePlayerState(currentPlayer, updates);
     setShowCardMenu(false);
@@ -888,12 +889,16 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     const drawnCards = newDeck.slice(0, drawCount);
     const finalDeck = newDeck.slice(drawCount);
 
-    // 新しく来たカードのインデックスを記録（残った手札の後に追加されるため）
-    const newIndices = drawnCards.map((_, i) => remainingHand.length + i);
-    setNewMulliganCardIndices(newIndices);
+    // 新しく来たカードにinstanceKeyを付与
+    const drawnCardsWithKeys = drawnCards.map(c => {
+      const k = `${c.id}-${Date.now()}-${Math.random()}`;
+      return { ...c, instanceKey: k };
+    });
+    const newKeys = new Set(drawnCardsWithKeys.map(c => c.instanceKey as string));
+    setNewMulliganCardKeys(newKeys);
 
     updatePlayerState(currentPlayer, {
-      hand: [...remainingHand, ...drawnCards],
+      hand: [...remainingHand, ...drawnCardsWithKeys],
       deck: finalDeck,
       mulliganDone: true
     });
@@ -938,9 +943,9 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     }
 
     // ターン終了時に新カードハイライトをリセット
-    setNewHandCardIndices([]);
+    setNewHandCardKeys(new Set());
     setNewFieldCardIndices([]);
-    setNewMulliganCardIndices([]);
+    setNewMulliganCardKeys(new Set());
 
     addLog("ターン終了", turnPlayer);
 
@@ -1147,10 +1152,10 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         pendingSetCard={pendingSetCard}
         onPendingSetCardProcessed={() => setPendingSetCard(null)}
         removeSetCardsRequest={removeSetCardsRequest}
-        newMulliganCardIndices={newMulliganCardIndices}
-        onClearNewMulliganCards={() => setNewMulliganCardIndices([])}
-        newHandCardIndices={newHandCardIndices}
-        onClearNewHandCards={() => setNewHandCardIndices([])}
+        newMulliganCardKeys={newMulliganCardKeys}
+        onClearNewMulliganCards={() => setNewMulliganCardKeys(new Set())}
+        newHandCardKeys={newHandCardKeys}
+        onClearNewHandCards={() => setNewHandCardKeys(new Set())}
         newFieldCardIndices={newFieldCardIndices}
         onClearNewFieldCards={() => setNewFieldCardIndices([])}
         onShowLog={() => setShowLogModal(true)}

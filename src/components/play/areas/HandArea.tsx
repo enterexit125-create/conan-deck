@@ -7,9 +7,9 @@ interface HandAreaProps {
   onCardClick: (card: Card, index: number) => void;
   onStartMulligan: () => void;
   onDrawCard: () => void;
-  newMulliganCardIndices?: number[];
+  newMulliganCardKeys?: Set<string>;
   onClearNewMulliganCards?: () => void;
-  newHandCardIndices?: number[];
+  newHandCardKeys?: Set<string>;
   onClearNewHandCards?: () => void;
   onCardDetailClick?: (card: Card) => void;
 }
@@ -23,21 +23,15 @@ export function HandArea({
   onCardClick, 
   onStartMulligan,
   onDrawCard,
-  newMulliganCardIndices = [],
+  newMulliganCardKeys = new Set<string>(),
   onClearNewMulliganCards,
-  newHandCardIndices = [],
+  newHandCardKeys = new Set<string>(),
   onClearNewHandCards,
   onCardDetailClick
 }: HandAreaProps) {
   
-  // カードクリック時にハイライトをクリア
+  // カードクリック時はハイライトをクリアしない（操作後に個別削除）
   const handleCardClick = (card: Card, index: number) => {
-    if (newMulliganCardIndices.length > 0 && onClearNewMulliganCards) {
-      onClearNewMulliganCards();
-    }
-    if (newHandCardIndices.length > 0 && onClearNewHandCards) {
-      onClearNewHandCards();
-    }
     onCardClick(card, index);
   };
 
@@ -96,8 +90,8 @@ export function HandArea({
         alignItems: "flex-start"
       }}>
         {playHand.map((card, idx) => {
-          const isNewFromMulligan = newMulliganCardIndices.includes(idx);
-          const isNewFromDraw = newHandCardIndices.includes(idx);
+          const isNewFromMulligan = newMulliganCardKeys.has((card as any).instanceKey ?? "");
+          const isNewFromDraw = newHandCardKeys.has((card as any).instanceKey ?? "");
           const isNew = isNewFromMulligan || isNewFromDraw;
           
           return (

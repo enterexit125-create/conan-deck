@@ -54,10 +54,10 @@ interface VersusPlayFieldProps {
   removeSetCardsRequest?: { fieldIndex: number; player: 1 | 2 } | null;
   onSetCardsRemoved?: (cards: Card[], fieldIndex: number, player: 1 | 2) => void;
   // マリガンで新しく来たカードのインデックス
-  newMulliganCardIndices?: number[];
+  newMulliganCardKeys?: Set<string>;
   onClearNewMulliganCards?: () => void;
   // 今ターンで手札に追加されたカードのインデックス
-  newHandCardIndices?: number[];
+  newHandCardKeys?: Set<string>;
   onClearNewHandCards?: () => void;
   // 今ターンで現場に出たカードのインデックス
   newFieldCardIndices?: number[];
@@ -140,9 +140,9 @@ export function VersusPlayField({
   onPendingSetCardProcessed,
   removeSetCardsRequest,
   onSetCardsRemoved,
-  newMulliganCardIndices = [],
+  newMulliganCardKeys = new Set<string>(),
   onClearNewMulliganCards,
-  newHandCardIndices = [],
+  newHandCardKeys = new Set<string>(),
   onClearNewHandCards,
   newFieldCardIndices = [],
   onClearNewFieldCards,
@@ -1088,9 +1088,9 @@ export function VersusPlayField({
           onStartMulligan={onStartMulligan}
           onDrawCard={onDrawCard}
           onCardDetailClick={onCardDetailClick}
-          newMulliganCardIndices={newMulliganCardIndices}
+          newMulliganCardKeys={newMulliganCardKeys}
           onClearNewMulliganCards={onClearNewMulliganCards}
-          newHandCardIndices={newHandCardIndices}
+          newHandCardKeys={newHandCardKeys}
           onClearNewHandCards={onClearNewHandCards}
         />
       </div>
