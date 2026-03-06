@@ -175,7 +175,7 @@ export default function App() {
       const matchText = !q || name.includes(q) || num.includes(q) || traits.includes(q) || memo.includes(q);
       const matchColor = !filterColor || c.color === filterColor;
       const matchType = !filterType || c.type === filterType;
-      const matchLevel = !filterLevel || c.level === parseInt(filterLevel);
+      const matchLevel = !filterLevel || String(c.level) === String(filterLevel);
       
       return matchText && matchColor && matchType && matchLevel;
     });
@@ -267,7 +267,7 @@ export default function App() {
       const matchText = !q || name.includes(q) || num.includes(q) || (c.traits ?? "").toLowerCase().includes(q) || (c.memo ?? "").toLowerCase().includes(q);
       const matchColor = !cardSelectColor || c.color === cardSelectColor;
       const matchType = !cardSelectType || c.type === cardSelectType;
-      const matchLevel = !cardSelectLevel || c.level === parseInt(cardSelectLevel);
+      const matchLevel = !cardSelectLevel || String(c.level) === String(cardSelectLevel);
       return matchText && matchColor && matchType && matchLevel;
     });
     return filtered.slice(0, 200); // 常に200件上限（スマホクラッシュ防止）
