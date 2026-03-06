@@ -30,8 +30,8 @@ function MulliganCardThumb({ card }: { card: Card }) {
 
   return (
     <div style={{
-      width: "50px",
-      height: "70px",
+      width: "85px",
+      height: "119px",
       borderRadius: "3px",
       overflow: "hidden",
       border: "1px solid #ccc",
@@ -984,7 +984,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
               borderRadius: "16px",
               padding: "1.25rem",
               width: "100%",
-              maxWidth: "280px",
+              maxWidth: "420px",
               boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
               textAlign: "center"
             }}
