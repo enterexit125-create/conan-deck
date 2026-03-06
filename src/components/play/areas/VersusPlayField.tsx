@@ -22,12 +22,16 @@ interface PlayerState {
 
 interface VersusPlayFieldProps {
   currentPlayer: 1 | 2;
+  turnPlayer: 1 | 2;
   currentPlayerState: PlayerState;
   opponentPlayerState: PlayerState;
   partnerCard: Card | null;
   incidentCard: Card | null;
+  incidentPhase: "incident" | "resolution";
   onDrawCard: () => void;
   onRefreshDeck: () => void;
+  onDeckCardClick: () => void;
+  onAddEvidenceFromDeck: () => void;
   onStartTurn: () => void;
   onStartMulligan: () => void;
   onSwitchPlayer: () => void;
@@ -50,10 +54,10 @@ interface VersusPlayFieldProps {
   removeSetCardsRequest?: { fieldIndex: number; player: 1 | 2 } | null;
   onSetCardsRemoved?: (cards: Card[], fieldIndex: number, player: 1 | 2) => void;
   // マリガンで新しく来たカードのインデックス
-  newMulliganCardIndices?: number[];
+  newMulliganCardKeys?: Set<string>;
   onClearNewMulliganCards?: () => void;
   // 今ターンで手札に追加されたカードのインデックス
-  newHandCardIndices?: number[];
+  newHandCardKeys?: Set<string>;
   onClearNewHandCards?: () => void;
   // 今ターンで現場に出たカードのインデックス
   newFieldCardIndices?: number[];
@@ -108,12 +112,16 @@ function getSetCardsKey(fieldIndex: number, player: 1 | 2): string {
 
 export function VersusPlayField({
   currentPlayer,
+  turnPlayer,
   currentPlayerState,
   opponentPlayerState,
   partnerCard,
   incidentCard,
+  incidentPhase,
   onDrawCard,
   onRefreshDeck,
+  onDeckCardClick,
+  onAddEvidenceFromDeck,
   onStartTurn,
   onStartMulligan,
   onSwitchPlayer,
@@ -132,9 +140,9 @@ export function VersusPlayField({
   onPendingSetCardProcessed,
   removeSetCardsRequest,
   onSetCardsRemoved,
-  newMulliganCardIndices = [],
+  newMulliganCardKeys = new Set<string>(),
   onClearNewMulliganCards,
-  newHandCardIndices = [],
+  newHandCardKeys = new Set<string>(),
   onClearNewHandCards,
   newFieldCardIndices = [],
   onClearNewFieldCards,
@@ -509,7 +517,8 @@ export function VersusPlayField({
     player, 
     status, 
     cardState,
-    isNew = false
+    isNew = false,
+    cardWidth = CARD_WIDTH
   }: { 
     card: Card; 
     idx: number; 
@@ -517,15 +526,17 @@ export function VersusPlayField({
     status: CardStatus;
     cardState: CardState;
     isNew?: boolean;
+    cardWidth?: number;
   }) {
     const rotation = getCardRotation(cardState);
     const setCardsForThis = getSetCardsForField(idx, player);
+    const cardHeight = Math.round(cardWidth / 0.7);
     
     return (
       <div
         style={{
           position: "relative",
-          width: `${CARD_WIDTH}px`,
+          width: `${cardWidth}px`,
           flexShrink: 0
         }}
       >
@@ -533,8 +544,8 @@ export function VersusPlayField({
         <div
           onClick={() => handleCardTap(card, idx, player)}
           style={{
-            width: `${CARD_WIDTH}px`,
-            aspectRatio: "0.7",
+            width: `${cardWidth}px`,
+            height: `${cardHeight}px`,
             borderRadius: "4px",
             overflow: "visible",
             cursor: "pointer",
@@ -579,6 +590,32 @@ export function VersusPlayField({
             )}
           </div>
           
+          {/* 虫眼鏡バッジ */}
+          <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onCardDetailClick(card);
+            }}
+            style={{
+              position: "absolute",
+              top: "2px",
+              right: "2px",
+              width: "20px",
+              height: "20px",
+              background: "rgba(0,0,0,0.55)",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "0.7rem",
+              cursor: "pointer",
+              zIndex: 10,
+              backdropFilter: "blur(2px)"
+            }}
+          >
+            🔍
+          </div>
+
           {/* NEWバッジ */}
           {isNew && (
             <div style={{
@@ -643,13 +680,17 @@ export function VersusPlayField({
 
   return (
     <div style={{ 
-      height: "100svh", 
-      maxHeight: "-webkit-fill-available",
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       display: "flex", 
       flexDirection: "column",
       overflow: "hidden",
       background: theme.background,
-      transition: "background 0.4s ease"
+      transition: "background 0.4s ease",
+      zIndex: 500
     }}>
         {/* ヘッダー - プレイヤーに応じて色が変わる */}
         <div style={{
@@ -784,9 +825,8 @@ export function VersusPlayField({
           </div>
         </div>
 
-        {/* コンテンツ（アニメーション付き） */}
         <div style={{
-          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "240px") : "0",
+          maxHeight: isOpponentFieldOpen ? (opponentPlayerState.field.length === 0 ? "32px" : "165px") : "0",
           overflow: "hidden",
           transition: "max-height 0.3s ease"
         }}>
@@ -815,8 +855,8 @@ export function VersusPlayField({
                 <div style={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: CARD_GAP,
-                  padding: "0.3rem",
+                  gap: "4px",
+                  padding: "0.25rem",
                   alignItems: "flex-start",
                   justifyContent: "center"
                 }}>
@@ -832,6 +872,7 @@ export function VersusPlayField({
                         player={opponentPlayer}
                         status={status}
                         cardState={cardState}
+                        cardWidth={52}
                       />
                     );
                   })}
@@ -879,7 +920,7 @@ export function VersusPlayField({
             padding: "0.4rem 0.8rem", 
             fontSize: "0.8rem",
             lineHeight: 1.2,
-            background: currentPlayer === 1 
+            background: turnPlayer === 1 
               ? "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)"
               : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
             color: "white",
@@ -895,7 +936,10 @@ export function VersusPlayField({
         >
           <span>🔄</span>
           <span style={{ fontWeight: "bold" }}>
-            {currentPlayer === 1 ? "P2へ" : "P1へ"}
+            {currentPlayer === turnPlayer
+              ? (turnPlayer === 1 ? "P2へ" : "P1へ")
+              : (turnPlayer === 1 ? "P1へ戻る" : "P2へ戻る")
+            }
           </span>
         </button>
 
@@ -1000,7 +1044,7 @@ export function VersusPlayField({
               overflowX: "hidden",
               display: "flex",
               flexWrap: "wrap",
-              gap: CARD_GAP,
+              gap: "6px",
               alignContent: "flex-start",
               alignItems: "flex-start",
               justifyContent: "center",
@@ -1020,6 +1064,7 @@ export function VersusPlayField({
                     status={status}
                     cardState={cardState}
                     isNew={isNew}
+                    cardWidth={96}
                   />
                 );
               })}
@@ -1042,9 +1087,10 @@ export function VersusPlayField({
           onCardClick={(card, index) => onCardClick(card, index, "hand")}
           onStartMulligan={onStartMulligan}
           onDrawCard={onDrawCard}
-          newMulliganCardIndices={newMulliganCardIndices}
+          onCardDetailClick={onCardDetailClick}
+          newMulliganCardKeys={newMulliganCardKeys}
           onClearNewMulliganCards={onClearNewMulliganCards}
-          newHandCardIndices={newHandCardIndices}
+          newHandCardKeys={newHandCardKeys}
           onClearNewHandCards={onClearNewHandCards}
         />
       </div>
@@ -1057,8 +1103,11 @@ export function VersusPlayField({
         evidenceFaceUp={currentPlayerState.evidenceFaceUp}
         isEvidenceCollapsed={isEvidenceCollapsed}
         onToggleEvidenceCollapse={onToggleEvidenceCollapse}
+        deckCount={currentPlayerState.deck.length}
+        onAddEvidenceFromDeck={onAddEvidenceFromDeck}
         onEvidenceCardClick={(card, index) => onCardClick(card, index, "evidence")}
         onRemoveCardClick={(card, index) => onCardClick(card, index, "remove")}
+        onCardDetailClick={onCardDetailClick}
         onClose={() => setLeftPanelOpen(false)}
       />
 
@@ -1071,9 +1120,11 @@ export function VersusPlayField({
         partnerZone={currentPlayerState.partnerZone}
         partnerState={partnerState}
         incidentCard={incidentCard}
+        incidentPhase={incidentPhase}
         opponentTraceFound={opponentTraceFound}
         onDrawCard={onDrawCard}
         onRefreshDeck={onRefreshDeck}
+        onDeckCardClick={onDeckCardClick}
         onFileCardClick={(card, index) => onCardClick(card, index, "file")}
         onPartnerClick={onPartnerCardClick}
         onPartnerZoneCardClick={(card, index) => onCardClick(card, index, "partnerZone")}

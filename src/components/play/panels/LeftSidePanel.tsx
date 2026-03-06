@@ -13,6 +13,7 @@ interface LeftSidePanelProps {
   onAddEvidenceFromDeck: () => void;
   onEvidenceCardClick: (card: Card, index: number) => void;
   onRemoveCardClick: (card: Card, index: number) => void;
+  onCardDetailClick: (card: Card) => void;
   onClose: () => void;
 }
 
@@ -28,6 +29,7 @@ export function LeftSidePanel({
   onAddEvidenceFromDeck,
   onEvidenceCardClick,
   onRemoveCardClick,
+  onCardDetailClick,
   onClose
 }: LeftSidePanelProps) {
   return (
@@ -192,6 +194,31 @@ export function LeftSidePanel({
                       }}>
                         {idx + 1}
                       </div>
+                      {/* 虫眼鏡バッジ */}
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCardDetailClick(card);
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: "2px",
+                          right: "2px",
+                          width: "18px",
+                          height: "18px",
+                          background: "rgba(0,0,0,0.55)",
+                          borderRadius: "50%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "0.65rem",
+                          cursor: "pointer",
+                          zIndex: 10,
+                          backdropFilter: "blur(2px)"
+                        }}
+                      >
+                        🔍
+                      </div>
                     </div>
                   );
                 })}
@@ -233,7 +260,8 @@ export function LeftSidePanel({
                       overflow: "hidden",
                       boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                       cursor: "pointer",
-                      opacity: 0.8
+                      opacity: 0.8,
+                      position: "relative" as const
                     }}
                   >
                     {card.image ? (
@@ -258,6 +286,31 @@ export function LeftSidePanel({
                         {card.name}
                       </div>
                     )}
+                    {/* 虫眼鏡バッジ */}
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onCardDetailClick(card);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: "2px",
+                        right: "2px",
+                        width: "18px",
+                        height: "18px",
+                        background: "rgba(0,0,0,0.55)",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.65rem",
+                        cursor: "pointer",
+                        zIndex: 10,
+                        backdropFilter: "blur(2px)"
+                      }}
+                    >
+                      🔍
+                    </div>
                   </div>
                 ))}
               </div>
