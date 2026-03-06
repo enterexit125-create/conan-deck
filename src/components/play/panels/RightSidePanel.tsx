@@ -486,7 +486,7 @@ export function RightSidePanel({
           <AccordionSection
             title="事件"
             icon="📋"
-            defaultOpen={false}
+            defaultOpen={true}
             headerColor="#795548"
           >
             <div style={{

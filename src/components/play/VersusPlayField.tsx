@@ -27,6 +27,7 @@ interface VersusPlayFieldProps {
   opponentPlayerState: PlayerState;
   partnerCard: Card | null;
   incidentCard: Card | null;
+  incidentPhase: "incident" | "resolution";
   onDrawCard: () => void;
   onRefreshDeck: () => void;
   onAddEvidenceFromDeck: () => void;
@@ -115,6 +116,7 @@ export function VersusPlayField({
   opponentPlayerState,
   partnerCard,
   incidentCard,
+  incidentPhase,
   onDrawCard,
   onRefreshDeck,
   onAddEvidenceFromDeck,
@@ -1115,6 +1117,7 @@ export function VersusPlayField({
         partnerZone={currentPlayerState.partnerZone}
         partnerState={partnerState}
         incidentCard={incidentCard}
+        incidentPhase={incidentPhase}
         opponentTraceFound={opponentTraceFound}
         onDrawCard={onDrawCard}
         onRefreshDeck={onRefreshDeck}
