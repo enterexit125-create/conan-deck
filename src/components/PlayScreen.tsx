@@ -424,21 +424,23 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         const keyF = `${card.id}-${Date.now()}-${Math.random()}`;
         updates.hand = [...currentPlayerState.hand, { ...card, instanceKey: keyF }];
         setNewHandCardKeys(prev => new Set([...prev, keyF]));
+        addLog(`「${card.name}」現場→手札`);
         break;
       case "remove":
         updates.remove = [...currentPlayerState.remove, card];
+        addLog(`「${card.name}」現場→リムーブ`);
         break;
       case "deckTop":
-        // 山札の一番上に追加
         updates.deck = [card, ...currentPlayerState.deck];
+        addLog(`「${card.name}」現場→山札（上）`);
         break;
       case "deckBottom":
-        // 山札の一番下に追加
         updates.deck = [...currentPlayerState.deck, card];
+        addLog(`「${card.name}」現場→山札（下）`);
         break;
       case "partner":
-        // パートナーゾーンへ
         updates.partnerZone = [...currentPlayerState.partnerZone, card];
+        addLog(`「${card.name}」現場→パートナーゾーン`);
         break;
     }
     
@@ -465,11 +467,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     switch (destination) {
       case "field":
         updates.field = [...currentPlayerState.field, card];
-        // 新しい現場カードとしてハイライト
         setNewFieldCardIndices(prev => [...prev, currentPlayerState.field.length]);
+        addLog(`「${card.name}」パートナーゾーン→現場`);
         break;
       case "remove":
         updates.remove = [...currentPlayerState.remove, card];
+        addLog(`「${card.name}」パートナーゾーン→リムーブ`);
         break;
     }
     
@@ -488,6 +491,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     // セットカードの削除を要求（VersusPlayFieldで処理される）
     setRemoveSetCardsRequest({ fieldIndex: index, player: currentPlayer });
     
+    addLog(`「${card.name}」現場→リムーブ`);
     updatePlayerState(currentPlayer, {
       field: newField,
       remove: [...currentPlayerState.remove, card]
@@ -505,6 +509,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     // セットカードの削除を要求（VersusPlayFieldで処理される）
     setRemoveSetCardsRequest({ fieldIndex: index, player: currentPlayer });
     
+    addLog(`「${card.name}」現場→証拠`);
     updatePlayerState(currentPlayer, {
       field: newField,
       evidence: [...currentPlayerState.evidence, card]
@@ -517,10 +522,13 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     if (!currentPlayerState) return;
     
     const newSet = new Set(currentPlayerState.evidenceFaceUp);
-    if (newSet.has(cardId)) {
+    const isFaceUp = newSet.has(cardId);
+    if (isFaceUp) {
       newSet.delete(cardId);
+      addLog("証拠を裏向きに");
     } else {
       newSet.add(cardId);
+      addLog("証拠を表向きに");
     }
     
     updatePlayerState(currentPlayer, {
@@ -544,15 +552,16 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         const keyR = `${card.id}-${Date.now()}-${Math.random()}`;
         updates.hand = [...currentPlayerState.hand, { ...card, instanceKey: keyR }];
         setNewHandCardKeys(prev => new Set([...prev, keyR]));
+        addLog(`「${card.name}」リムーブ→手札`);
         break;
       case "field":
         updates.field = [...currentPlayerState.field, card];
-        // 新しい現場カードとしてハイライト
         setNewFieldCardIndices(prev => [...prev, currentPlayerState.field.length]);
+        addLog(`「${card.name}」リムーブ→現場`);
         break;
       case "deck":
-        // 山札の一番下に追加
         updates.deck = [...currentPlayerState.deck, card];
+        addLog(`「${card.name}」リムーブ→山札（下）`);
         break;
     }
     
@@ -575,15 +584,16 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     switch (destination) {
       case "field":
         updates.field = [...currentPlayerState.field, card];
-        // 新しい現場カードとしてハイライト
         setNewFieldCardIndices(prev => [...prev, currentPlayerState.field.length]);
+        addLog(`「${card.name}」手札→現場`);
         break;
       case "remove":
         updates.remove = [...currentPlayerState.remove, card];
+        addLog(`「${card.name}」手札→リムーブ`);
         break;
       case "deck":
-        // 山札の一番下に追加
         updates.deck = [...currentPlayerState.deck, card];
+        addLog(`「${card.name}」手札→山札（下）`);
         break;
     }
     
@@ -617,15 +627,19 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     switch (destination) {
       case "hand":
         updates.hand = [...currentPlayerState.hand, card];
+        addLog(`「${card.name}」証拠→手札`);
         break;
       case "field":
         updates.field = [...currentPlayerState.field, card];
+        addLog(`「${card.name}」証拠→現場`);
         break;
       case "remove":
         updates.remove = [...currentPlayerState.remove, card];
+        addLog(`「${card.name}」証拠→リムーブ`);
         break;
       case "deck":
         updates.deck = [...currentPlayerState.deck, card];
+        addLog(`「${card.name}」証拠→山札`);
         break;
     }
     
@@ -648,15 +662,19 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     switch (destination) {
       case "hand":
         updates.hand = [...currentPlayerState.hand, card];
+        addLog(`「${card.name}」FILE→手札`);
         break;
       case "field":
         updates.field = [...currentPlayerState.field, card];
+        addLog(`「${card.name}」FILE→現場`);
         break;
       case "remove":
         updates.remove = [...currentPlayerState.remove, card];
+        addLog(`「${card.name}」FILE→リムーブ`);
         break;
       case "deck":
         updates.deck = [...currentPlayerState.deck, card];
+        addLog(`「${card.name}」FILE→山札`);
         break;
     }
     
@@ -833,6 +851,8 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       }
     } else {
       updatePlayerState(currentPlayer, { partnerState: state });
+      if (state === "assist") addLog("パートナーがアシスト");
+      else if (state === "normal") addLog("パートナーが通常状態に");
     }
 
     setShowPartnerCardModal(false);
@@ -1183,8 +1203,8 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         onClearNewHandCards={() => setNewHandCardKeys(new Set())}
         newFieldCardIndices={newFieldCardIndices}
         onClearNewFieldCards={() => setNewFieldCardIndices([])}
-        turnCount={turnCount}
         onShowLog={() => setShowLogModal(true)}
+        onAddLog={(message) => addLog(message)}
         onSetCardsRemoved={(cards, fieldIndex, player) => {
           // セットカードをリムーブへ追加
           if (cards.length > 0) {

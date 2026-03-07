@@ -64,6 +64,7 @@ interface VersusPlayFieldProps {
   // ログ機能
   turnCount: number;
   onShowLog: () => void;
+  onAddLog: (message: string) => void;
 }
 
 // カードサイズの定数（スマホ向け・3枚横並び）
@@ -146,7 +147,8 @@ export function VersusPlayField({
   newFieldCardIndices = [],
   onClearNewFieldCards,
   turnCount,
-  onShowLog
+  onShowLog,
+  onAddLog
 }: VersusPlayFieldProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
@@ -428,6 +430,12 @@ export function VersusPlayField({
         selectedCardForStatus.player,
         newState
       );
+      const stateLabel: Record<CardState, string> = {
+        active: "アクティブ",
+        sleep: "スリープ",
+        stan: "スタン"
+      };
+      onAddLog(`「${selectedCardForStatus.card.name}」→${stateLabel[newState]}`);
     }
   }
 
