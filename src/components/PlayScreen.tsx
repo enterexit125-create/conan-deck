@@ -87,7 +87,7 @@ interface PlayerState {
   partnerCard: Card | null;   // デッキに設定されたパートナー
   incidentCard: Card | null;  // デッキに設定された事件
   incidentPhase: "incident" | "resolution"; // 事件編 or 解決編
-  resolutionAssistDone: boolean; // 解決編最初のアシストを消化済み
+  resolutionAssistUsed: boolean; // 解決編の最初のアシストを使用済み
 }
 
 export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
@@ -251,7 +251,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       partnerCard: deckPartnerCard,
       incidentCard: deckIncidentCard,
       incidentPhase: "incident" as const,
-      resolutionAssistDone: false,
+      resolutionAssistUsed: false,
     };
   }
 
@@ -968,72 +968,47 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     setSelectedForMulligan([]);
   }
 
-  // 先攻（player1）の解決編への切り替えを監視
-  // 先攻FILEが7枚以上になったら先攻だけ「解決編」に（一度切り替わったら戻らない）
-  // 解決編になったターンから自動アシスト対象になるため、手番かどうかも見てアシストをセット
+  // 解決編への切り替えを監視（FILE枚数トリガー）
   useEffect(() => {
     if (!player1) return;
     if (player1.incidentPhase === "resolution") return;
     if (player1.file.length >= 7) {
-      setPlayer1(prev => {
-        if (!prev) return null;
-        // 現在player1が手番なら即アシスト（解決編1回目）
-        const shouldAssist = turnPlayer === 1;
-        return {
-          ...prev,
-          incidentPhase: "resolution",
-          resolutionAssistDone: shouldAssist, // 手番中に即アシストしたら消化済み
-          partnerState: shouldAssist ? "assist" : prev.partnerState
-        };
-      });
+      setPlayer1(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
     }
   }, [player1?.file.length]);
 
-  // 後攻（player2）の解決編への切り替えを監視
-  // 後攻FILEが6枚以上になったら後攻だけ「解決編」に（一度切り替わったら戻らない）
   useEffect(() => {
     if (!player2) return;
     if (player2.incidentPhase === "resolution") return;
     if (player2.file.length >= 6) {
-      setPlayer2(prev => {
-        if (!prev) return null;
-        const shouldAssist = turnPlayer === 2;
-        return {
-          ...prev,
-          incidentPhase: "resolution",
-          resolutionAssistDone: shouldAssist,
-          partnerState: shouldAssist ? "assist" : prev.partnerState
-        };
-      });
+      setPlayer2(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
     }
   }, [player2?.file.length]);
 
-  // 自分の手番開始時：パートナー状態をリセット
-  //   - 解決編かつ未消化 → assist にセットしてフラグを消化済みに
-  //   - それ以外         → normal に戻す
+  // player1 が解決編になった瞬間を検知してアシストをセット（初回のみ）
+  useEffect(() => {
+    if (!player1) return;
+    if (player1.incidentPhase !== "resolution") return;
+    if (player1.resolutionAssistUsed) return;
+    setPlayer1(prev => prev ? { ...prev, partnerState: "assist", resolutionAssistUsed: true } : null);
+  }, [player1?.incidentPhase]);
+
+  // player2 が解決編になった瞬間を検知してアシストをセット（初回のみ）
+  useEffect(() => {
+    if (!player2) return;
+    if (player2.incidentPhase !== "resolution") return;
+    if (player2.resolutionAssistUsed) return;
+    setPlayer2(prev => prev ? { ...prev, partnerState: "assist", resolutionAssistUsed: true } : null);
+  }, [player2?.incidentPhase]);
+
+  // 自分の手番開始時：partnerState を normal にリセット
   // 相手の手番中は自分のパートナー状態を一切変えない
   useEffect(() => {
     if (!isPlaying) return;
     if (turnPlayer === 1) {
-      setPlayer1(prev => {
-        if (!prev) return null;
-        const shouldAssist = prev.incidentPhase === "resolution" && !prev.resolutionAssistDone;
-        return {
-          ...prev,
-          partnerState: shouldAssist ? "assist" : "normal",
-          resolutionAssistDone: shouldAssist ? true : prev.resolutionAssistDone
-        };
-      });
+      setPlayer1(prev => prev ? { ...prev, partnerState: "normal" } : null);
     } else {
-      setPlayer2(prev => {
-        if (!prev) return null;
-        const shouldAssist = prev.incidentPhase === "resolution" && !prev.resolutionAssistDone;
-        return {
-          ...prev,
-          partnerState: shouldAssist ? "assist" : "normal",
-          resolutionAssistDone: shouldAssist ? true : prev.resolutionAssistDone
-        };
-      });
+      setPlayer2(prev => prev ? { ...prev, partnerState: "normal" } : null);
     }
   }, [turnPlayer]);
 
