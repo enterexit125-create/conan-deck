@@ -826,8 +826,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         partnerState: state,
         deck: newDeck,
         remove: removeToUse,
-        evidence: [...currentPlayerState.evidence, evidenceCard],
-        traceFound: true
+        evidence: [...currentPlayerState.evidence, evidenceCard]
       });
       addLog(didRefresh
         ? "パートナーが推理中 → リフレッシュ後に証拠+1"

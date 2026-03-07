@@ -53,10 +53,10 @@ interface VersusPlayFieldProps {
   removeSetCardsRequest?: { fieldIndex: number; player: 1 | 2 } | null;
   onSetCardsRemoved?: (cards: Card[], fieldIndex: number, player: 1 | 2) => void;
   // マリガンで新しく来たカードのインデックス
-  newMulliganCardIndices?: number[];
+  newMulliganCardKeys?: Set<string>;
   onClearNewMulliganCards?: () => void;
   // 今ターンで手札に追加されたカードのインデックス
-  newHandCardIndices?: number[];
+  newHandCardKeys?: Set<string>;
   onClearNewHandCards?: () => void;
   // 今ターンで現場に出たカードのインデックス
   newFieldCardIndices?: number[];
@@ -83,7 +83,7 @@ const PLAYER_THEMES = {
     handBg: "linear-gradient(to top, #34495e 0%, #2c3e50 100%)",
     fieldTitle: "#667eea",
     fieldCardBg: "white",
-    label: "P1",
+    label: "先攻",
     emoji: "🔵"
   },
   2: {
@@ -96,7 +96,7 @@ const PLAYER_THEMES = {
     handBg: "linear-gradient(to top, #4a2c2c 0%, #3d2020 100%)",
     fieldTitle: "#e74c3c",
     fieldCardBg: "#f0f0f0",
-    label: "P2",
+    label: "後攻",
     emoji: "🔴"
   }
 };
@@ -140,9 +140,9 @@ export function VersusPlayField({
   onPendingSetCardProcessed,
   removeSetCardsRequest,
   onSetCardsRemoved,
-  newMulliganCardIndices = [],
+  newMulliganCardKeys = new Set<string>(),
   onClearNewMulliganCards,
-  newHandCardIndices = [],
+  newHandCardKeys = new Set<string>(),
   onClearNewHandCards,
   newFieldCardIndices = [],
   onClearNewFieldCards,
@@ -946,7 +946,7 @@ export function VersusPlayField({
           <span>🔄</span>
           <span style={{ fontWeight: "bold" }}>
             {currentPlayer === turnPlayer
-              ? (turnPlayer === 1 ? "P2へ" : "P1へ")
+              ? (turnPlayer === 1 ? "後攻へ" : "先攻へ")
               : (turnPlayer === 1 ? "P1へ戻る" : "P2へ戻る")
             }
           </span>
@@ -1097,9 +1097,9 @@ export function VersusPlayField({
           onStartMulligan={onStartMulligan}
           onDrawCard={onDrawCard}
           onCardDetailClick={onCardDetailClick}
-          newMulliganCardIndices={newMulliganCardIndices}
+          newMulliganCardKeys={newMulliganCardKeys}
           onClearNewMulliganCards={onClearNewMulliganCards}
-          newHandCardIndices={newHandCardIndices}
+          newHandCardKeys={newHandCardKeys}
           onClearNewHandCards={onClearNewHandCards}
         />
       </div>
