@@ -62,6 +62,7 @@ interface VersusPlayFieldProps {
   newFieldCardIndices?: number[];
   onClearNewFieldCards?: () => void;
   // ログ機能
+  turnCount: number;
   onShowLog: () => void;
 }
 
@@ -81,7 +82,7 @@ const PLAYER_THEMES = {
     handBg: "linear-gradient(to top, #34495e 0%, #2c3e50 100%)",
     fieldTitle: "#667eea",
     fieldCardBg: "white",
-    label: "先攻",
+    label: "P1",
     emoji: "🔵"
   },
   2: {
@@ -94,7 +95,7 @@ const PLAYER_THEMES = {
     handBg: "linear-gradient(to top, #4a2c2c 0%, #3d2020 100%)",
     fieldTitle: "#e74c3c",
     fieldCardBg: "#f0f0f0",
-    label: "後攻",
+    label: "P2",
     emoji: "🔴"
   }
 };
@@ -144,6 +145,7 @@ export function VersusPlayField({
   onClearNewHandCards,
   newFieldCardIndices = [],
   onClearNewFieldCards,
+  turnCount,
   onShowLog
 }: VersusPlayFieldProps) {
   const [leftPanelOpen, setLeftPanelOpen] = useState(false);
@@ -724,6 +726,7 @@ export function VersusPlayField({
               {theme.emoji}
             </span>
             {theme.label}を操作中
+            <span style={{ fontSize: "0.75rem", fontWeight: "normal", opacity: 0.85, marginLeft: "0.5rem" }}>{turnCount}ターン目</span>
           </h2>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button 
@@ -935,7 +938,7 @@ export function VersusPlayField({
           <span>🔄</span>
           <span style={{ fontWeight: "bold" }}>
             {currentPlayer === turnPlayer
-              ? (turnPlayer === 1 ? "後攻へ" : "先攻へ")
+              ? (turnPlayer === 1 ? "P2へ" : "P1へ")
               : (turnPlayer === 1 ? "P1へ戻る" : "P2へ戻る")
             }
           </span>

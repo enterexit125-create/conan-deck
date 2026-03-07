@@ -87,7 +87,6 @@ interface PlayerState {
   partnerCard: Card | null;   // デッキに設定されたパートナー
   incidentCard: Card | null;  // デッキに設定された事件
   incidentPhase: "incident" | "resolution"; // 事件編 or 解決編
-  resolutionAssistUsed: boolean; // 解決編の最初のアシストを使用済み
 }
 
 export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
@@ -251,7 +250,6 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       partnerCard: deckPartnerCard,
       incidentCard: deckIncidentCard,
       incidentPhase: "incident" as const,
-      resolutionAssistUsed: false,
     };
   }
 
@@ -968,47 +966,54 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     setSelectedForMulligan([]);
   }
 
-  // 解決編への切り替えを監視（FILE枚数トリガー）
+  // 先攻（player1）の解決編への切り替えを監視
+  // 先攻FILEが7枚以上になったら先攻だけ「解決編」に（一度切り替わったら戻らない）
+  // 解決編になったターンから自動アシスト対象になるため、手番かどうかも見てアシストをセット
   useEffect(() => {
     if (!player1) return;
     if (player1.incidentPhase === "resolution") return;
     if (player1.file.length >= 7) {
-      setPlayer1(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
+      setPlayer1(prev => {
+        if (!prev) return null;
+        // 現在player1が手番なら即アシスト、そうでなければ incidentPhase だけ更新
+        const shouldAssist = turnPlayer === 1;
+        return {
+          ...prev,
+          incidentPhase: "resolution",
+          partnerState: shouldAssist ? "assist" : prev.partnerState
+        };
+      });
     }
   }, [player1?.file.length]);
 
+  // 後攻（player2）の解決編への切り替えを監視
+  // 後攻FILEが6枚以上になったら後攻だけ「解決編」に（一度切り替わったら戻らない）
   useEffect(() => {
     if (!player2) return;
     if (player2.incidentPhase === "resolution") return;
     if (player2.file.length >= 6) {
-      setPlayer2(prev => prev ? { ...prev, incidentPhase: "resolution" } : null);
+      setPlayer2(prev => {
+        if (!prev) return null;
+        const shouldAssist = turnPlayer === 2;
+        return {
+          ...prev,
+          incidentPhase: "resolution",
+          partnerState: shouldAssist ? "assist" : prev.partnerState
+        };
+      });
     }
   }, [player2?.file.length]);
 
-  // player1 が解決編になった瞬間を検知してアシストをセット（初回のみ）
-  useEffect(() => {
-    if (!player1) return;
-    if (player1.incidentPhase !== "resolution") return;
-    if (player1.resolutionAssistUsed) return;
-    setPlayer1(prev => prev ? { ...prev, partnerState: "assist", resolutionAssistUsed: true } : null);
-  }, [player1?.incidentPhase]);
-
-  // player2 が解決編になった瞬間を検知してアシストをセット（初回のみ）
-  useEffect(() => {
-    if (!player2) return;
-    if (player2.incidentPhase !== "resolution") return;
-    if (player2.resolutionAssistUsed) return;
-    setPlayer2(prev => prev ? { ...prev, partnerState: "assist", resolutionAssistUsed: true } : null);
-  }, [player2?.incidentPhase]);
-
-  // 自分の手番開始時：partnerState を normal にリセット
+  // 自分の手番開始時：パートナーを normal にリセット（解決編なら assist）
   // 相手の手番中は自分のパートナー状態を一切変えない
   useEffect(() => {
     if (!isPlaying) return;
-    if (turnPlayer === 1) {
-      setPlayer1(prev => prev ? { ...prev, partnerState: "normal" } : null);
+    const currentState = turnPlayer === 1 ? player1 : player2;
+    if (!currentState) return;
+    if (currentState.incidentPhase === "resolution") {
+      updatePlayerState(turnPlayer, { partnerState: "assist" });
     } else {
-      setPlayer2(prev => prev ? { ...prev, partnerState: "normal" } : null);
+      updatePlayerState(turnPlayer, { partnerState: "normal" });
     }
   }, [turnPlayer]);
 
@@ -1178,6 +1183,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         onClearNewHandCards={() => setNewHandCardKeys(new Set())}
         newFieldCardIndices={newFieldCardIndices}
         onClearNewFieldCards={() => setNewFieldCardIndices([])}
+        turnCount={turnCount}
         onShowLog={() => setShowLogModal(true)}
         onSetCardsRemoved={(cards, fieldIndex, player) => {
           // セットカードをリムーブへ追加
