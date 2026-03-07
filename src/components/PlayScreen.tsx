@@ -1202,6 +1202,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         onClearNewHandCards={() => setNewHandCardKeys(new Set())}
         newFieldCardIndices={newFieldCardIndices}
         onClearNewFieldCards={() => setNewFieldCardIndices([])}
+        turnCount={turnCount}
         onShowLog={() => setShowLogModal(true)}
         onAddLog={(message) => addLog(message)}
         onSetCardsRemoved={(cards, fieldIndex, player) => {

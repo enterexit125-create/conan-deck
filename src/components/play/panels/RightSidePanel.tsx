@@ -506,16 +506,17 @@ export function RightSidePanel({
               {/* 解決編バッジ（左側） */}
               {incidentPhase === "resolution" && (
                 <div style={{
-                  background: "linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)",
+                  background: "linear-gradient(135deg, #c62828 0%, #b71c1c 100%)",
                   color: "white",
-                  fontSize: "1rem",
+                  fontSize: "1.3rem",
                   fontWeight: "bold",
-                  padding: "0.4rem 0.6rem",
-                  borderRadius: "6px",
-                  letterSpacing: "0.1em",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                  padding: "0.5rem 0.8rem",
+                  borderRadius: "8px",
+                  letterSpacing: "0.12em",
+                  boxShadow: "0 0 0 3px #ff5252, 0 2px 10px rgba(198,40,40,0.5)",
                   flexShrink: 0,
-                  whiteSpace: "nowrap"
+                  whiteSpace: "nowrap",
+                  border: "2px solid #ff5252"
                 }}>
                   解決編
                 </div>
@@ -572,12 +573,12 @@ export function RightSidePanel({
                 <div style={{
                   background: "linear-gradient(135deg, #795548 0%, #5d4037 100%)",
                   color: "white",
-                  fontSize: "1rem",
+                  fontSize: "1.3rem",
                   fontWeight: "bold",
-                  padding: "0.4rem 0.6rem",
-                  borderRadius: "6px",
-                  letterSpacing: "0.1em",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+                  padding: "0.5rem 0.8rem",
+                  borderRadius: "8px",
+                  letterSpacing: "0.12em",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
                   flexShrink: 0,
                   whiteSpace: "nowrap"
                 }}>
