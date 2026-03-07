@@ -116,6 +116,23 @@ export function LeftSidePanel({
             defaultOpen={true}
             headerColor="#9c27b0"
           >
+            <div style={{ padding: "0.25rem 0.5rem 0 0.5rem", display: "flex", justifyContent: "center" }}>
+              <div style={{
+                display: "inline-flex",
+                gap: "0.5rem",
+                background: "linear-gradient(135deg, #9c27b0 0%, #6a1b9a 100%)",
+                color: "white",
+                fontSize: "0.72rem",
+                fontWeight: "bold",
+                padding: "0.2rem 0.7rem",
+                borderRadius: "99px",
+                letterSpacing: "0.05em"
+              }}>
+                <span>先攻 7枚</span>
+                <span style={{ opacity: 0.6 }}>|</span>
+                <span>後攻 6枚</span>
+              </div>
+            </div>
             <div style={{ padding: "0.4rem 0.5rem 0" }}>
               <button
                 onClick={onAddEvidenceFromDeck}
