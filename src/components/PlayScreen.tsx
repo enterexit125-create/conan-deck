@@ -87,6 +87,7 @@ interface PlayerState {
   partnerCard: Card | null;   // デッキに設定されたパートナー
   incidentCard: Card | null;  // デッキに設定された事件
   incidentPhase: "incident" | "resolution"; // 事件編 or 解決編
+  resolutionAssistUsed: boolean; // 解決編の最初のアシストを使用済み
 }
 
 export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
@@ -250,6 +251,7 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
       partnerCard: deckPartnerCard,
       incidentCard: deckIncidentCard,
       incidentPhase: "incident" as const,
+      resolutionAssistUsed: false,
     };
   }
 
@@ -994,12 +996,12 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
     if (player1.file.length >= 7) {
       setPlayer1(prev => {
         if (!prev) return null;
-        // 現在player1が手番なら即アシスト、そうでなければ incidentPhase だけ更新
         const shouldAssist = turnPlayer === 1;
         return {
           ...prev,
           incidentPhase: "resolution",
-          partnerState: shouldAssist ? "assist" : prev.partnerState
+          partnerState: shouldAssist ? "assist" : prev.partnerState,
+          resolutionAssistUsed: shouldAssist ? true : false
         };
       });
     }
@@ -1017,22 +1019,39 @@ export function PlayScreen({ decks, cards, createDeck }: PlayScreenProps) {
         return {
           ...prev,
           incidentPhase: "resolution",
-          partnerState: shouldAssist ? "assist" : prev.partnerState
+          partnerState: shouldAssist ? "assist" : prev.partnerState,
+          resolutionAssistUsed: shouldAssist ? true : false
         };
       });
     }
   }, [player2?.file.length]);
 
-  // 自分の手番開始時：パートナーを normal にリセット（解決編なら assist）
+  // 自分の手番開始時：パートナーをリセット
+  //   - 解決編かつ未使用 → assist にセットしてフラグをON
+  //   - それ以外         → normal に戻す
   // 相手の手番中は自分のパートナー状態を一切変えない
   useEffect(() => {
     if (!isPlaying) return;
-    const currentState = turnPlayer === 1 ? player1 : player2;
-    if (!currentState) return;
-    if (currentState.incidentPhase === "resolution") {
-      updatePlayerState(turnPlayer, { partnerState: "assist" });
+    if (turnPlayer === 1) {
+      setPlayer1(prev => {
+        if (!prev) return null;
+        const shouldAssist = prev.incidentPhase === "resolution" && !prev.resolutionAssistUsed;
+        return {
+          ...prev,
+          partnerState: shouldAssist ? "assist" : "normal",
+          resolutionAssistUsed: shouldAssist ? true : prev.resolutionAssistUsed
+        };
+      });
     } else {
-      updatePlayerState(turnPlayer, { partnerState: "normal" });
+      setPlayer2(prev => {
+        if (!prev) return null;
+        const shouldAssist = prev.incidentPhase === "resolution" && !prev.resolutionAssistUsed;
+        return {
+          ...prev,
+          partnerState: shouldAssist ? "assist" : "normal",
+          resolutionAssistUsed: shouldAssist ? true : prev.resolutionAssistUsed
+        };
+      });
     }
   }, [turnPlayer]);
 
