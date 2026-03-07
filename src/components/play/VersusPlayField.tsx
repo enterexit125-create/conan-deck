@@ -30,6 +30,7 @@ interface VersusPlayFieldProps {
   incidentPhase: "incident" | "resolution";
   onDrawCard: () => void;
   onRefreshDeck: () => void;
+  onDeckCardClick: () => void;
   onAddEvidenceFromDeck: () => void;
   onStartTurn: () => void;
   onStartMulligan: () => void;
@@ -121,6 +122,7 @@ export function VersusPlayField({
   incidentPhase,
   onDrawCard,
   onRefreshDeck,
+  onDeckCardClick,
   onAddEvidenceFromDeck,
   onStartTurn,
   onStartMulligan,
@@ -1116,6 +1118,7 @@ export function VersusPlayField({
         onAddEvidenceFromDeck={onAddEvidenceFromDeck}
         onEvidenceCardClick={(card, index) => onCardClick(card, index, "evidence")}
         onRemoveCardClick={(card, index) => onCardClick(card, index, "remove")}
+        onCardDetailClick={onCardDetailClick}
         onClose={() => setLeftPanelOpen(false)}
       />
 
@@ -1135,6 +1138,7 @@ export function VersusPlayField({
         onFileCardClick={(card, index) => onCardClick(card, index, "file")}
         onPartnerClick={onPartnerCardClick}
         onPartnerZoneCardClick={(card, index) => onCardClick(card, index, "partnerZone")}
+        onDeckCardClick={onDeckCardClick}
         onIncidentClick={onCardDetailClick}
         onClose={() => setRightPanelOpen(false)}
       />
