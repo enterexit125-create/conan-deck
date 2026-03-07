@@ -380,8 +380,8 @@ export function RightSidePanel({
                   <div
                     onClick={() => onPartnerClick(partnerCard)}
                     style={{
-                      width: (partnerState === "reasoning" || partnerState === "assist") ? "84px" : "60px",
-                      height: (partnerState === "reasoning" || partnerState === "assist") ? "60px" : "84px",
+                      width: partnerState === "reasoning" ? "84px" : "60px",
+                      height: partnerState === "reasoning" ? "60px" : "84px",
                       borderRadius: "4px",
                       overflow: "hidden",
                       boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
@@ -398,10 +398,10 @@ export function RightSidePanel({
                           position: "absolute",
                           top: "50%",
                           left: "50%",
-                          width: (partnerState === "reasoning" || partnerState === "assist") ? "60px" : "100%",
-                          height: (partnerState === "reasoning" || partnerState === "assist") ? "84px" : "100%",
+                          width: partnerState === "reasoning" ? "60px" : "100%",
+                          height: partnerState === "reasoning" ? "84px" : "100%",
                           objectFit: "cover",
-                          transform: (partnerState === "reasoning" || partnerState === "assist") 
+                          transform: partnerState === "reasoning" 
                             ? "translate(-50%, -50%) rotate(90deg)" 
                             : "translate(-50%, -50%)"
                         }}

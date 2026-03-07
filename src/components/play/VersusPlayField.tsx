@@ -760,6 +760,7 @@ export function VersusPlayField({
       left: 0,
       right: 0,
       bottom: 0,
+      height: "100dvh",
       display: "flex", 
       flexDirection: "column",
       overflow: "hidden",
