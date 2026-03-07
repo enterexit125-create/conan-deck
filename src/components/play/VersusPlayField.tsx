@@ -376,25 +376,90 @@ export function VersusPlayField({
 
   // 現場カードのインデックスが変わった時にセットカードのキーも更新
   function updateSetCardIndices(player: 1 | 2, removedIndex: number) {
+    // setCardsのインデックスをリマップ
     setSetCards(prev => {
       const newMap = new Map<string, SetCardInfo[]>();
       prev.forEach((value, key) => {
-        // このプレイヤーのfield用のキーかチェック
         const prefix = `${player}-field-`;
         if (key.startsWith(prefix)) {
           const indexStr = key.substring(prefix.length);
           const index = parseInt(indexStr, 10);
           if (index > removedIndex) {
-            // インデックスを1つ減らす
             const newKey = `${player}-field-${index - 1}`;
             newMap.set(newKey, value);
           } else if (index < removedIndex) {
-            // そのまま保持
             newMap.set(key, value);
           }
           // index === removedIndex は削除済みなのでスキップ
         } else {
+          newMap.set(key, value);
+        }
+      });
+      return newMap;
+    });
+
+    // cardStatesのインデックスもリマップ（削除でインデックスがズレるのを防ぐ）
+    setCardStates(prev => {
+      const newMap = new Map<string, CardState>();
+      prev.forEach((value, key) => {
+        // キー形式: "${player}-${cardId}-${index}"
+        const prefix = `${player}-`;
+        if (key.startsWith(prefix)) {
+          const rest = key.substring(prefix.length); // "cardId-index"
+          const lastDash = rest.lastIndexOf("-");
+          if (lastDash !== -1) {
+            const indexStr = rest.substring(lastDash + 1);
+            const index = parseInt(indexStr, 10);
+            if (!isNaN(index)) {
+              if (index > removedIndex) {
+                // インデックスを1つ減らしたキーで保存
+                const cardIdPart = rest.substring(0, lastDash);
+                const newKey = `${player}-${cardIdPart}-${index - 1}`;
+                newMap.set(newKey, value);
+              } else if (index < removedIndex) {
+                newMap.set(key, value);
+              }
+              // index === removedIndex は削除済みなのでスキップ
+            } else {
+              newMap.set(key, value);
+            }
+          } else {
+            newMap.set(key, value);
+          }
+        } else {
           // 他のプレイヤーのキーはそのまま
+          newMap.set(key, value);
+        }
+      });
+      return newMap;
+    });
+
+    // cardStatusesも同様にリマップ
+    setCardStatuses(prev => {
+      const newMap = new Map<string, CardStatus>();
+      prev.forEach((value, key) => {
+        const prefix = `${player}-`;
+        if (key.startsWith(prefix)) {
+          const rest = key.substring(prefix.length);
+          const lastDash = rest.lastIndexOf("-");
+          if (lastDash !== -1) {
+            const indexStr = rest.substring(lastDash + 1);
+            const index = parseInt(indexStr, 10);
+            if (!isNaN(index)) {
+              if (index > removedIndex) {
+                const cardIdPart = rest.substring(0, lastDash);
+                const newKey = `${player}-${cardIdPart}-${index - 1}`;
+                newMap.set(newKey, value);
+              } else if (index < removedIndex) {
+                newMap.set(key, value);
+              }
+            } else {
+              newMap.set(key, value);
+            }
+          } else {
+            newMap.set(key, value);
+          }
+        } else {
           newMap.set(key, value);
         }
       });
