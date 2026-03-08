@@ -278,6 +278,27 @@ export async function syncToSupabase(
     const totalDC = unsyncedDeckCards.length;
     report("deckCards", 0, totalDC, `デッキカードアップロード: ${totalDC}個`);
 
+    // deck_cardsが参照するdeck_idがSupabaseに存在するか確認し、なければ強制insert
+    if (unsyncedDeckCards.length > 0) {
+      const referencedDeckIds = [...new Set(unsyncedDeckCards.map(dc => dc.deckId).filter(Boolean))];
+      if (referencedDeckIds.length > 0) {
+        const existingDeckIdsInSupabase = await getExistingIds("decks", referencedDeckIds);
+        const missingDeckIds = referencedDeckIds.filter(id => !existingDeckIdsInSupabase.has(id));
+        if (missingDeckIds.length > 0) {
+          const missingDecks = (await db.decks.toArray()).filter(d => missingDeckIds.includes(d.id!));
+          if (missingDecks.length > 0) {
+            const rows = missingDecks.map(d => ({ id: d.id, name: d.name, created_at: new Date(d.createdAt).toISOString(), user_id: userId }));
+            const { error } = await supabase.from("decks").insert(rows);
+            if (error) throw error;
+            for (const d of missingDecks) {
+              await db.decks.update(d.id!, { synced: true });
+            }
+            report("deckCards", 0, totalDC, `不足デッキを補完: ${missingDecks.length}個`);
+          }
+        }
+      }
+    }
+
     const dcIds = unsyncedDeckCards.map(dc => dc.id!).filter(Boolean);
     const existingDcIds = dcIds.length > 0 ? await getExistingIds("deck_cards", dcIds) : new Set<number>();
 
