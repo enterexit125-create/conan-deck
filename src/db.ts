@@ -290,10 +290,37 @@ export async function syncToSupabase(
             const rows = missingDecks.map(d => ({ id: d.id, name: d.name, created_at: new Date(d.createdAt).toISOString(), user_id: userId }));
             const { error } = await supabase.from("decks").insert(rows);
             if (error) throw error;
-            for (const d of missingDecks) {
-              await db.decks.update(d.id!, { synced: true });
-            }
+            for (const d of missingDecks) await db.decks.update(d.id!, { synced: true });
             report("deckCards", 0, totalDC, `不足デッキを補完: ${missingDecks.length}個`);
+          }
+        }
+      }
+
+      // deck_cardsが参照するcard_idがSupabaseに存在するか確認し、なければ強制insert
+      const referencedCardIds = [...new Set(unsyncedDeckCards.map(dc => dc.cardId).filter(Boolean))];
+      if (referencedCardIds.length > 0) {
+        const existingCardIdsInSupabase = await getExistingIds("cards", referencedCardIds);
+        const missingCardIds = referencedCardIds.filter(id => !existingCardIdsInSupabase.has(id));
+        if (missingCardIds.length > 0) {
+          const missingCards = (await db.cards.toArray()).filter(c => missingCardIds.includes(c.id!));
+          if (missingCards.length > 0) {
+            const rows = missingCards.map(c => ({
+              id: c.id,
+              name: c.name,
+              number: c.number || null,
+              color: c.color || null,
+              type: c.type || null,
+              level: c.level || null,
+              traits: c.traits || null,
+              memo: c.memo || null,
+              image_url: c.imageUrl || null,
+              updated_at: new Date(c.updatedAt).toISOString(),
+              user_id: userId,
+            }));
+            const { error } = await supabase.from("cards").insert(rows);
+            if (error) throw error;
+            for (const c of missingCards) await db.cards.update(c.id!, { synced: true });
+            report("deckCards", 0, totalDC, `不足カードを補完: ${missingCards.length}枚`);
           }
         }
       }
