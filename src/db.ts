@@ -339,7 +339,9 @@ export async function syncToSupabase(
 
       if (toInsert.length > 0) {
         const rows = toInsert.map(dc => ({ id: dc.id, deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }));
-        const { error } = await supabase.from("deck_cards").insert(rows);
+        const { error } = await supabase.from("deck_cards").upsert(rows, {
+          onConflict: 'deck_id,card_id'
+        });
         if (error) throw error;
       }
       for (const dc of toUpdate) {
