@@ -326,26 +326,19 @@ export async function syncToSupabase(
       }
     }
 
-    const dcIds = unsyncedDeckCards.map(dc => dc.id!).filter(Boolean);
-    const existingDcIds = dcIds.length > 0 ? await getExistingIds("deck_cards", dcIds) : new Set<number>();
-
+    // 注意: deck_cardsのローカルidは端末ごとのDexie自動採番なので、PC/スマホ間でidが衝突しうる。
+    // そのためSupabaseにはidを送らず、(deck_id, card_id)のユニーク制約だけでupsertする。
     let dcDone = 0;
     for (let i = 0; i < unsyncedDeckCards.length; i += BATCH_SIZE) {
       const batch = unsyncedDeckCards.slice(i, i + BATCH_SIZE)
         .filter(dc => Number.isInteger(dc.deckId) && Number.isInteger(dc.cardId));
 
-      const toInsert = batch.filter(dc => !existingDcIds.has(dc.id!));
-      const toUpdate = batch.filter(dc => existingDcIds.has(dc.id!));
-
-      if (toInsert.length > 0) {
-        const rows = toInsert.map(dc => ({ id: dc.id, deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }));
+      if (batch.length > 0) {
+        const rows = batch.map(dc => ({ deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }));
         const { error } = await supabase.from("deck_cards").upsert(rows, {
           onConflict: 'deck_id,card_id'
         });
         if (error) throw error;
-      }
-      for (const dc of toUpdate) {
-        await supabase.from("deck_cards").update({ deck_id: dc.deckId, card_id: dc.cardId, count: dc.count || 1 }).eq("id", String(dc.id!));
       }
       for (const dc of batch) {
         await db.deckCards.update(dc.id!, { synced: true });
@@ -461,22 +454,39 @@ export async function syncFromSupabase(
     }
 
     // デッキカードをバッチ同期
+    // 注意: ローカルのidはDexieの端末ごとの自動採番なので、PC/スマホ間でidが衝突する可能性がある。
+    // そのため (deckId, cardId) の組み合わせで既存レコードを判定する（idはマッチングに使わない）。
     if (deckCardsData.length > 0) {
       report("deckCards", 0, deckCardsData.length, `デッキカード同期中... (${deckCardsData.length}個)`);
-      const localDeckCardIds = new Set((await db.deckCards.toArray()).map(dc => dc.id));
+      const localDeckCardsArr = await db.deckCards.toArray();
+      const localByKey = new Map<string, DeckCard>();
+      for (const dc of localDeckCardsArr) {
+        localByKey.set(`${dc.deckId}_${dc.cardId}`, dc);
+      }
+
       const toAdd: DeckCard[] = [];
       const toUpdate: [number, Partial<DeckCard>][] = [];
+      const seenKeys = new Set<string>();
 
       for (const dc of deckCardsData) {
+        const deckId = Number(dc.deck_id);
+        const cardId = Number(dc.card_id);
+        const key = `${deckId}_${cardId}`;
+
+        // Supabase側に同じ(deckId,cardId)が複数件返ってきた場合の保険（最初の1件のみ採用）
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+
+        const existingLocal = localByKey.get(key);
         const record: DeckCard = {
-          id: dc.id,
-          deckId: Number(dc.deck_id),
-          cardId: Number(dc.card_id),
+          deckId,
+          cardId,
           count: Number(dc.count) || 1,
           synced: true,
         };
-        if (localDeckCardIds.has(dc.id)) {
-          toUpdate.push([dc.id, record]);
+
+        if (existingLocal?.id !== undefined) {
+          toUpdate.push([existingLocal.id, record]);
         } else {
           toAdd.push(record);
         }
@@ -585,6 +595,63 @@ export async function syncFromSupabase(
   } catch (error) {
     console.error("❌ Supabase同期エラー:", error);
     return { success: false, error };
+  }
+}
+
+// ========================================
+// 重複deckCardsのクリーンアップ
+// ========================================
+// 過去の同期バグにより、同じ (deckId, cardId) の組み合わせが
+// ローカルDBに複数行存在してしまっているケースを一本化する。
+// countは合算せず「最大値」を採用する（合算すると枚数がさらに膨らむため）。
+export type CleanupResult = {
+  success: boolean;
+  duplicateGroups: number;
+  deletedRows: number;
+  error?: unknown;
+};
+
+export async function cleanupDuplicateDeckCards(): Promise<CleanupResult> {
+  try {
+    const all = await db.deckCards.toArray();
+    const groups = new Map<string, DeckCard[]>();
+
+    for (const dc of all) {
+      const key = `${dc.deckId}_${dc.cardId}`;
+      const arr = groups.get(key);
+      if (arr) {
+        arr.push(dc);
+      } else {
+        groups.set(key, [dc]);
+      }
+    }
+
+    let duplicateGroups = 0;
+    let deletedRows = 0;
+
+    for (const rows of groups.values()) {
+      if (rows.length <= 1) continue;
+      duplicateGroups++;
+
+      // 一番大きいcountを正とする（合算はしない）
+      const maxCount = Math.max(...rows.map(r => r.count || 1));
+      // idが一番小さい行を残す（最も古い＝もともとの行とみなす）
+      const sorted = [...rows].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+      const keep = sorted[0];
+      const toDelete = sorted.slice(1);
+
+      await db.deckCards.update(keep.id!, { count: maxCount, synced: false });
+      for (const dc of toDelete) {
+        await db.deckCards.delete(dc.id!);
+        deletedRows++;
+      }
+    }
+
+    console.log(`✅ クリーンアップ完了: 重複グループ${duplicateGroups}件, 削除行${deletedRows}件`);
+    return { success: true, duplicateGroups, deletedRows };
+  } catch (error) {
+    console.error("❌ クリーンアップ失敗:", error);
+    return { success: false, duplicateGroups: 0, deletedRows: 0, error };
   }
 }
 
